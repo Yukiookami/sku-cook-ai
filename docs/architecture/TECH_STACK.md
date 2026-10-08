@@ -10,13 +10,13 @@ Personal Daily App 是供家庭日常使用的应用。V1 优先实现菜谱，�
 
 ## 2. 仓库与运行环境
 
-| 技术 | 用途 | V1 约定 |
-| --- | --- | --- |
-| Git | 版本管理与回退 | 每个验收通过的小步骤单独提交 |
-| pnpm workspace | 管理 Monorepo 的依赖与脚本 | 不加入 Nx / Turborepo |
-| Node.js | 前端工具链与后端运行环境 | 初始化时选择受支持的 LTS，并记录版本 |
-| TypeScript | 前后端与共享包的类型检查 | 启用 strict；构建和类型检查分别验证 |
-| Docker Compose | 启动开发依赖 | 初期至少运行 PostgreSQL，Web / API 在宿主机运行 |
+| 技术           | 用途                       | V1 约定                                         |
+| -------------- | -------------------------- | ----------------------------------------------- |
+| Git            | 版本管理与回退             | 每个验收通过的小步骤单独提交                    |
+| pnpm workspace | 管理 Monorepo 的依赖与脚本 | 不加入 Nx / Turborepo                           |
+| Node.js        | 前端工具链与后端运行环境   | 初始化时选择受支持的 LTS，并记录版本            |
+| TypeScript     | 前后端与共享包的类型检查   | 启用 strict；构建和类型检查分别验证             |
+| Docker Compose | 启动开发依赖               | 初期至少运行 PostgreSQL，Web / API 在宿主机运行 |
 
 具体依赖版本在初始化时检查兼容性并通过 pnpm-lock.yaml 固定。不要在未确认适配关系时直接把全部依赖升级到最新版。
 
@@ -24,20 +24,20 @@ Personal Daily App 是供家庭日常使用的应用。V1 优先实现菜谱，�
 
 ## 3. 前端：apps/web
 
-| 技术 | 用途 | 使用约定 |
-| --- | --- | --- |
-| Vue 3 | 页面与组件 | Composition API，优先 script setup lang="ts" |
-| Vite | 开发服务器与生产构建 | 开发阶段代理 /api 到 Fastify |
-| Vue Router | 页面路由 | 路由配置集中管理 |
-| Pinia | 跨页面共享状态 | 页面局部状态使用 ref / reactive，不默认放进 Store |
-| Axios | HTTP Client | 在 src/api/client.ts 集中配置，View 不直接发送请求 |
-| Vant 4 | Vue 3 移动端 UI 组件 | 用于表单、选择器、弹出层、导航等基础交互；按需引入 |
-| CSS / 按需 SCSS | 页面布局与自定义样式 | 使用 Flex、Grid 和媒体查询；不引入 Tailwind CSS |
-| vite-plugin-pwa | Manifest、Service Worker 与更新机制 | V1 支持安装基础；离线业务写入暂不实现 |
-| Screen Wake Lock API | 厨房屏有菜单时阻止自动熄屏 | 浏览器原生 API，无依赖；封装为 useWakeLock composable，仅 /kitchen 路由使用 |
-| Vitest | 单元测试运行器 | 验证有价值的逻辑与行为 |
-| Vue Test Utils | Vue 组件测试 | 重点验证表单、校验和交互 |
-| ESLint / Prettier | 代码检查与格式化 | 检查逻辑与格式职责分开 |
+| 技术                 | 用途                                | 使用约定                                                                    |
+| -------------------- | ----------------------------------- | --------------------------------------------------------------------------- |
+| Vue 3                | 页面与组件                          | Composition API，优先 script setup lang="ts"                                |
+| Vite                 | 开发服务器与生产构建                | 开发阶段代理 /api 到 Fastify                                                |
+| Vue Router           | 页面路由                            | 路由配置集中管理                                                            |
+| Pinia                | 跨页面共享状态                      | 页面局部状态使用 ref / reactive，不默认放进 Store                           |
+| Axios                | HTTP Client                         | 在 src/api/client.ts 集中配置，View 不直接发送请求                          |
+| Vant 4               | Vue 3 移动端 UI 组件                | 用于表单、选择器、弹出层、导航等基础交互；按需引入                          |
+| CSS / 按需 SCSS      | 页面布局与自定义样式                | 使用 Flex、Grid 和媒体查询；不引入 Tailwind CSS                             |
+| vite-plugin-pwa      | Manifest、Service Worker 与更新机制 | V1 支持安装基础；离线业务写入暂不实现                                       |
+| Screen Wake Lock API | 厨房屏有菜单时阻止自动熄屏          | 浏览器原生 API，无依赖；封装为 useWakeLock composable，仅 /kitchen 路由使用 |
+| Vitest               | 单元测试运行器                      | 验证有价值的逻辑与行为                                                      |
+| Vue Test Utils       | Vue 组件测试                        | 重点验证表单、校验和交互                                                    |
+| ESLint / Prettier    | 代码检查与格式化                    | 检查逻辑与格式职责分开                                                      |
 
 页面以手机布局为基准，平板通过内容宽度、卡片列数与留白调整。Vant 不替代页面响应式设计；菜谱卡片和详情布局按业务实现。组件外观优先通过 Vant 主题变量调整，组件专用样式放在 Vue 的 scoped style 中；SCSS 只在确有需要时使用。
 
@@ -49,16 +49,16 @@ Wake Lock 只能阻止熄屏，不能点亮已熄灭的屏幕；页面进入后�
 
 ## 4. 后端：apps/api
 
-| 技术 | 用途 | 使用约定 |
-| --- | --- | --- |
-| Node.js + TypeScript | API 运行与开发 | 开发可使用 tsx；生产执行编译后的 JavaScript |
-| Fastify | HTTP / REST API | app.ts 构造实例，server.ts 负责启动和退出 |
-| Zod | Body、Query、Params 与配置校验 | 业务请求约定优先定义在 shared；服务端必须校验输入 |
-| Prisma | PostgreSQL 访问与迁移 | Prisma Client 仅供后端使用 |
-| Pino | 结构化日志 | 使用 Fastify 内置日志集成，避免重复建立日志系统 |
-| Vitest | 单元和集成测试运行器 | 业务逻辑与 API 行为按需要验证 |
-| Supertest | HTTP API 集成测试 | 可针对 Fastify 的 Node HTTP Server 验证请求响应 |
-| ESLint / Prettier | 代码检查与格式化 | 与仓库公共配置保持一致 |
+| 技术                 | 用途                           | 使用约定                                          |
+| -------------------- | ------------------------------ | ------------------------------------------------- |
+| Node.js + TypeScript | API 运行与开发                 | 开发可使用 tsx；生产执行编译后的 JavaScript       |
+| Fastify              | HTTP / REST API                | app.ts 构造实例，server.ts 负责启动和退出         |
+| Zod                  | Body、Query、Params 与配置校验 | 业务请求约定优先定义在 shared；服务端必须校验输入 |
+| Prisma               | PostgreSQL 访问与迁移          | Prisma Client 仅供后端使用                        |
+| Pino                 | 结构化日志                     | 使用 Fastify 内置日志集成，避免重复建立日志系统   |
+| Vitest               | 单元和集成测试运行器           | 业务逻辑与 API 行为按需要验证                     |
+| Supertest            | HTTP API 集成测试              | 可针对 Fastify 的 Node HTTP Server 验证请求响应   |
+| ESLint / Prettier    | 代码检查与格式化               | 与仓库公共配置保持一致                            |
 
 Fastify 也提供 inject 测试能力。默认保留既定的 Supertest 方案；同一 API 场景不必同时写两套测试。
 
@@ -74,13 +74,13 @@ V1 不实现登录 UI、注册、JWT 或密码认证。业务请求使用后端�
 
 用户模型预留字段：
 
-| 字段 | 约定 |
-| --- | --- |
-| id | 用户主键 |
-| name | 用户名称 |
-| email | V1 可为空；存在时唯一 |
-| password_hash | 可为空；未来认证时使用 |
-| created_at / updated_at | 创建及更新时间 |
+| 字段                    | 约定                   |
+| ----------------------- | ---------------------- |
+| id                      | 用户主键               |
+| name                    | 用户名称               |
+| email                   | V1 可为空；存在时唯一  |
+| password_hash           | 可为空；未来认证时使用 |
+| created_at / updated_at | 创建及更新时间         |
 
 Seed 创建默认用户（建议 id = 1，name = default-user），重复执行不应产生重复用户。具体主键和命名映射在数据库初始化阶段统一确认。
 
@@ -93,6 +93,7 @@ recipes 等个人业务表保存 user_id，并建立外键。ingredients / categ
 共享以下内容：
 
 - Zod 请求与响应 Schema。
+- 已确认的纯数字份数换算与用量格式化规则（待业务实施）：详情和厨房共用，不能依赖Vue、数据库或环境变量；原份数/目标份数/换算开关由Contract定义，不为份数计算新增API或依赖。
 - 由 Schema 推导的 TypeScript 类型。
 - 前后端都需要的业务常量和 API Contract。
 
@@ -136,10 +137,10 @@ Windows PC
 
 厨房屏是一台闲置的 Android 平板，常插电，打开 `/kitchen` 路由加到桌面。它不是一台需要部署代码的设备，但有自己的运行配置，记录在 docs/development/KITCHEN_TABLET.md。
 
-| 阶段 | 方案 | 说明 |
-| --- | --- | --- |
-| V1 | Chrome 加桌面 + 系统设置 | 屏幕超时自动熄屏，有菜单时由 Wake Lock 保持常亮；系统自带充电上限（三星“保护电池”、小米 / 华为“智能充电”），没有则用定时插座 |
-| 预留 | Fully Kiosk Browser | Android 应用，把平板变成单一网页展示终端：开机自启、全屏锁定、空闲熄屏、定时亮屏熄屏、按电量触发 URL（配合智能插座控制充电）、崩溃自动重载、局域网 REST 接口（`?cmd=screenOn`）可远程亮屏。Plus 授权一次性付费、按设备计。Home Assistant 挂墙面板的标准做法 |
+| 阶段 | 方案                     | 说明                                                                                                                                                                                                                                                        |
+| ---- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| V1   | Chrome 加桌面 + 系统设置 | 屏幕超时自动熄屏，有菜单时由 Wake Lock 保持常亮；系统自带充电上限（三星“保护电池”、小米 / 华为“智能充电”），没有则用定时插座                                                                                                                                |
+| 预留 | Fully Kiosk Browser      | Android 应用，把平板变成单一网页展示终端：开机自启、全屏锁定、空闲熄屏、定时亮屏熄屏、按电量触发 URL（配合智能插座控制充电）、崩溃自动重载、局域网 REST 接口（`?cmd=screenOn`）可远程亮屏。Plus 授权一次性付费、按设备计。Home Assistant 挂墙面板的标准做法 |
 
 Fully Kiosk 是解决“开机要手点”“熄屏后手机发菜单它不亮”“电池管理”这些问题的现成方案，V1 不装，但不要在遇到这些问题时重新调研。接入它时代码侧只有一处改动：API 在“发送到厨房”成功后向 Fully 的 REST 接口发一个亮屏请求，地址和密码放在 `.env`，未配置时跳过。门口的 TodoList 显示屏届时使用同一套方案。
 

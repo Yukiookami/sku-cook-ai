@@ -16,7 +16,7 @@ Content-Type application/json，Body严格RecipeInput，见 [COMMON](../COMMON.m
   "difficulty": "easy",
   "tags": ["家常菜", "快手"],
   "ingredients": [
-    { "name": "鸡蛋", "amount": "3", "unit": "个" },
+    { "name": "鸡蛋", "amount": "3", "unit": "个", "scaleWithServings": true },
     { "name": "番茄", "amount": "2", "unit": "个", "note": "切块" },
     { "name": "盐", "amount": "适量" }
   ],
@@ -31,6 +31,8 @@ Content-Type application/json，Body严格RecipeInput，见 [COMMON](../COMMON.m
 
 ## 2. 成功201
 
+servings省略默认1，食材scaleWithServings省略默认true；显式值必须分别为正整数/boolean，null不接受。amount仍按原份数存字符串，false可保留煎炒用油等固定量。目标份数不是RecipeInput字段。
+
 响应 `{ "recipe": Recipe }`，完整结构见 [COMMON 3.2](../COMMON.md#32-recipe--recipesummary)；`Location: /api/recipes/{id}`。创建时间由服务端确定，主键数据库生成。
 
 ## 3. 业务处理
@@ -42,3 +44,5 @@ Content-Type application/json，Body严格RecipeInput，见 [COMMON](../COMMON.m
 400 INVALID_INPUT，issues精确定位食材/步骤；409 RECIPE_TITLE_CONFLICT定位title；413 PAYLOAD_TOO_LARGE；500/503按共通处理。唯一冲突只捕获相应数据库错误，其他异常不得伪装成“同名”。
 
 测试至少1条食材/步骤、连续order、未知字段拒绝、同名含两端空白、并发同名仅1成功、事务失败不残留子数据、用户归属不可指定、响应不泄漏数据库字段。重复POST不自动幂等；客户端防连点，网络结果不确定先查询。
+
+测试默认1/true、显式原份数及false、原amount不被换算、servings空/0/小数与开关非boolean拒绝。

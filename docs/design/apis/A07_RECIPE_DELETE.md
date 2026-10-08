@@ -12,7 +12,7 @@ id为正整数；无Body或userId。`DELETE /api/recipes/101`。
 
 同用户事务锁 →确认id属于默认用户→删除Recipe的从属食材/步骤与标签关系→移除厨房菜单成员→若删当前菜选择剩余有序菜单第一道，若无剩余active=null→菜单发生变化时revision+1→删除Recipe→提交。
 
-删除非菜单菜谱不改会话版本。删除菜谱不删除User、不建文件清理逻辑。会话成员顺序重新保持连续；不能留下指向已删除菜谱的activeRecipeId。手机不推送，厨房下一次成功轮询看到变化。
+删除非菜单菜谱不改会话版本。删除菜谱不删除User、不建文件清理逻辑。移除成员时连同其targetServings移除，剩余成员份数不变；items/recipeIds/recipes保持同序。会话成员顺序重新保持连续；不能留下指向已删除菜谱的activeRecipeId。手机不推送，厨房下一次成功轮询看到变化。
 
 ## 错误与测试
 

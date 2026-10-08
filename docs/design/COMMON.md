@@ -36,7 +36,7 @@ ID 为正整数；日期为 ISO 8601 UTC 字符串。请求对象拒绝未知字
 | ------------------------ | -------------------------------------------------------------------------- |
 | title                    | 必填 string；trim 后 1～50 字；同一用户唯一                                |
 | description              | 可选 string，trim；建议上限 500 字                                         |
-| servings                 | 可选正整数；建议最大 100                                                   |
+| servings                 | 原菜谱份数，正整数；省略默认 1，响应始终非 null；建议最大 100              |
 | prepMinutes、cookMinutes | 可选非负整数；建议各最大 1440；0 是合法值                                  |
 | difficulty               | 可选 `easy` / `medium` / `hard`，显示简单 / 中等 / 复杂                    |
 | tags                     | 可选 string[]；默认 []；每项 trim 后非空、去重；建议最多 20 项，每项 20 字 |
@@ -47,9 +47,24 @@ ID 为正整数；日期为 ISO 8601 UTC 字符串。请求对象拒绝未知字
 
 IngredientInput：`name` 必填非空字符串（建议 50 字），`amount` / `unit` / `note` / `group` 可选字符串（建议上限分别 50 / 20 / 200 / 50 字）。数组顺序是展示顺序；group 缺失的先展示，其余分组按首次出现顺序，组内保持原顺序。数量始终是字符串，支持“适量”“少许”“2～3”。
 
+IngredientInput 另有 `scaleWithServings` 可选 boolean，省略默认 true；响应必有 boolean。它与 servings 都不是可清空的可选标量。false 表示保留原量，适用于部分油、水、调料。旧版 version=1 导入没有这两个字段时按默认值处理，不根据文本推断原份数。
+
 StepInput：`order` 必填正整数，`text` 必填 trim 后非空字符串（建议最多 5000 字）；数组内 order 必须恰好是 1…N 且与数组顺序相同，不重复、不跳号。前端移动条目后重新编号，服务端不默默修复非法导入。
 
-表单可选文本留空时省略；可选数字留空时省略而不是变成 0；请求可选字段不使用 null。PUT 是完整替换，省略可选字段表示清除。响应统一把缺失可选标量返回 null，tags 返回 []；IngredientInput 的可选标量在响应中同样为 null。以上“建议”数值是设计初稿的输入上限，实施前统一固化到 shared，不能不同页面各自定义。
+表单可选文本留空时省略；可选数字留空时省略而不是变成 0；请求可选字段不使用 null。原份数输入不得留空，提交正整数；接口省略 servings / scaleWithServings 分别默认 1 / true。PUT 是完整替换，省略其他可选字段表示清除，省略这两个默认字段则重置为默认值；编辑端必须显式提交已有值。响应缺失可选标量返回 null，tags 返回 []，servings / scaleWithServings 始终非 null。以上“建议”数值上限实施前统一固化到 shared，不能不同页面各自定义。
+
+### 3.1.1 份数换算
+
+用户已确认：新增默认1人份但允许原份数；手机详情及发送弹层用 − / ＋ 调整每道目标份数，并发送到厨房。目标初始等于原份数，不是所有菜一律显示1。
+
+- targetServings 为正整数（建议与原份数同上限100）；下限1，边界禁用按钮。它是本次阅读/做饭状态，不改变 Recipe.servings，也不新增单独换算 API。
+- trim 后 amount 仅当匹配 `^\d+(?:\.\d+)?$` 且 scaleWithServings=true 才换算。负号、科学记数、范围、分数、单位混在amount内、空值、中文量词不解析，保留原文；合法数字0仍是0。
+- 比例是 targetServings / Recipe.servings，始终从保存的原量重新算，不基于上次显示值累计，以免反复 + / − 产生误差。
+- 原份数等于目标时原文不改。数值乘除与显示采用明确十进制舍入；设计建议四舍五入到最多2位小数、去尾零，近似值标“约”，极小正值不可舍为0（显示“少于0.01”）。实施前固定该精度策略并补边界测试，不展示浮点噪声、Infinity或NaN。
+- 数值过长、无法在既定计算精度内安全表示时不强制换算，保留原文并标“未换算”；不能静默截断，实施时在 shared 明确支持精度及超限判定。不为此提前安装数学库。
+- 个/枚等不自动向上取整，允许参考“1.5个”；用户自行分配。文字量与关闭换算项在目标不同时标“原量/按需调整”。
+- 全部换算区显示“参考用量，调料按口味调整”。不解析步骤或tips中的“加10g盐”，不换算时间/火力，目标不同另提示“步骤与时间沿用原菜谱”。
+- 将实际共享的纯换算/格式化规则放shared，Web详情/厨房复用；API存原量及目标份数，不把临时计算量覆盖进菜谱。既有 Schema 不包含这些业务字段，实施时才新增并测试。
 
 ### 3.2 Recipe / RecipeSummary
 
@@ -71,9 +86,30 @@ Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不�
     "difficulty": "easy",
     "tags": ["家常菜", "快手"],
     "ingredients": [
-      { "name": "鸡蛋", "amount": "3", "unit": "个", "note": null, "group": null },
-      { "name": "番茄", "amount": "2", "unit": "个", "note": "切块", "group": null },
-      { "name": "盐", "amount": "适量", "unit": null, "note": null, "group": null }
+      {
+        "name": "鸡蛋",
+        "amount": "3",
+        "unit": "个",
+        "note": null,
+        "group": null,
+        "scaleWithServings": true
+      },
+      {
+        "name": "番茄",
+        "amount": "2",
+        "unit": "个",
+        "note": "切块",
+        "group": null,
+        "scaleWithServings": true
+      },
+      {
+        "name": "盐",
+        "amount": "适量",
+        "unit": null,
+        "note": null,
+        "group": null,
+        "scaleWithServings": true
+      }
     ],
     "steps": [
       { "order": 1, "text": "鸡蛋打散，加少许盐。" },
@@ -92,13 +128,14 @@ Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不�
 
 所有厨房读写成功统一返回 `{ session: KitchenSession, pollIntervalSeconds: number }`。KitchenSession：
 
-| 字段           | 说明                                               |
-| -------------- | -------------------------------------------------- |
-| recipeIds      | 去重且有序的 0～10 个菜谱 id                       |
-| activeRecipeId | 非空菜单中恰好属于 recipeIds；空菜单时 null        |
-| revision       | 非负整数版本。初始空状态 0；每次实际内容变更 +1    |
-| updatedAt      | 变更时间；初始未创建记录时 null                    |
-| recipes        | 按 recipeIds 排列的完整 Recipe[] 快照；空菜单为 [] |
+| 字段           | 说明                                                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| recipeIds      | 去重且有序的 0～10 个菜谱 id                                                                         |
+| items          | 与 recipeIds 同序的 `{ recipeId, targetServings }[]`；服务端保存目标，recipeIds由其派生，空菜单为 [] |
+| activeRecipeId | 非空菜单中恰好属于 recipeIds；空菜单时 null                                                          |
+| revision       | 非负整数版本。初始空状态 0；每次实际内容变更 +1                                                      |
+| updatedAt      | 变更时间；初始未创建记录时 null                                                                      |
+| recipes        | 按 recipeIds 排列的完整 Recipe[] 快照；空菜单为 []                                                   |
 
 `pollIntervalSeconds` 默认 10，由后端 `KITCHEN_POLL_INTERVAL_SECONDS` 环境变量确定（正整数，建议 5～300），不是前端 VITE 配置副本。GET 返回空状态而不是 404；GET 不创建数据库记录。发送创建第一条记录。
 
@@ -106,7 +143,9 @@ Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不�
 
 版本用于并发控制，不能表示“屏幕已收到”。所有写入携带 `expectedRevision`；服务端原子比对当前版本，失配返回 409 SESSION_CONFLICT。手机打开弹层读取一次版本，厨房使用最近的成功响应版本。不自动重试带旧版本的写操作，不因轮询失败清空菜谱。
 
-显示内容比較包含 recipes 的文字、顺序与当前菜，不能只比较 recipeIds / activeRecipeId；相同响应不重置 DOM 或页码。本机写入成功后更新本地版本，下一次轮询不能重复刷新。
+显示内容比较包含 recipes 的文字、顺序、items 的目标份数与当前菜，不能只比较 recipeIds / activeRecipeId；相同响应不重置 DOM 或页码。本机写入成功后更新本地版本，下一次轮询不能重复刷新。
+
+发送Body使用items而不重复提交recipeIds，避免两份列表矛盾。每个recipeId只出现一次，targetServings必填正整数；读取/切换/清空等成功响应都包含items，原Recipe.servings与amount仍是原值。厨房按items与Recipe共同计算显示。编辑原菜谱时保留会话目标份数，使用新原份数/原量重新计算；修改和删除仍同步revision及成员关系。
 
 ### 3.4 导入
 
@@ -147,7 +186,7 @@ issues 可选；至少保证 path（string / number 数组）和 message。导�
 
 ## 5. 数据与事务设计
 
-设计新增 Recipe（userId 外键，规范化 title 同用户唯一）、食材 / 步骤从属数据、KitchenSession（userId 唯一）、KitchenSessionRecipe（顺序与菜谱外键）等模型；最终 Prisma 表结构在业务实施时建立。食材“内嵌”指业务随菜谱读写，不等于需要独立食材字典或强制使用 JSON 列。
+设计新增 Recipe（userId 外键，规范化 title 同用户唯一，servings默认1且不可空）、食材（scaleWithServings默认true）/ 步骤从属数据、KitchenSession（userId 唯一）、KitchenSessionRecipe（顺序、菜谱外键、targetServings正整数）等模型；最终 Prisma 表结构在业务实施时建立。食材“内嵌”指业务随菜谱读写，不等于需要独立食材字典或强制使用 JSON 列。
 
 会话成员与 activeRecipeId 必须保持一致。替换会话、切换、清空，以及影响会话的菜谱编辑 / 删除，用同一用户的事务锁串行化（可锁既有默认 User 行），事务内检查 revision；不采用“先 GET、后无条件 UPDATE”。
 

@@ -20,6 +20,7 @@ expectedRevision非负整数。Axios DELETE使用 `{ data: { expectedRevision } 
 {
   "session": {
     "recipeIds": [],
+    "items": [],
     "activeRecipeId": null,
     "revision": 10,
     "updatedAt": "2026-10-08T05:30:00.000Z",
@@ -33,7 +34,7 @@ expectedRevision非负整数。Axios DELETE使用 `{ data: { expectedRevision } 
 
 ## 处理
 
-默认用户事务锁→比较revision→非空则移除菜单成员、active=null、revision+1→保留会话记录→提交返回。此处DELETE清的是菜单内容，不删除版本记录，防止版本重置导致旧请求重新匹配。
+默认用户事务锁→比较revision→非空则移除菜单成员及其目标份数、active=null、revision+1→保留会话记录→提交返回。此处DELETE清的是菜单内容，不删除版本记录，防止版本重置导致旧请求重新匹配。
 
 不删除Recipe或食材步骤；不添加完成状态、做菜统计或逐道完成记录。服务端不知道本地页码，也不验证“最后一页”；画面负责显示完成按钮，用户决定全部结束。
 

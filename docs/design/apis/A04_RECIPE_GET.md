@@ -6,7 +6,7 @@
 
 id为正整数；无Body/Query/userId。`GET /api/recipes/101`。
 
-成功200：`{ "recipe": Recipe }`，完整可复制JSON示例见 [COMMON 3.2](../COMMON.md#32-recipe--recipesummary)。返回id、菜名、所有规范化可选字段、食材、连续步骤、tags、tips、source、时间；缺失标量null，不返回数据库userId或内部关系id。
+成功200：`{ "recipe": Recipe }`，完整可复制JSON示例见 [COMMON 3.2](../COMMON.md#32-recipe--recipesummary)。返回id、菜名、所有规范化可选字段、食材、连续步骤、tags、tips、source、时间；缺失可选标量null，原servings为正整数、食材scaleWithServings为boolean，不返回数据库userId或内部关系id。读取原amount，不接收目标份数Query，不返回替代原量的计算值。
 
 ## 处理
 

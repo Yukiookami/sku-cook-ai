@@ -12,7 +12,7 @@ Content-Type application/json：
 
 activeRecipeId必填正整数，expectedRevision必填非负整数；不接本地pageIndex、食材页、步骤完成、userId。
 
-成功KitchenState完整结构复用[A10](A10_KITCHEN_GET.md)。仅active变更时revision+1与更新时间，recipeIds顺序保持。若选中已经当前的菜，在版本相符时200返回原状态，不递增、不重置阅读。
+成功KitchenState完整结构复用[A10](A10_KITCHEN_GET.md)。仅active变更时revision+1与更新时间，recipeIds顺序及items各菜targetServings保持。若选中已经当前的菜，在版本相符时200返回原状态，不递增、不重置阅读。
 
 ## 处理与错误
 

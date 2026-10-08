@@ -37,6 +37,8 @@ version错误路径为["version"]。数组索引0-based，报告中显示第2、
 
 去除两端空白后查重，与新增/编辑一致。此API只读，不写菜谱、会话或校验token，不保证此刻通过之后仍无冲突。
 
+version=1继续接受省略servings/scaleWithServings的文件，分别默认1/true；显式非法份数/非boolean定位相应字段。原2/4人份食材无需转换成1人份，文字量不改。该默认规则与A05/A09复用，不凭文本推断份数。
+
 ## 其他错误与测试
 
 400 INVALID_REQUEST：畸形JSON；413 PAYLOAD_TOO_LARGE；500/503通用（数据库失败不能说valid=true或已有同名）。422包含结构、字段、version、同文件同名和库中同名错误。

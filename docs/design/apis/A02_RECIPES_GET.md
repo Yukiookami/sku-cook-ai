@@ -38,7 +38,7 @@
 }
 ```
 
-items为RecipeSummary[]，不带正文；零结果正常200、items=[]、hasMore=false；超出末页同样为空。不默认计算总数。
+items为RecipeSummary[]，不带正文；servings为原菜谱正整数且非null，供多选发送初始化目标份数，不是当前厨房份数。零结果正常200、items=[]、hasMore=false；超出末页同样为空。不默认计算总数。
 
 ## 3. 处理与存储
 
