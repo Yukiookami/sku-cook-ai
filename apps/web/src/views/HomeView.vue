@@ -26,8 +26,8 @@ async function checkConnection() {
 
 <template>
   <main class="home">
-    <p class="eyebrow">PERSONAL DAILY APP</p>
-    <h1>家庭菜谱</h1>
+    <p class="eyebrow">家庭菜谱</p>
+    <h1>吃什么饭</h1>
     <p :role="failed ? 'alert' : 'status'">{{ message }}</p>
     <VanButton type="primary" :loading="loading" @click="checkConnection"> 检查后端连接 </VanButton>
   </main>

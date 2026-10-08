@@ -8,6 +8,13 @@ vi.mock('../api/health', () => ({ getHealth: vi.fn() }));
 describe('HomeView', () => {
   beforeEach(() => vi.resetAllMocks());
 
+  it('shows the product name before checking the connection', () => {
+    const wrapper = mount(HomeView);
+    expect(wrapper.get('h1').text()).toBe('吃什么饭');
+    expect(wrapper.text()).toContain('基础工程已就绪，菜谱业务尚未实现。');
+    expect(getHealth).not.toHaveBeenCalled();
+  });
+
   it('shows the successful API connection', async () => {
     vi.mocked(getHealth).mockResolvedValue({ status: 'ok', service: 'sku-cook-ai-api' });
     const wrapper = mount(HomeView);

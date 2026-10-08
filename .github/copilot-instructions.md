@@ -38,6 +38,7 @@
 - [PROJECT_MAP.md](../docs/architecture/PROJECT_MAP.md) 是实际文件清单；[PROJECT_STRUCTURE.md](../docs/architecture/PROJECT_STRUCTURE.md) 是目标规划，两者用途不同。
 - 每次新增、删除、移动、改名文件，或修改职责/入口/重要依赖，同次任务维护项目地图；新增设计书也必须登记。内部小修改且职责不变不必改文字。
 - 修改接口字段、交互或业务规则时同步相关设计书、需求和 shared；不把尚未实施的文件写进实际清单。
+- 设计图生成/修改提示词统一维护在 [PROMPTS.md](../docs/design/screens/images/PROMPTS.md)，画面设计书仅链接对应章节，不保留提示词副本。仅视觉提示改动更新该文件；业务变更仍同步需求与设计。生成新图后更新图集索引、实际生成记录和地图，历史输入不当作当前指令。
 - 结束有文件结构变化的任务运行 `node .github/skills/maintain-project-map/scripts/check-map.mjs`；脚本检查清单覆盖，职责准确性仍需人工判断。
 
 ## Git 与数据安全

@@ -11,8 +11,8 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'prompt',
         manifest: {
-          name: '家庭菜谱',
-          short_name: '菜谱',
+          name: '吃什么饭',
+          short_name: '吃什么饭',
           lang: 'zh-CN',
           start_url: '/',
           display: 'standalone',

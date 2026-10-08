@@ -2,7 +2,9 @@
 
 ## 1. 项目目标
 
-Personal Daily App 是供家庭日常使用的应用。V1 优先实现菜谱，之后再考虑整合已有 TodoList。
+项目名称为“吃什么饭”，是供家庭日常使用的应用。V1 优先实现菜谱，之后再考虑整合已有 TodoList。浏览器标题、PWA 安装名称和产品首页统一使用“吃什么饭”；仓库名 sku-cook-ai、包名 @sku-cook/* 及 health 服务标识保持不变，不因产品命名调整协议或工程标识。
+
+V1另有主动随机菜谱推荐与“换一个”，从已有菜谱抽取，不使用AI Runtime、通知服务或新增依赖。V2记录随机外卖及平台分享店铺/菜品链接管理，V1不接平台SDK、不抓取分享链接、不自动下单，细节见[需求10.1](../requirements/REQUIREMENTS_V1.md#101-v2随机外卖已记录v1不实施)。
 
 采用 PWA First，以手机使用为主，同时适配 Android 平板及 iPad。Windows PC 和 Mac 可以通过浏览器访问，但 V1 不建设专门的桌面管理界面。未来需要 PC 管理端时，可以新增独立前端 App；是否独立仓库届时再决定。V1 不打包原生 App；未来确实需要原生能力时，再评估 Capacitor。
 
@@ -169,3 +171,7 @@ Fully Kiosk 是解决“开机要手点”“熄屏后手机发菜单它不亮�
 相关目录规划见 [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)，V1 功能需求见 [REQUIREMENTS_V1.md](../requirements/REQUIREMENTS_V1.md)。
 
 逐页面 / API 设计书与页面生成图提示词见 [V1 设计书索引](../design/README.md)。设计初稿不代表业务已实现；Wake Lock 失败降级、厨房轮询一致性与正式导入事务行为在设计中细化，实施时同步 shared Contract 与测试。
+
+V1做饭历史使用既有Prisma/PostgreSQL，厨房完成在同一事务记录整顿并清空，手机清空不记录；详情手动记录、历史分页及删除误记均待业务实施，不新增依赖或历史快照存储。需求/Contract设计见[COMMON](../design/COMMON.md#35-做饭历史)。
+
+预定视觉已改为奶油黄可爱Memo；Android厨房同配色、大字和按钮，不再为墨水屏强制黑白。本次只更新设计规范与当前提示词，现有技术验证页（非正式首页）、CSS和PWA运行时主题保持原状，正式页面开发再同步主题并做截图/真机验收。

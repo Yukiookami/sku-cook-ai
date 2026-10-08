@@ -1,4 +1,4 @@
-# 项目目录规划
+# 吃什么饭 · 项目目录规划
 
 ## 1. 使用方式
 
@@ -7,9 +7,9 @@
 - 【基础】：初始化阶段分步创建，并验证能够运行。
 - 【业务】：实现对应功能时创建。
 - 【按需】：出现重复流程或具体问题后创建。
-- 【V2】：V1 范围之外（目前只有图片 / 文件存储），保留位置，V1 不创建。
+- 【V2】：V1范围之外（如图片/文件存储、随机外卖分享链接），仅记规划，V1不创建。
 
-基础工程已创建：workspace、Web 首页、API health、共享 Contract、Prisma 默认用户模型与 Seed、检查工具和 PWA 基础。启动方式见 [SETUP.md](../development/SETUP.md)。下列结构仍包含尚未实现的业务与按需项目，不能据此认为全部已实现；数据库迁移需要 PostgreSQL 就绪后由 Prisma 生成。
+基础工程已创建：workspace、Web技术联通验证页（非正式产品首页）、API health、共享Contract、Prisma默认用户模型与Seed、检查工具和PWA基础。启动方式见[SETUP.md](../development/SETUP.md)。下列结构仍含未实施的业务/按需项目，不能认为全部已实现；数据库迁移需PostgreSQL就绪后生成。
 
 ## 2. 完整目标结构
 
@@ -181,15 +181,20 @@ sku-cook-ai/
 │   ├── design/                           已创建：V1 设计初稿，不代表业务已实现
 │   │   ├── README.md                     设计书索引、页面/API 对应关系与设计取舍
 │   │   ├── COMMON.md                     共通视觉、数据 Contract、错误与事务
-│   │   ├── screens/                      每画面一份，包含 AI 设计图提示词
+│   │   ├── screens/                      每画面一份，业务/验收设计与独立提示词链接
 │   │   │   ├── S00_HOME.md               基础首页（过渡页）
-│   │   │   ├── S01_RECIPE_LIST.md         菜谱一览
+│   │   │   ├── S01_RECIPE_LIST.md         菜谱一览与随机推荐区/换一个
 │   │   │   ├── S02_RECIPE_DETAIL.md       菜谱详情
 │   │   │   ├── S03_RECIPE_CREATE.md       新增菜谱
 │   │   │   ├── S04_RECIPE_EDIT.md         编辑菜谱
 │   │   │   ├── S05_RECIPE_IMPORT.md       JSON 批量导入
 │   │   │   ├── S06_KITCHEN_DISPLAY.md     厨房显示与各状态
-│   │   │   └── S07_KITCHEN_PANEL.md       共用发送/查看厨房菜单弹层
+│   │   │   ├── S07_KITCHEN_PANEL.md       共用发送/查看厨房菜单弹层
+│   │   │   ├── S08_COOKING_HISTORY.md     做饭历史、最新做法入口与删除误记
+│   │   │   └── images/                   已创建：9张Memo V3主图、2张补充图与唯一提示词入口，非页面实现
+│   │   │       ├── README.md             图集索引、使用边界与差异说明
+│   │   │       ├── PROMPTS.md            当前生成/修改提示词、补充状态与历史输入记录
+│   │   │       └── S00–S08 对应的 -v3.png 主图、表单中段与厨房横屏补充图（旧图已删除）
 │   │   └── apis/                         每个 Method + Path 一份
 │   │       ├── A01_HEALTH_GET.md
 │   │       ├── A02_RECIPES_GET.md
@@ -203,7 +208,12 @@ sku-cook-ai/
 │   │       ├── A10_KITCHEN_GET.md
 │   │       ├── A11_KITCHEN_PUT.md
 │   │       ├── A12_KITCHEN_ACTIVE_PATCH.md
-│   │       └── A13_KITCHEN_DELETE.md
+│   │       ├── A13_KITCHEN_DELETE.md
+│   │       ├── A14_RECIPE_RANDOM_GET.md   全部已有菜谱随机推荐，换一个排除当前
+│   │       ├── A15_KITCHEN_COMPLETE_POST.md 完成时记整顿历史与清空同事务
+│   │       ├── A16_COOKING_HISTORY_GET.md 历史分页
+│   │       ├── A17_COOKING_HISTORY_POST.md 单菜手动记录
+│   │       └── A18_COOKING_HISTORY_DELETE.md 删除一次完整历史，不恢复厨房
 │   ├── development/
 │   │   ├── SETUP.md                       【基础】详细环境与启动说明
 │   │   ├── AI_WORKFLOW.md                 已创建：规则、Skills、Agents 与验收交接流程
@@ -299,14 +309,14 @@ storage/ 在首次上传功能需要时自动创建，并被 Git 忽略。数据
 
 ## 9. AI Coding 配置
 
-| 文件 | 职责 | 创建时机 |
-| --- | --- | --- |
-| .github/copilot-instructions.md | 唯一全局入口：中文、解耦、验证、地图和Git规则 | 已创建 |
-| .github/instructions/*.instructions.md | Web 与 API/shared 范围规则，含对应测试约束 | 已创建 |
-| .github/agents/*.agent.md | Frontend、Backend、只读 Reviewer 职责及工具范围 | 已创建 |
-| .github/skills/*/SKILL.md | Git发布、画面、API、数据库迁移、评审、地图维护 | 已创建，按任务使用 |
-| docs/architecture/PROJECT_MAP.md | 真实文件清单与每文件职责，不包含规划/产物 | 已创建，每次结构/职责变化维护 |
-| docs/development/AI_WORKFLOW.md | 用户如何选择角色、Skills、验收与交接 | 已创建 |
+| 文件                                   | 职责                                            | 创建时机                      |
+| -------------------------------------- | ----------------------------------------------- | ----------------------------- |
+| .github/copilot-instructions.md        | 唯一全局入口：中文、解耦、验证、地图和Git规则   | 已创建                        |
+| .github/instructions/*.instructions.md | Web 与 API/shared 范围规则，含对应测试约束      | 已创建                        |
+| .github/agents/*.agent.md              | Frontend、Backend、只读 Reviewer 职责及工具范围 | 已创建                        |
+| .github/skills/*/SKILL.md              | Git发布、画面、API、数据库迁移、评审、地图维护  | 已创建，按任务使用            |
+| docs/architecture/PROJECT_MAP.md       | 真实文件清单与每文件职责，不包含规划/产物       | 已创建，每次结构/职责变化维护 |
+| docs/development/AI_WORKFLOW.md        | 用户如何选择角色、Skills、验收与交接            | 已创建                        |
 
 仅使用 copilot-instructions.md，不再创建重复的 AGENTS.md。架构细节以 docs/architecture 为依据；AI 入口保留高频规则和文档引用。实际文件地图见 [PROJECT_MAP.md](./PROJECT_MAP.md)，使用与检查步骤见 [AI_WORKFLOW.md](../development/AI_WORKFLOW.md)。规则属于指引，不是自动强制的hook；实际使用时检查工具是否加载了相应规则。
 
@@ -318,17 +328,17 @@ storage/ 在首次上传功能需要时自动创建，并被 Git 忽略。数据
 
 ## 10. 给 Copilot 的分步创建顺序
 
-| 步骤 | 创建范围 | 验收标准 |
-| --- | --- | --- |
-| 1 | 根 package.json、workspace、版本约束、忽略规则 | pnpm 能识别三个 workspace 包 |
-| 2 | Vue / Vite 基础、路由、Vant 按需引入、样式 | 本机页面与 Vant 组件能运行，Web 类型检查与构建通过 |
-| 3 | Fastify、环境校验、health | API 能启动，health 测试通过，能正常退出 |
-| 4 | shared 与 health Contract | Web / API 都能导入，构建后的 API 也能运行 |
-| 5 | Compose、Prisma、User 迁移、Seed | 数据库持久化；迁移成功；Seed 重复执行不重复创建用户 |
-| 6 | Axios、开发代理、基础联通 | 页面能读取 API health 响应 |
-| 7 | ESLint、Prettier、测试、文档和 AI 规则 | 统一检查命令通过；启动说明可重复执行 |
-| 8 | Manifest、图标、PWA 配置、LAN 实测 | 平板访问正常；HTTPS 条件具备后单独验证 PWA |
-| 9 | 总结文件与验证结果 | 用户确认基础工程后再开始新增菜谱 |
+| 步骤 | 创建范围                                       | 验收标准                                            |
+| ---- | ---------------------------------------------- | --------------------------------------------------- |
+| 1    | 根 package.json、workspace、版本约束、忽略规则 | pnpm 能识别三个 workspace 包                        |
+| 2    | Vue / Vite 基础、路由、Vant 按需引入、样式     | 本机页面与 Vant 组件能运行，Web 类型检查与构建通过  |
+| 3    | Fastify、环境校验、health                      | API 能启动，health 测试通过，能正常退出             |
+| 4    | shared 与 health Contract                      | Web / API 都能导入，构建后的 API 也能运行           |
+| 5    | Compose、Prisma、User 迁移、Seed               | 数据库持久化；迁移成功；Seed 重复执行不重复创建用户 |
+| 6    | Axios、开发代理、基础联通                      | 页面能读取 API health 响应                          |
+| 7    | ESLint、Prettier、测试、文档和 AI 规则         | 统一检查命令通过；启动说明可重复执行                |
+| 8    | Manifest、图标、PWA 配置、LAN 实测             | 平板访问正常；HTTPS 条件具备后单独验证 PWA          |
+| 9    | 总结文件与验证结果                             | 用户确认基础工程后再开始新增菜谱                    |
 
 每一步可以由 AI 写代码，但需要保留实际执行的命令、结果和未验证事项。不要把“文件已生成”当作“工程已跑通”。
 

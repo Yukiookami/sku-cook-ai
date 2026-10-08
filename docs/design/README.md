@@ -1,4 +1,4 @@
-# V1 设计书索引
+# 吃什么饭 · V1 设计书索引
 
 状态：2026-10-08 设计初稿，业务设计待实施。当前只有基础首页与 health 已实现；本文档不代表菜谱、厨房业务已经完成。
 
@@ -18,6 +18,7 @@
 | S05  | [批量导入](screens/S05_RECIPE_IMPORT.md)                | `/recipes/import`                          | 待实现     |
 | S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                 | 待实现     |
 | S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                 | 待实现     |
+| S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                         | 待实现     |
 
 静态路径 `new`、`import` 与 id 路由明确区分；详情 id 只能是正整数。不存在的前端路由显示简洁的“页面不存在 / 返回菜谱”状态，不另外设计业务页面。
 
@@ -25,26 +26,34 @@
 
 一次请求的方法与路径对应一份设计书。请求前缀统一为 `/api`。
 
-| 编号 | 接口                                                                  | 调用画面           | 状态   |
-| ---- | --------------------------------------------------------------------- | ------------------ | ------ |
-| A01  | [GET /api/health](apis/A01_HEALTH_GET.md)                             | S00                | 已实现 |
-| A02  | [GET /api/recipes](apis/A02_RECIPES_GET.md)                           | S01、S05           | 待实现 |
-| A03  | [GET /api/recipes/tags](apis/A03_RECIPE_TAGS_GET.md)                  | S01、表单建议项    | 待实现 |
-| A04  | [GET /api/recipes/:id](apis/A04_RECIPE_GET.md)                        | S02、S04           | 待实现 |
-| A05  | [POST /api/recipes](apis/A05_RECIPE_POST.md)                          | S03                | 待实现 |
-| A06  | [PUT /api/recipes/:id](apis/A06_RECIPE_PUT.md)                        | S04                | 待实现 |
-| A07  | [DELETE /api/recipes/:id](apis/A07_RECIPE_DELETE.md)                  | S02                | 待实现 |
-| A08  | [POST /api/recipes/import/validate](apis/A08_IMPORT_VALIDATE_POST.md) | S05                | 待实现 |
-| A09  | [POST /api/recipes/import](apis/A09_IMPORT_POST.md)                   | S05                | 待实现 |
-| A10  | [GET /api/kitchen/session](apis/A10_KITCHEN_GET.md)                   | S06、S07           | 待实现 |
-| A11  | [PUT /api/kitchen/session](apis/A11_KITCHEN_PUT.md)                   | S07 发送菜单       | 待实现 |
-| A12  | [PATCH /api/kitchen/session/active](apis/A12_KITCHEN_ACTIVE_PATCH.md) | S06 切换菜谱       | 待实现 |
-| A13  | [DELETE /api/kitchen/session](apis/A13_KITCHEN_DELETE.md)             | S06 完成、S07 清空 | 待实现 |
+| 编号 | 接口                                                                    | 调用画面             | 状态   |
+| ---- | ----------------------------------------------------------------------- | -------------------- | ------ |
+| A01  | [GET /api/health](apis/A01_HEALTH_GET.md)                               | S00                  | 已实现 |
+| A02  | [GET /api/recipes](apis/A02_RECIPES_GET.md)                             | S01、S05             | 待实现 |
+| A03  | [GET /api/recipes/tags](apis/A03_RECIPE_TAGS_GET.md)                    | S01、表单建议项      | 待实现 |
+| A04  | [GET /api/recipes/:id](apis/A04_RECIPE_GET.md)                          | S02、S04             | 待实现 |
+| A05  | [POST /api/recipes](apis/A05_RECIPE_POST.md)                            | S03                  | 待实现 |
+| A06  | [PUT /api/recipes/:id](apis/A06_RECIPE_PUT.md)                          | S04                  | 待实现 |
+| A07  | [DELETE /api/recipes/:id](apis/A07_RECIPE_DELETE.md)                    | S02                  | 待实现 |
+| A08  | [POST /api/recipes/import/validate](apis/A08_IMPORT_VALIDATE_POST.md)   | S05                  | 待实现 |
+| A09  | [POST /api/recipes/import](apis/A09_IMPORT_POST.md)                     | S05                  | 待实现 |
+| A10  | [GET /api/kitchen/session](apis/A10_KITCHEN_GET.md)                     | S06、S07             | 待实现 |
+| A11  | [PUT /api/kitchen/session](apis/A11_KITCHEN_PUT.md)                     | S07 发送菜单         | 待实现 |
+| A12  | [PATCH /api/kitchen/session/active](apis/A12_KITCHEN_ACTIVE_PATCH.md)   | S06 切换菜谱         | 待实现 |
+| A13  | [DELETE /api/kitchen/session](apis/A13_KITCHEN_DELETE.md)               | S07 清空，不记历史   | 待实现 |
+| A14  | [GET /api/recipes/random](apis/A14_RECIPE_RANDOM_GET.md)                | S01 随机推荐、换一个 | 待实现 |
+| A15  | [POST /api/kitchen/session/complete](apis/A15_KITCHEN_COMPLETE_POST.md) | S06 完成并记整顿历史 | 待实现 |
+| A16  | [GET /api/cooking-history](apis/A16_COOKING_HISTORY_GET.md)             | S08 历史分页         | 待实现 |
+| A17  | [POST /api/cooking-history](apis/A17_COOKING_HISTORY_POST.md)           | S02 手动记录做过     | 待实现 |
+| A18  | [DELETE /api/cooking-history/:id](apis/A18_COOKING_HISTORY_DELETE.md)   | S08 删除整次误记     | 待实现 |
+
+菜谱静态API路径 `tags` / `random` 与 `:id` 正整数路由明确区分，不能因新增随机入口破坏详情访问。随机区复用S01，不新增独立路由页面。
 
 ## 3. 共通设计与使用方式
 
 - [共通设计与数据 Contract](COMMON.md)：字段、约束、错误、厨房版本控制、数据存储和视觉规范。
-- 每份画面设计书都有可独立复制的 AI 主提示词和补充状态提示词。一次生成一个画板，保持相同字体、边距、按钮和配色；生成图只是视觉参考，业务行为以设计书为准。
+- [设计图提示词](screens/images/PROMPTS.md)是生成/修改设计图的唯一提示词维护入口，按S00–S08分节，包含通用约束、当前Memo规范、主提示词、补充状态和历史生成记录。画面设计书只链接对应章节，不重复存放提示词。一次生成一个画板，生成图只是视觉参考，业务行为以设计书为准。
+- 仅调整视觉生成表达时改提示词；若改变业务规则、字段或交互，仍需同步需求、COMMON、画面/API设计及实施 Contract。生成后更新图集索引、实际记录和项目地图，旧图未更新时明确差异。
 - 提示词中的示例菜名是测试内容，不是内置生产数据；“纯文字”限制菜谱照片、插画、封面和占位图，不限制基础按钮图标和 PWA 安装图标。
 - API 示例是预定响应；只有 A01 的响应与现有实现一致。各接口通过共通 Contract 避免重复字段说明；实现后接口代码、设计书与测试一起更新。
 
@@ -52,7 +61,13 @@
 
 已确认的需求补充：原份数默认1但可改；手机详情与发送弹层逐道调整目标份数，厨房保留各菜目标；仅纯数字按比例显示参考用量，每食材可关闭换算，文字量/步骤/时间保持原文。同步详见[COMMON份数换算](COMMON.md#311-份数换算)。这属于V1预定行为，尚未实现。
 
+另已确认：V1随机菜谱从全部已保存菜谱等概率抽一道，忽略列表筛选/已加载分页，“换一个”仅排除当前菜。S01推荐区与A14已补充设计，提示词统一更新在PROMPTS；不是系统通知、AI服务或厨房自动发送。V2随机外卖与平台分享店铺/菜品链接的需求记在[需求10.1](../requirements/REQUIREMENTS_V1.md#101-v2随机外卖已记录v1不实施)，不在V1创建平台集成或外卖API。
+
 份数上限、显示精度及舍入策略仍是设计建议，实施前确认；不能把下述建议当成用户已确认。
+
+已确认做饭历史：厨房完成自动记整顿、详情可手动记；保存时间/当时名字/目标份数，打开最新菜谱，删菜留文字；可确认删除一次误记而不影响厨房。A13与A15明确区分清空/完成，S08和A15–A18均只是预定设计，不是已实施功能。
+
+已确认当前视觉改为可爱奶油黄Memo；Android厨房同色系、大字大按钮，不再强制黑白。本次只改产品设计和提示词，不改S00技术验证页或PWA运行时主题；S00不是正式产品首页。最新Memo及做饭历史主图已生成，手机长内容自然滚动；旧V1/V2 PNG已按用户要求删除，实际输入历史保留。
 
 以下是设计初稿的实施建议，不是此前聊天已经逐项确认的新需求：
 
@@ -65,3 +80,11 @@
 7. 手机发送菜单会先展示现有菜单，非空时按钮明确写“替换厨房菜单”。请求仍以版本控制确认，避免读取后状态变化造成无意覆盖。
 
 尚待设备实测：实际 CSS 视口、字号、分页结果、可更新的浏览器、Wake Lock 支持、屏幕超时与充电设置。屏幕英寸 / ppi 不能直接推导 CSS 视口，750×1000 只作为参考画板，不是硬件保证。
+
+## 5. 已生成的画面参考图
+
+[查看S00–S08当前Memo主图与补充图](screens/images/README.md) · [唯一提示词入口及实际生成记录](screens/images/PROMPTS.md)。2026-10-08生成9张V3主图及表单中段、厨房横屏两张补充图，共11张PNG。旧16张V1/V2图片已按用户要求删除，历史输入记录保留。
+
+手机采用390×844、厨房竖屏750×1000/横屏1000×750参考比例，输出高清尺寸。长表单首屏只显示基本信息，后续自然滚动；约10寸Android厨房采用同色Memo、大字大按钮与空间充足时的两栏阅读，实际分页仍按真机CSS视口。
+
+S00仍是技术验证页，非正式产品首页；本次仅更新设计图和文档，不改代码、PWA主题或业务。历史/完成/更多操作及异常状态未全部绘图，不以主图替代功能验收。JSON结构片段不是有效导入文件。实施按需求、COMMON及对应设计书，视觉还原边界见[图集验收](screens/images/README.md#视觉还原与验收)。

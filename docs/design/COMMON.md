@@ -10,21 +10,27 @@ Vue 3 + Vant 4 + CSS，页面使用 Composition API；Axios 请求集中于 api 
 
 ## 2. 视觉与 AI 画图通用规则
 
-| 项目              | 手机                                | 厨房屏                                |
-| ----------------- | ----------------------------------- | ------------------------------------- |
-| 参考画板          | 390×844 CSS px                      | 竖屏 750×1000、横屏 1000×750 CSS px   |
-| 背景 / 主文字     | `#FDFCFA` / `#1F1F1F`               | `#FFFFFF` / `#111111`                 |
-| 辅助文字          | `#6B6B6B`                           | 清晰的深灰，不作唯一状态表达          |
-| 主操作            | 陶土橙 `#B8502D` 底白字             | 黑底白字                              |
-| tag 浅底 / 分割线 | `#F6E7E0` / `#E5E2DD`               | 黑白边框、文字标注当前项              |
-| 危险色            | `#A83232`，同时标注“删除”           | 完成不是危险色，不依赖颜色            |
-| 字号              | 正文 16px，标题 24～28px，说明 14px | 正文 ≥20px，步骤 24～28px，菜名 ≥28px |
-| 点击区域          | ≥44px；主按钮 ≥48px                 | ≥56px，按钮之间 ≥16px                 |
-| 页面边距          | 20px，纵向间距 12～24px             | 24～32px，主体不能被底部按钮遮挡      |
+| 项目              | 手机                                   | 厨房屏                                |
+| ----------------- | -------------------------------------- | ------------------------------------- |
+| 参考画板          | 390×844 CSS px                         | 竖屏 750×1000、横屏 1000×750 CSS px   |
+| 背景 / 主文字     | `#FFFDF8` / `#332E28`                  | 同手机，白色便签卡片                  |
+| 辅助文字          | `#716452`                              | 同手机，不作唯一状态表达              |
+| 主操作            | 蜂蜜黄 `#FFE28A` 底配深棕 `#332E28` 字 | 同手机，当前菜粗边框加“当前”文字      |
+| tag 浅底 / 分割线 | `#FFF4C2` / `#EADCC4`                  | 同手机，可用轻虚线                    |
+| 危险色            | `#A93D3D`，同时标注“删除”              | 完成不是危险色，不依赖颜色            |
+| 字号              | 正文 16px，标题 24～28px，说明 14px    | 正文 ≥20px，步骤 24～28px，菜名 ≥28px |
+| 点击区域          | ≥44px；主按钮 ≥48px                    | ≥56px，按钮之间 ≥16px                 |
+| 页面边距          | 20px，纵向间距 12～24px                | 24～32px，主体不能被底部按钮遮挡      |
 
-纸质菜谱书 / 高对比极简，不用图片、封面占位图、渐变、重阴影、装饰插画、社交信息或底部五栏导航。标题可用系统宋体 / 衬线字体，正文系统无衬线，不新增 Web 字体依赖。普通页面可纵向滚动；只有厨房页按可见空间分页，禁止滑动手势导航。平板与桌面访问同一个 Web，不另建 admin。
+当前设计是“奶油黄可爱Memo / 圆角便签”：白卡片16～20px圆角、内边距16～20px、按钮14px圆角，可用轻微阴影（建议 `0 4px 16px rgba(70, 50, 20, 0.06)`）、组内浅虚线、标题小色条和少量CSS波浪边；不引入贴纸/吉祥物图片、纸纹、渐变、动画、社交信息或五栏导航。正文使用清晰系统字体，标题偏圆润字重，不安装手写字体。全App一致，厨房不再强制黑白，但降低装饰占高并保留大字、按钮、分页。普通页面可纵向滚动；只有厨房页按可见空间分页，禁止滑动手势导航。平板与桌面访问同一个 Web，不另建 admin。
+
+与用户参考图只共享风格特征，不复制其品牌/画面资产或“100克选择/勺子”等功能。纯文字业务不限制CSS几何装饰；提示词必须使用当前Memo规范，而不是历史V1/V2图中的陶土橙/厨房黑白。常规正文及必要辅助文字对背景至少4.5:1，浅黄按钮用深棕字，不能白字低对比。技术验证页和PWA当前代码仍是旧主题，本次只改设计，正式画面实施时再同步主题变量。
 
 错误提示就地显示，必要时 Vant Toast 辅助，但不只用短暂 Toast 呈现字段错误。读接口失败提供重试；提交中禁用重复点击，保留输入。使用明确 loading 状态；厨房不用闪烁骨架或旋转动画。PWA 更新提示属于全局壳，不在每份设计图重复添加。
+
+### 2.1 页面延伸与设备空间
+
+用户补充：手机长表单和长正文无需全部挤进首屏，使用正常字号、点击区域及舒适间距自然向下滚动，固定底部操作不能遮挡最后一项。Android厨房平板约10寸，有空间时可同时展示更多内容，横屏优先食材/做法两栏；但仍以真实CSS视口、系统缩放和文字换行决定分页，不凭英寸推断容量，不缩字或裁内容。
 
 ## 3. 公共数据类型
 
@@ -71,6 +77,8 @@ StepInput：`order` 必填正整数，`text` 必填 trim 后非空字符串（�
 Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不含 userId、密码或其他关系内部字段。RecipeSummary 只含 `id`、`title`、`description`、`servings`、`prepMinutes`、`cookMinutes`、`difficulty`、`tags`、`updatedAt`，不传食材、步骤和 tips。
 
 总时长不单独存储：两个时间均非 null 时相加，否则不显示“总时长”。单独的准备 / 烹饪时间可在详情中显示，0 不当作缺失。
+
+[A14随机推荐](apis/A14_RECIPE_RANDOM_GET.md)复用RecipeSummary，只返回一道候选；成功类型为 `{ recipe: RecipeSummary, reason: null }` 或 `{ recipe: null, reason: "EMPTY_LIBRARY" | "NO_ALTERNATIVE" }`，实施时用shared联合Schema约束，不用宽泛可空字段放任无效组合。Query只允许可选excludeRecipeId，不带列表筛选，推荐不持久化、不写厨房。V2外卖候选是未来独立业务，不混入RecipeInput或厨房Contract。
 
 以下作为 A04 / A05 / A06 的完整响应示例（不是预置数据库数据）：
 
@@ -139,7 +147,7 @@ Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不�
 
 `pollIntervalSeconds` 默认 10，由后端 `KITCHEN_POLL_INTERVAL_SECONDS` 环境变量确定（正整数，建议 5～300），不是前端 VITE 配置副本。GET 返回空状态而不是 404；GET 不创建数据库记录。发送创建第一条记录。
 
-厨房请求串行，不叠加轮询；回来前台立即重新读。厨房本地页码不写服务端，切换菜谱才写 activeRecipeId。切换不会标记菜已做完，菜单位置也不是已完成数量；没有逐道完成历史。
+厨房请求串行，不叠加轮询；回来前台立即重新读。厨房本地页码不写服务端，切换菜谱才写 activeRecipeId。切换不会标记菜已做完，菜单位置也不是已完成数量；没有逐道完成打勾，[A15](apis/A15_KITCHEN_COMPLETE_POST.md)“完成”才把整份菜单记为一顿历史并清空，[A13](apis/A13_KITCHEN_DELETE.md)只清空，不记。
 
 版本用于并发控制，不能表示“屏幕已收到”。所有写入携带 `expectedRevision`；服务端原子比对当前版本，失配返回 409 SESSION_CONFLICT。手机打开弹层读取一次版本，厨房使用最近的成功响应版本。不自动重试带旧版本的写操作，不因轮询失败清空菜谱。
 
@@ -154,6 +162,14 @@ Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不�
 预校验成功返回 `{ valid: true, count: N, issues: [] }`；业务校验失败是 422，错误报告含全部可识别的问题，前端按 index +1 显示第几条。语法错误无法继续检查条目时为 400。
 
 正式导入返回 `{ importedCount: N, recipeIds: number[] }`；顺序与输入一致。预校验不保存草稿、不生成 token，正式提交同一份输入并重新校验。用户修改文本后旧校验状态立即失效。
+
+### 3.5 做饭历史
+
+预定CookingHistory响应为 `{ id, cookedAt, source, items }`：id正整数、cookedAt服务端记录的ISO UTC时间、source为`kitchen`/`manual`，items为1～10条有序 `{ recipeId: 正整数 | null, title: string, targetServings: 正整数 }`。title是当时菜名快照，份数是当次目标；manual仅1条，kitchen为完成时全菜单。
+
+无userId、食材步骤、内部关系id或sourceSessionRevision，不保存完整Recipe副本；菜谱删除使recipeId=null，title/份数保留。查看链接访问最新Recipe，历史目标只初始化详情的本次显示份数。列表A16每页20次 `{ items: CookingHistory[], page, pageSize, hasMore }`；手动A17返回 `{ history: CookingHistory }`；删除A18返回204。Schema、模型和业务均待实施，不能把文档类型冒称现有Contract。
+
+历史与推荐/浏览记录无关。同日同菜多次做过可多条，V1无日期补录、编辑、统计和清空全部；删除误记整组不影响Recipe或KitchenState。手机主动查看历史，不通知/轮询。
 
 ## 4. 错误约定
 
@@ -175,8 +191,10 @@ issues 可选；至少保证 path（string / number 数组）和 message。导�
 | ---- | ------------------------------- | -------------------------------------------------- |
 | 400  | INVALID_INPUT / INVALID_REQUEST | 参数不合法 / JSON 语法不合法                       |
 | 404  | RECIPE_NOT_FOUND                | 菜谱不存在或不属于默认用户                         |
+| 404  | COOKING_HISTORY_NOT_FOUND       | 历史不存在、已删或不属于默认用户                   |
 | 409  | RECIPE_TITLE_CONFLICT           | 与现有菜名冲突                                     |
 | 409  | SESSION_CONFLICT                | 厨房状态已变更，重新读取                           |
+| 409  | KITCHEN_SESSION_EMPTY           | 当前为空，不能完成并创建空历史                     |
 | 413  | PAYLOAD_TOO_LARGE               | 请求体超限                                         |
 | 422  | IMPORT_VALIDATION_FAILED        | 导入条目、同名、版本校验未通过                     |
 | 500  | INTERNAL_ERROR                  | 内部异常；服务端 Pino 记录                         |
@@ -188,7 +206,9 @@ issues 可选；至少保证 path（string / number 数组）和 message。导�
 
 设计新增 Recipe（userId 外键，规范化 title 同用户唯一，servings默认1且不可空）、食材（scaleWithServings默认true）/ 步骤从属数据、KitchenSession（userId 唯一）、KitchenSessionRecipe（顺序、菜谱外键、targetServings正整数）等模型；最终 Prisma 表结构在业务实施时建立。食材“内嵌”指业务随菜谱读写，不等于需要独立食材字典或强制使用 JSON 列。
 
-会话成员与 activeRecipeId 必须保持一致。替换会话、切换、清空，以及影响会话的菜谱编辑 / 删除，用同一用户的事务锁串行化（可锁既有默认 User 行），事务内检查 revision；不采用“先 GET、后无条件 UPDATE”。
+做饭历史再新增CookingHistory（userId、cookedAt、source、可空内部sourceSessionRevision）及从属项（顺序、可空Recipe外键、当时title、targetServings）。Recipe删除对历史项SetNull、保留名字/份数，不级联删历史；历史本身删除级联其项。厨房来源 `(userId, sourceSessionRevision)` 唯一防重复，手动null可多次；模型/约束/索引实施时通过版本化迁移建立，不在本次生成空迁移。
+
+会话成员与 activeRecipeId 必须保持一致。替换会话、切换、清空/完成，以及影响会话的菜谱编辑 / 删除、手动历史写入，用同一用户的事务锁串行化（可锁既有默认 User 行），厨房写入事务内检查 revision；不采用“先 GET、后无条件 UPDATE”。A15历史创建与菜单清空一个事务，不能分两次HTTP请求凑合；A13从不记历史。
 
 - 编辑当前菜单中的菜谱也递增会话 revision，读接口在一致性事务快照内返回菜谱内容。
 - 删除菜谱原子删除所属食材、步骤并移除会话成员。若删的是当前菜，选择剩余有序菜单第一道；无剩余则 activeRecipeId=null。否则保留当前菜。会话改变递增 revision。
