@@ -8,12 +8,134 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String
-  email        String?  @unique
-  passwordHash String?  @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id               Int              @id @default(autoincrement())
+  name             String
+  email            String?          @unique
+  passwordHash     String?          @map("password_hash")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  recipes          Recipe[]
+  kitchenSession   KitchenSession?
+  cookingHistories CookingHistory[]
 
   @@map("users")
+}
+
+model Recipe {
+  id           Int                    @id @default(autoincrement())
+  userId       Int                    @map("user_id")
+  title        String                 @db.VarChar(50)
+  description  String?                @db.VarChar(500)
+  servings     Int                    @default(1)
+  prepMinutes  Int?                   @map("prep_minutes")
+  cookMinutes  Int?                   @map("cook_minutes")
+  difficulty   String?                @db.VarChar(10)
+  tips         String?                @db.VarChar(5000)
+  source       String?                @db.VarChar(500)
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingredients  Ingredient[]
+  steps        RecipeStep[]
+  tags         RecipeTag[]
+  kitchenItems KitchenSessionRecipe[]
+  historyItems CookingHistoryItem[]
+
+  @@unique([userId, title], map: "recipes_user_id_title_key")
+  @@index([userId, updatedAt(sort: Desc), id(sort: Desc)], map: "recipes_user_updated_id_idx")
+  @@map("recipes")
+}
+
+model Ingredient {
+  id                Int     @id @default(autoincrement())
+  recipeId          Int     @map("recipe_id")
+  position          Int
+  name              String  @db.VarChar(50)
+  amount            String? @db.VarChar(50)
+  unit              String? @db.VarChar(20)
+  note              String? @db.VarChar(200)
+  group             String? @db.VarChar(50)
+  scaleWithServings Boolean @default(true) @map("scale_with_servings")
+  recipe            Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, position])
+  @@map("ingredients")
+}
+
+model RecipeStep {
+  id       Int    @id @default(autoincrement())
+  recipeId Int    @map("recipe_id")
+  order    Int
+  text     String @db.VarChar(5000)
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, order])
+  @@map("recipe_steps")
+}
+
+model RecipeTag {
+  id       Int    @id @default(autoincrement())
+  recipeId Int    @map("recipe_id")
+  position Int
+  value    String @db.VarChar(20)
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, position])
+  @@unique([recipeId, value])
+  @@index([value])
+  @@map("recipe_tags")
+}
+
+model KitchenSession {
+  id             Int                    @id @default(autoincrement())
+  userId         Int                    @unique @map("user_id")
+  activeRecipeId Int?                   @map("active_recipe_id")
+  revision       Int                    @default(0)
+  updatedAt      DateTime?              @map("updated_at")
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items          KitchenSessionRecipe[]
+
+  @@map("kitchen_sessions")
+}
+
+model KitchenSessionRecipe {
+  id               Int            @id @default(autoincrement())
+  kitchenSessionId Int            @map("kitchen_session_id")
+  recipeId         Int            @map("recipe_id")
+  position         Int
+  targetServings   Int            @map("target_servings")
+  kitchenSession   KitchenSession @relation(fields: [kitchenSessionId], references: [id], onDelete: Cascade)
+  recipe           Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([kitchenSessionId, position])
+  @@unique([kitchenSessionId, recipeId])
+  @@map("kitchen_session_recipes")
+}
+
+model CookingHistory {
+  id                    Int                  @id @default(autoincrement())
+  userId                Int                  @map("user_id")
+  cookedAt              DateTime             @default(now()) @map("cooked_at")
+  source                String               @db.VarChar(10)
+  sourceSessionRevision Int?                 @map("source_session_revision")
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                 CookingHistoryItem[]
+
+  @@unique([userId, sourceSessionRevision], map: "cooking_histories_user_session_revision_key")
+  @@index([userId, cookedAt(sort: Desc), id(sort: Desc)])
+  @@map("cooking_histories")
+}
+
+model CookingHistoryItem {
+  id             Int            @id @default(autoincrement())
+  historyId      Int            @map("history_id")
+  recipeId       Int?           @map("recipe_id")
+  position       Int
+  title          String         @db.VarChar(50)
+  targetServings Int            @map("target_servings")
+  history        CookingHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
+  recipe         Recipe?        @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  @@unique([historyId, position])
+  @@map("cooking_history_items")
 }

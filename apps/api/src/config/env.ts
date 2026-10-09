@@ -11,6 +11,7 @@ const ConfigSchema = z.object({
       'DATABASE_URL must use PostgreSQL',
     ),
   DEFAULT_USER_ID: z.coerce.number().int().positive().default(1),
+  KITCHEN_POLL_INTERVAL_SECONDS: z.coerce.number().int().min(5).max(300).default(10),
 });
 
 export function readConfig(environment: NodeJS.ProcessEnv) {

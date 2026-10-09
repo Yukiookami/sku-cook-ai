@@ -1,6 +1,6 @@
 # A16 GET /api/cooking-history
 
-状态：待实现。调用方：[S08](../screens/S08_COOKING_HISTORY.md)。预定 shared `CookingHistoryListQuerySchema` / `CookingHistoryListResponseSchema`，类型见[COMMON](../COMMON.md#35-做饭历史)。
+状态：源码已实现；初始迁移已应用于本地开发数据库。A16通过真实HTTP只读冒烟检查；历史写入/删除仍待验收。调用方：[S08](../screens/S08_COOKING_HISTORY.md)。shared `CookingHistoryListQuerySchema` / `CookingHistoryListResponseSchema`，类型见[COMMON](../COMMON.md#35-做饭历史)。
 
 ## 请求
 

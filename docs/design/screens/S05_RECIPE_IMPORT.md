@@ -1,6 +1,6 @@
 # S05 JSON 批量导入设计书
 
-状态：待实现。路由 `/recipes/import`，组件 `RecipeImportView.vue`。从列表“更多”或空库入口进入。
+状态：Web画面已实现；A08/A09 API client已按shared Contract接入，条目校验由服务端返回全部字段问题，正式导入使用同一份校验输入。尚未在可用服务/数据库环境执行真实HTTP业务验收。路由 `/recipes/import`，组件 `RecipeImportView.vue`。从列表“更多”或空库入口进入。
 
 ## 1. 信息结构
 

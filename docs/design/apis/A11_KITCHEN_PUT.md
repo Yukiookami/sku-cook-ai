@@ -1,6 +1,6 @@
 # A11 PUT /api/kitchen/session
 
-状态：待实现。调用方：[S07](../screens/S07_KITCHEN_PANEL.md)发送 / 明确替换菜单。shared建议 `KitchenReplaceInputSchema`，响应KitchenState复用[A10](A10_KITCHEN_GET.md)。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A11写入、revision冲突与持久化行为尚未通过真实HTTP验收。调用方：[S07](../screens/S07_KITCHEN_PANEL.md)发送 / 明确替换菜单。shared Contract：`KitchenReplaceInputSchema`，响应KitchenState复用[A10](A10_KITCHEN_GET.md)。
 
 ## 请求
 
@@ -17,7 +17,7 @@ Content-Type application/json：
 }
 ```
 
-items为1～10项，recipeId为不重复正整数，顺序就是展示顺序；targetServings必填正整数，上限建议与COMMON一致。expectedRevision非负整数。空数组用A13清空，不在这里做成功空发送。客户端不重复提交recipeIds，不指定activeRecipeId、userId、revision或设备地址，不发送临时换算量。
+items为1～10项，recipeId为不重复正整数，顺序就是展示顺序；targetServings必填1～100正整数。expectedRevision非负整数。空数组用A13清空，不在这里做成功空发送。客户端不重复提交recipeIds，不指定activeRecipeId、userId、revision或设备地址，不发送临时换算量。
 
 ## 成功200 / 处理
 

@@ -1,6 +1,6 @@
 # A10 GET /api/kitchen/session
 
-状态：待实现。调用方：[S06](../screens/S06_KITCHEN_DISPLAY.md)串行轮询、[S07](../screens/S07_KITCHEN_PANEL.md)打开时读一次。shared建议 `KitchenStateResponseSchema`。
+状态：源码已实现；初始迁移已应用于本地开发数据库。A10通过真实HTTP只读冒烟检查；写入与并发行为仍待验收。调用方：[S06](../screens/S06_KITCHEN_DISPLAY.md)串行轮询、[S07](../screens/S07_KITCHEN_PANEL.md)打开时读一次。shared Contract：`KitchenStateResponseSchema`。
 
 ## 请求 / 成功200
 

@@ -1,24 +1,26 @@
 # 吃什么饭 · V1 设计书索引
 
-状态：2026-10-08 设计初稿，业务设计待实施。当前只有基础首页与 health 已实现；本文档不代表菜谱、厨房业务已经完成。
+状态：2026-10-08。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；A02–A18 API 源码及Prisma Schema已实现。初始版本化迁移已应用于本地Docker开发数据库，Seed幂等性验证通过；A01、A02、A10、A16真实HTTP只读冒烟检查通过。写入事务与完整数据库集成、浏览器图稿对照及Android真机验收仍待完成。
 
 依据：[需求文档](../requirements/REQUIREMENTS_V1.md)、[技术栈](../architecture/TECH_STACK.md)、[目录规划](../architecture/PROJECT_STRUCTURE.md)。需求定义范围，设计书细化交互与接口，实施时在 shared 中建立相应 Zod Contract。设计不新增登录、图片、AI Runtime、通知、离线写入或 TodoList。
 
 ## 1. 画面设计书
 
+S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单条食材与步骤编辑组件；联想输入复用AutocompleteInput，纯草稿/Contract映射放在Web的domain/recipe-form模块。RecipeForm保留API读取、校验与提交流程，子组件不依赖服务端或自行请求API；拆分不改变shared Contract和路由。
+
 每个路由页面独立一份；共用厨房弹层另外单列，避免在列表和详情里重复定义。
 
-| 编号 | 画面                                                    | 路由 / 形态                                | 状态       |
-| ---- | ------------------------------------------------------- | ------------------------------------------ | ---------- |
-| S00  | [基础首页](screens/S00_HOME.md)                         | 当前 `/`；业务上线后 `/` 重定向 `/recipes` | 已有过渡页 |
-| S01  | [菜谱一览](screens/S01_RECIPE_LIST.md)                  | `/recipes`                                 | 待实现     |
-| S02  | [菜谱详情](screens/S02_RECIPE_DETAIL.md)                | `/recipes/:id`                             | 待实现     |
-| S03  | [新增菜谱](screens/S03_RECIPE_CREATE.md)                | `/recipes/new`                             | 待实现     |
-| S04  | [编辑菜谱](screens/S04_RECIPE_EDIT.md)                  | `/recipes/:id/edit`                        | 待实现     |
-| S05  | [批量导入](screens/S05_RECIPE_IMPORT.md)                | `/recipes/import`                          | 待实现     |
-| S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                 | 待实现     |
-| S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                 | 待实现     |
-| S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                         | 待实现     |
+| 编号 | 画面                                                    | 路由 / 形态                                  | 状态               |
+| ---- | ------------------------------------------------------- | -------------------------------------------- | ------------------ |
+| S00  | [基础首页](screens/S00_HOME.md)                         | `/health-check`；`/` 导向正式入口 `/recipes` | 前端已有技术验证页 |
+| S01  | [菜谱一览](screens/S01_RECIPE_LIST.md)                  | `/recipes`                                   | 前端已实现，待联调 |
+| S02  | [菜谱详情](screens/S02_RECIPE_DETAIL.md)                | `/recipes/:id`                               | 前端已实现，待联调 |
+| S03  | [新增菜谱](screens/S03_RECIPE_CREATE.md)                | `/recipes/new`                               | 前端已实现，待联调 |
+| S04  | [编辑菜谱](screens/S04_RECIPE_EDIT.md)                  | `/recipes/:id/edit`                          | 前端已实现，待联调 |
+| S05  | [批量导入](screens/S05_RECIPE_IMPORT.md)                | `/recipes/import`                            | 前端已实现，待联调 |
+| S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                   | 前端已实现，待联调 |
+| S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                   | 前端已实现，待联调 |
+| S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                           | 前端已实现，待联调 |
 
 静态路径 `new`、`import` 与 id 路由明确区分；详情 id 只能是正整数。不存在的前端路由显示简洁的“页面不存在 / 返回菜谱”状态，不另外设计业务页面。
 
@@ -26,28 +28,45 @@
 
 一次请求的方法与路径对应一份设计书。请求前缀统一为 `/api`。
 
-| 编号 | 接口                                                                    | 调用画面             | 状态   |
-| ---- | ----------------------------------------------------------------------- | -------------------- | ------ |
-| A01  | [GET /api/health](apis/A01_HEALTH_GET.md)                               | S00                  | 已实现 |
-| A02  | [GET /api/recipes](apis/A02_RECIPES_GET.md)                             | S01、S05             | 待实现 |
-| A03  | [GET /api/recipes/tags](apis/A03_RECIPE_TAGS_GET.md)                    | S01、表单建议项      | 待实现 |
-| A04  | [GET /api/recipes/:id](apis/A04_RECIPE_GET.md)                          | S02、S04             | 待实现 |
-| A05  | [POST /api/recipes](apis/A05_RECIPE_POST.md)                            | S03                  | 待实现 |
-| A06  | [PUT /api/recipes/:id](apis/A06_RECIPE_PUT.md)                          | S04                  | 待实现 |
-| A07  | [DELETE /api/recipes/:id](apis/A07_RECIPE_DELETE.md)                    | S02                  | 待实现 |
-| A08  | [POST /api/recipes/import/validate](apis/A08_IMPORT_VALIDATE_POST.md)   | S05                  | 待实现 |
-| A09  | [POST /api/recipes/import](apis/A09_IMPORT_POST.md)                     | S05                  | 待实现 |
-| A10  | [GET /api/kitchen/session](apis/A10_KITCHEN_GET.md)                     | S06、S07             | 待实现 |
-| A11  | [PUT /api/kitchen/session](apis/A11_KITCHEN_PUT.md)                     | S07 发送菜单         | 待实现 |
-| A12  | [PATCH /api/kitchen/session/active](apis/A12_KITCHEN_ACTIVE_PATCH.md)   | S06 切换菜谱         | 待实现 |
-| A13  | [DELETE /api/kitchen/session](apis/A13_KITCHEN_DELETE.md)               | S07 清空，不记历史   | 待实现 |
-| A14  | [GET /api/recipes/random](apis/A14_RECIPE_RANDOM_GET.md)                | S01 随机推荐、换一个 | 待实现 |
-| A15  | [POST /api/kitchen/session/complete](apis/A15_KITCHEN_COMPLETE_POST.md) | S06 完成并记整顿历史 | 待实现 |
-| A16  | [GET /api/cooking-history](apis/A16_COOKING_HISTORY_GET.md)             | S08 历史分页         | 待实现 |
-| A17  | [POST /api/cooking-history](apis/A17_COOKING_HISTORY_POST.md)           | S02 手动记录做过     | 待实现 |
-| A18  | [DELETE /api/cooking-history/:id](apis/A18_COOKING_HISTORY_DELETE.md)   | S08 删除整次误记     | 待实现 |
+| 编号 | 接口                                                                    | 调用画面             | 状态                     |
+| ---- | ----------------------------------------------------------------------- | -------------------- | ------------------------ |
+| A01  | [GET /api/health](apis/A01_HEALTH_GET.md)                               | S00                  | 已实现                   |
+| A02  | [GET /api/recipes](apis/A02_RECIPES_GET.md)                             | S01、S05             | 源码已实现，待数据库验收 |
+| A03  | [GET /api/recipes/tags](apis/A03_RECIPE_TAGS_GET.md)                    | S01、表单建议项      | 源码已实现，待数据库验收 |
+| A04  | [GET /api/recipes/:id](apis/A04_RECIPE_GET.md)                          | S02、S04             | 源码已实现，待数据库验收 |
+| A05  | [POST /api/recipes](apis/A05_RECIPE_POST.md)                            | S03                  | 源码已实现，待数据库验收 |
+| A06  | [PUT /api/recipes/:id](apis/A06_RECIPE_PUT.md)                          | S04                  | 源码已实现，待数据库验收 |
+| A07  | [DELETE /api/recipes/:id](apis/A07_RECIPE_DELETE.md)                    | S02                  | 源码已实现，待数据库验收 |
+| A08  | [POST /api/recipes/import/validate](apis/A08_IMPORT_VALIDATE_POST.md)   | S05                  | 源码已实现，待数据库验收 |
+| A09  | [POST /api/recipes/import](apis/A09_IMPORT_POST.md)                     | S05                  | 源码已实现，待数据库验收 |
+| A10  | [GET /api/kitchen/session](apis/A10_KITCHEN_GET.md)                     | S06、S07             | 源码已实现，待数据库验收 |
+| A11  | [PUT /api/kitchen/session](apis/A11_KITCHEN_PUT.md)                     | S07 发送菜单         | 源码已实现，待数据库验收 |
+| A12  | [PATCH /api/kitchen/session/active](apis/A12_KITCHEN_ACTIVE_PATCH.md)   | S06 切换菜谱         | 源码已实现，待数据库验收 |
+| A13  | [DELETE /api/kitchen/session](apis/A13_KITCHEN_DELETE.md)               | S07 清空，不记历史   | 源码已实现，待数据库验收 |
+| A14  | [GET /api/recipes/random](apis/A14_RECIPE_RANDOM_GET.md)                | S01 随机推荐、换一个 | 源码已实现，待数据库验收 |
+| A15  | [POST /api/kitchen/session/complete](apis/A15_KITCHEN_COMPLETE_POST.md) | S06 完成并记整顿历史 | 源码已实现，待数据库验收 |
+| A16  | [GET /api/cooking-history](apis/A16_COOKING_HISTORY_GET.md)             | S08 历史分页         | 源码已实现，待数据库验收 |
+| A17  | [POST /api/cooking-history](apis/A17_COOKING_HISTORY_POST.md)           | S02 手动记录做过     | 源码已实现，待数据库验收 |
+| A18  | [DELETE /api/cooking-history/:id](apis/A18_COOKING_HISTORY_DELETE.md)   | S08 删除整次误记     | 源码已实现，待数据库验收 |
 
 菜谱静态API路径 `tags` / `random` 与 `:id` 正整数路由明确区分，不能因新增随机入口破坏详情访问。随机区复用S01，不新增独立路由页面。
+
+### 2.1 Web 已引用的 shared Contract
+
+`apps/web/src/api/*` 和 `RecipeForm.vue` 已按设计直接消费 shared Schema / 推导类型，没有在 View 重写请求 DTO。以下 Contract 已由 shared 入口导出；Web 类型检查/构建应由后端实现验证：
+
+| 用途                       | 预期导出                                                                                                                                                                                                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 菜谱表单、详情与摘要       | `RecipeInputSchema` / `RecipeInput`、`Recipe`、`RecipeSummary`、`RecipeResponseSchema`                                                                                                                                                                     |
+| 列表、标签、路由参数、份数 | `RecipeListQuerySchema` / `RecipeListQuery`、`RecipeListResponseSchema` / `RecipeListResponse`、`RecipeTagsResponseSchema` / `RecipeTagsResponse`、`RecipeIdParamsSchema`、`TargetServingsSchema`                                                          |
+| 随机推荐                   | `RecipeRandomQuerySchema`、`RecipeRandomResponseSchema` / `RecipeRandomResponse`                                                                                                                                                                           |
+| JSON 导入                  | `RecipeImportValidationRequestSchema` / `RecipeImportValidationRequest`、`RecipeImportInputSchema` / `RecipeImportInput`、`RecipeImportValidationResponseSchema` / `RecipeImportValidationResponse`、`RecipeImportResponseSchema` / `RecipeImportResponse` |
+| 厨房                       | `KitchenStateResponseSchema` / `KitchenStateResponse`、`KitchenReplaceInputSchema` / `KitchenReplaceInput`、`KitchenActiveInputSchema` / `KitchenActiveInput`、`KitchenRevisionInputSchema` / `KitchenRevisionInput`                                       |
+| 做饭历史                   | `CookingHistoryInputSchema` / `CookingHistoryInput`、`CookingHistoryListQuerySchema`、`CookingHistoryListResponseSchema` / `CookingHistoryListResponse`、`CookingHistoryResponseSchema` / `CookingHistory`、`CookingHistoryIdParamsSchema`                 |
+| 通用错误                   | `ApiErrorResponseSchema`、`ApiErrorIssue`（path 与 message，A08/A09 422 issues）                                                                                                                                                                           |
+| 份数计算                   | `scaleIngredientAmount`、`recipeTotalMinutes` 为 shared 纯函数；Web当前仍保留临时版本，联调时应切换到shared实现。                                                                                                                                          |
+
+特别说明：A08 预校验必须能把语法正确但字段有误的 JSON 送到服务端收集全部问题；`RecipeImportValidationRequestSchema` 应校验 version / recipes 外层和数量边界，但不能先用严格 `RecipeInputSchema` 把所有单条字段错误挡在浏览器。A09 正式写入则使用严格 `RecipeImportInputSchema`。字段、错误形状仍遵循现有 API 设计，不因前端消费而改写。
 
 ## 3. 共通设计与使用方式
 
@@ -63,7 +82,7 @@
 
 另已确认：V1随机菜谱从全部已保存菜谱等概率抽一道，忽略列表筛选/已加载分页，“换一个”仅排除当前菜。S01推荐区与A14已补充设计，提示词统一更新在PROMPTS；不是系统通知、AI服务或厨房自动发送。V2随机外卖与平台分享店铺/菜品链接的需求记在[需求10.1](../requirements/REQUIREMENTS_V1.md#101-v2随机外卖已记录v1不实施)，不在V1创建平台集成或外卖API。
 
-份数上限、显示精度及舍入策略仍是设计建议，实施前确认；不能把下述建议当成用户已确认。
+份数上限与份数换算精度已确认：原份数 / 目标份数 1～100；数值最多显示两位小数，四舍五入并去掉尾随零，近似结果标“约”，极小正值显示“少于0.01”；超出安全计算精度则保留原文并标“未换算”。Web 当前有已测临时格式逻辑，必须由 shared 导出规范实现后再替换，不能作为 shared Contract 已落地。
 
 已确认做饭历史：厨房完成自动记整顿、详情可手动记；保存时间/当时名字/目标份数，打开最新菜谱，删菜留文字；可确认删除一次误记而不影响厨房。A13与A15明确区分清空/完成，S08和A15–A18均只是预定设计，不是已实施功能。
 

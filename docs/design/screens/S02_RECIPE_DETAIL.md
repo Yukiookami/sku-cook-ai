@@ -1,6 +1,6 @@
 # S02 菜谱详情设计书
 
-状态：待实现。路由 `/recipes/:id`，组件 `RecipeDetailView.vue`；来自列表或直接链接。
+状态：Web画面已实现；A04/A07/A17及厨房弹层所用A10/A11 API client已按shared Contract接入并校验响应。尚未在可用服务/数据库环境执行真实HTTP业务验收。路由 `/recipes/:id`，组件 `RecipeDetailView.vue`；来自列表或直接链接。
 
 ## 1. 布局
 

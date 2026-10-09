@@ -16,13 +16,13 @@ export default defineConfig(({ mode }) => {
           lang: 'zh-CN',
           start_url: '/',
           display: 'standalone',
-          theme_color: '#B8502D',
-          background_color: '#FDFCFA',
+          theme_color: '#FFE28A',
+          background_color: '#FFFDF8',
           icons: [
-            { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-            { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+            { src: '/icons/app-icon-192-v1.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icons/app-icon-512-v1.png', sizes: '512x512', type: 'image/png' },
             {
-              src: '/icons/pwa-maskable-512x512.png',
+              src: '/icons/app-icon-maskable-512-v1.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
@@ -40,6 +40,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 5173,
       strictPort: true,
+      allowedHosts: ['shiro-windows', '.ts.net'],
       proxy: { '/api': env.API_PROXY_TARGET || 'http://127.0.0.1:3000' },
     },
   };

@@ -1,6 +1,6 @@
 # A17 POST /api/cooking-history
 
-状态：待实现。调用方：[S02](../screens/S02_RECIPE_DETAIL.md)“记录做过”确认。预定 shared `CookingHistoryInputSchema` / `CookingHistoryResponseSchema`，复用COMMON历史类型。仅手动记录一道，不批量传菜单、不操控厨房完成。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A17历史写入与持久化行为尚未通过真实HTTP验收。调用方：[S02](../screens/S02_RECIPE_DETAIL.md)“记录做过”确认。shared `CookingHistoryInputSchema` / `CookingHistoryResponseSchema`，复用COMMON历史类型。仅手动记录一道，不批量传菜单、不操控厨房完成。
 
 ## 请求 / 成功201
 
@@ -10,7 +10,7 @@ Content-Type application/json：
 { "recipeId": 101, "targetServings": 3 }
 ```
 
-recipeId、targetServings均必填正整数，份数上限与COMMON一致；不接title、cookedAt、source、userId或食材步骤。服务端设source=manual，取当前同用户菜名，以服务端当前时间记录，不支持V1回填过去日期。
+recipeId必填正整数，targetServings必填1～100正整数；不接title、cookedAt、source、userId或食材步骤。服务端设source=manual，取当前同用户菜名，以服务端当前时间记录，不支持V1回填过去日期。
 
 ```json
 {

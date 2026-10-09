@@ -1,6 +1,6 @@
 # A12 PATCH /api/kitchen/session/active
 
-状态：待实现。调用方：[S06](../screens/S06_KITCHEN_DISPLAY.md)菜单直接点选、跨菜上一页/下一道；本菜页码变化不调用。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A12写入及revision冲突行为尚未通过真实HTTP验收。调用方：[S06](../screens/S06_KITCHEN_DISPLAY.md)菜单直接点选、跨菜上一页/下一道；本菜页码变化不调用。
 
 ## 请求 / 成功200
 

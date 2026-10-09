@@ -1,9 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import HomeView from './HomeView.vue';
-import { getHealth } from '../api/health';
+import { getHealth } from '../../api/health';
 
-vi.mock('../api/health', () => ({ getHealth: vi.fn() }));
+vi.mock('../../api/health', () => ({ getHealth: vi.fn() }));
 
 describe('HomeView', () => {
   beforeEach(() => vi.resetAllMocks());
@@ -11,7 +11,7 @@ describe('HomeView', () => {
   it('shows the product name before checking the connection', () => {
     const wrapper = mount(HomeView);
     expect(wrapper.get('h1').text()).toBe('吃什么饭');
-    expect(wrapper.text()).toContain('基础工程已就绪，菜谱业务尚未实现。');
+    expect(wrapper.text()).toContain('不验证数据库');
     expect(getHealth).not.toHaveBeenCalled();
   });
 

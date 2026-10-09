@@ -1,6 +1,6 @@
 # A18 DELETE /api/cooking-history/:id
 
-状态：待实现。调用方：[S08](../screens/S08_COOKING_HISTORY.md)删除误记。预定shared历史id参数Schema；删除的是一次完整做饭记录，厨房来源可包含多道，V1不单独删除其中一道。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A18历史删除行为尚未通过真实HTTP验收。调用方：[S08](../screens/S08_COOKING_HISTORY.md)删除误记。shared历史id参数Schema；删除的是一次完整做饭记录，厨房来源可包含多道，V1不单独删除其中一道。
 
 ## 请求 / 成功204
 

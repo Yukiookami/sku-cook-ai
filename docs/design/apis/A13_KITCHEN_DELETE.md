@@ -1,6 +1,6 @@
 # A13 DELETE /api/kitchen/session
 
-状态：待实现。调用方：[S07](../screens/S07_KITCHEN_PANEL.md)“清空厨房”。只取消当前菜单，无通知、不生成做饭历史；厨房“完成”改用[A15](A15_KITCHEN_COMPLETE_POST.md)，二者不再共用此操作。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A13清空与revision冲突行为尚未通过真实HTTP验收。调用方：[S07](../screens/S07_KITCHEN_PANEL.md)“清空厨房”。只取消当前菜单，无通知、不生成做饭历史；厨房“完成”改用[A15](A15_KITCHEN_COMPLETE_POST.md)，二者不再共用此操作。
 
 ## 请求
 

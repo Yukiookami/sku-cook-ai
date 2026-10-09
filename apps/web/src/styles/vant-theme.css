@@ -1,8 +1,13 @@
 :root {
-  --van-primary-color: #b8502d;
-  --van-danger-color: #a83232;
-  --van-text-color: #1f1f1f;
-  --van-text-color-2: #6b6b6b;
-  --van-background: #fdfcfa;
-  --van-border-color: #e5e2dd;
+  --van-primary-color: #ffe28a;
+  --van-danger-color: #a93d3d;
+  --van-button-primary-color: #332e28;
+  --van-button-primary-background: #ffe28a;
+  --van-button-primary-border-color: #ffe28a;
+  --van-button-radius: 14px;
+  --van-text-color: #332e28;
+  --van-text-color-2: #716452;
+  --van-background: #fffdf8;
+  --van-background-2: #ffffff;
+  --van-border-color: #eadcc4;
 }

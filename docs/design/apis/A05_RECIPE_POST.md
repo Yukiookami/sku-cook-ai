@@ -1,6 +1,6 @@
 # A05 POST /api/recipes
 
-状态：待实现。调用方：[S03](../screens/S03_RECIPE_CREATE.md)。shared建议 `RecipeInputSchema` / `RecipeResponseSchema`。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A05写入与持久化行为尚未通过真实HTTP验收。调用方：[S03](../screens/S03_RECIPE_CREATE.md)。shared Contract：`RecipeInputSchema` / `RecipeResponseSchema`。
 
 ## 1. 请求
 

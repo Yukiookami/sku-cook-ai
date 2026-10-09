@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Button as VanButton } from 'vant';
-import { getHealth } from '../api/health';
+import { getHealth } from '../../api/health';
 import 'vant/lib/button/style';
 
 const loading = ref(false);
-const message = ref('基础工程已就绪，菜谱业务尚未实现。');
+const message = ref('这里检查后端存活状态，不验证数据库；菜谱业务请从菜单进入。');
 const failed = ref(false);
 
 async function checkConnection() {

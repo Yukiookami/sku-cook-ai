@@ -1,6 +1,6 @@
 # A06 PUT /api/recipes/:id
 
-状态：待实现。调用方：[S04](../screens/S04_RECIPE_EDIT.md)。参数/响应复用A04，请求复用A05的RecipeInput。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A06写入与持久化行为尚未通过真实HTTP验收。调用方：[S04](../screens/S04_RECIPE_EDIT.md)。参数/响应复用A04，请求复用A05的RecipeInput。
 
 ## 请求 / 成功200
 

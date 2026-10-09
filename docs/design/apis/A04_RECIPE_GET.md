@@ -1,6 +1,6 @@
 # A04 GET /api/recipes/:id
 
-状态：待实现。调用方：[S02](../screens/S02_RECIPE_DETAIL.md)、[S04](../screens/S04_RECIPE_EDIT.md)。shared建议 `RecipeIdParamsSchema` / `RecipeResponseSchema`。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A04真实数据库HTTP行为尚未单独验收。调用方：[S02](../screens/S02_RECIPE_DETAIL.md)、[S04](../screens/S04_RECIPE_EDIT.md)。shared Contract：`RecipeIdParamsSchema` / `RecipeResponseSchema`。
 
 ## 请求与响应
 

@@ -1,6 +1,6 @@
 # A14 GET /api/recipes/random
 
-状态：待实现。调用方：[S01](../screens/S01_RECIPE_LIST.md)“随机推荐 / 换一个”。这是应用内只读随机推荐，不是通知、定时推送或AI服务。预定 shared `RecipeRandomQuerySchema` / `RecipeRandomResponseSchema`，复用[COMMON RecipeSummary](../COMMON.md#32-recipe--recipesummary)；尚未写入现有Schema。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A14真实数据库HTTP行为尚未单独验收。调用方：[S01](../screens/S01_RECIPE_LIST.md)“随机推荐 / 换一个”。这是应用内只读随机推荐，不是通知、定时推送或AI服务。shared `RecipeRandomQuerySchema` / `RecipeRandomResponseSchema` 复用[COMMON RecipeSummary](../COMMON.md#32-recipe--recipesummary)。
 
 ## 1. 请求
 
@@ -55,7 +55,7 @@
 
 家庭百级规模先复用摘要DTO做单次一致读取，不查询正文、不随机猜测数据库id、不先取列表第一页，也不按updatedAt/标签加权。不存在/已删除/其他用户的排除id只是对本用户候选不产生影响，不额外查询或透露它是否属于其他用户。
 
-候选为0时先按原集合是否为空确定reason，不能调用空区间随机函数。抽样可用Node原生随机整数，无新依赖；为测试允许注入明确的抽样函数，生产不使用固定索引。每次请求独立，不写历史、不改updatedAt、厨房菜单/版本，也不新增数据库模型或事务写入。
+候选为0时先按原集合是否为空确定reason，不能调用空区间随机函数。抽样使用Node原生随机值，无新依赖；实现提供抽样函数参数供索引边界单测，生产不使用固定索引。每次请求独立，不写历史、不改updatedAt、厨房菜单/版本，也不新增数据库模型或事务写入。
 
 取到摘要后菜谱仍可能被其他操作删除；之后A04照常返回404，不承诺推荐快照长期有效。
 

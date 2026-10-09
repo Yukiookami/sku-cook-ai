@@ -63,9 +63,11 @@ sku-cook-ai/
 │   │   ├── .env.example                   【基础】公开的 Web 环境变量示例
 │   │   ├── public/
 │   │   │   └── icons/                     【基础】实际需要的 PWA 图标
-│   │   │       ├── pwa-192x192.png
-│   │   │       ├── pwa-512x512.png
-│   │   │       └── pwa-maskable-512x512.png
+│   │   │       ├── app-icon-192-v1.png
+│   │   │       ├── app-icon-512-v1.png
+│   │   │       ├── app-icon-maskable-512-v1.png
+│   │   │       ├── apple-touch-icon-180-v1.png
+│   │   │       └── favicon-32-v1.png
 │   │   └── src/
 │   │       ├── main.ts                    【基础】应用启动与插件注册
 │   │       ├── App.vue                    【基础】应用根组件
@@ -85,23 +87,34 @@ sku-cook-ai/
 │   │       ├── layouts/
 │   │       │   └── AppLayout.vue          【按需】多页面复用布局
 │   │       ├── views/
-│   │       │   ├── HomeView.vue           【基础】初始页面
+│   │       │   ├── system/                【基础】非业务联通检查
+│   │       │   │   └── HomeView.vue
 │   │       │   ├── recipes/               【业务】菜谱路由页面
 │   │       │   │   ├── RecipeListView.vue
 │   │       │   │   ├── RecipeCreateView.vue
 │   │       │   │   ├── RecipeEditView.vue
 │   │       │   │   ├── RecipeDetailView.vue
 │   │       │   │   └── RecipeImportView.vue   JSON 批量导入
-│   │       │   └── kitchen/               【业务】厨房屏只读页面（平板常亮展示）
-│   │       │       └── KitchenDisplayView.vue
+│   │       │   ├── kitchen/               【业务】厨房屏只读页面（平板常亮展示）
+│   │       │   │   └── KitchenDisplayView.vue
+│   │       │   └── history/               【业务】做饭历史页面
+│   │       │       └── CookingHistoryView.vue
 │   │       ├── components/
-│   │       │   ├── common/                【按需】跨业务可复用组件
+│   │       │   ├── common/                【已实现】跨业务可复用组件
+│   │       │   │   └── PageHeader.vue
 │   │       │   ├── recipes/               【业务】菜谱专用组件
 │   │       │   │   ├── RecipeForm.vue      新增与编辑共用
-│   │       │   │   └── RecipeForm.test.ts
+│   │       │   │   ├── RecipeBasicFields.vue
+│   │       │   │   ├── RecipeTagPicker.vue
+│   │       │   │   ├── IngredientEditor.vue
+│   │       │   │   ├── RecipeStepsEditor.vue
+│   │       │   │   └── AutocompleteInput.vue
 │   │       │   └── kitchen/               【业务】厨房屏专用组件
+│   │       │       └── KitchenMenuPanel.vue
 │   │       ├── composables/               【按需】可复用组合逻辑
 │   │       │   └── useWakeLock.ts         【业务】厨房页屏幕常亮，封装 Screen Wake Lock API
+│   │       ├── domain/
+│   │       │   └── recipe-form.ts          已实现：草稿与Contract映射纯函数
 │   │       ├── stores/                    【按需】跨页面 Pinia 状态
 │   │       ├── assets/                    【按需】由构建工具处理的资源
 │   │       ├── utils/                     【按需】无副作用工具函数
@@ -345,3 +358,5 @@ storage/ 在首次上传功能需要时自动创建，并被 Git 忽略。数据
 第一条业务链路只建立新增菜谱需要的模型、共享 Schema、API、表单和测试。分类、食材、图片是否同批实现，由该功能的最小需求决定。业务链路的建议顺序：新增菜谱 → 列表与详情 → 编辑与删除 → JSON 批量导入 → 厨房会话与厨房屏页面。
 
 功能范围与验收标准见 [REQUIREMENTS_V1.md](../requirements/REQUIREMENTS_V1.md)，技术用途与 V1 边界见 [TECH_STACK.md](./TECH_STACK.md)。
+
+品牌资源已保存于 `docs/design/brand/`：`app-logo-v1.png` 为原图，`README.md` 说明各尺寸用途。实际文件清单以 PROJECT_MAP.md 为准。

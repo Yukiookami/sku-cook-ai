@@ -1,6 +1,6 @@
 # S04 编辑菜谱设计书
 
-状态：待实现。路由 `/recipes/:id/edit`，组件 `RecipeEditView.vue`；表单复用 [S03](S03_RECIPE_CREATE.md)，不要复制一套校验或输入组件。
+状态：Web画面已实现；A04/A06与标签建议A03 API client已按shared Contract接入，表单复用shared输入Schema。尚未在可用服务/数据库环境执行真实HTTP业务验收。路由 `/recipes/:id/edit`，组件 `RecipeEditView.vue`；表单复用 [S03](S03_RECIPE_CREATE.md)，不要复制一套校验或输入组件。
 
 ## 1. 进入与布局
 

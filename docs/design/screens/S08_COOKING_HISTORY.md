@@ -1,6 +1,6 @@
 # S08 做饭历史设计书
 
-状态：待实现。路由 `/cooking-history`，组件建议 `CookingHistoryView.vue`；从S01“更多 → 做饭历史”进入。用于找到最近做过的菜，不是推荐历史、浏览记录、厨房实时进度或食材库存。
+状态：Web画面已实现；A16/A18 API client已按shared Contract接入，配合S02手动记录A17及S06厨房完成A15；真实HTTP业务验收待可用服务/数据库环境。路由 `/cooking-history`，组件 `CookingHistoryView.vue`；从S01“更多 → 做饭历史”进入。用于找到最近做过的菜，不是推荐历史、浏览记录、厨房实时进度或食材库存。
 
 ## 1. 信息结构
 

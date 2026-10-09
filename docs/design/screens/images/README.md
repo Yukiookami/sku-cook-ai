@@ -6,19 +6,19 @@
 
 本批共11张：S00–S08九张主图、表单中段及Android厨房横屏两张补充图。
 
-| 画面 | 当前设计图 | 高清尺寸 |
-| --- | --- | --- |
-| 技术验证页 | [S00_HOME-v3.png](./S00_HOME-v3.png) | 853 × 1844 |
-| 菜谱一览与随机推荐 | [S01_RECIPE_LIST-v3.png](./S01_RECIPE_LIST-v3.png) | 853 × 1844 |
-| 菜谱详情与目标份数 | [S02_RECIPE_DETAIL-v3.png](./S02_RECIPE_DETAIL-v3.png) | 853 × 1844 |
-| 新增菜谱宽松首屏 | [S03_RECIPE_CREATE-v3.png](./S03_RECIPE_CREATE-v3.png) | 853 × 1844 |
-| 编辑菜谱宽松首屏 | [S04_RECIPE_EDIT-v3.png](./S04_RECIPE_EDIT-v3.png) | 853 × 1844 |
-| JSON批量导入 | [S05_RECIPE_IMPORT-v3.png](./S05_RECIPE_IMPORT-v3.png) | 853 × 1844 |
-| Android厨房竖屏步骤页 | [S06_KITCHEN_DISPLAY-v3.png](./S06_KITCHEN_DISPLAY-v3.png) | 1086 × 1448 |
-| 发送到厨房弹层 | [S07_KITCHEN_PANEL-v3.png](./S07_KITCHEN_PANEL-v3.png) | 853 × 1844 |
-| 做饭历史 | [S08_COOKING_HISTORY-v3.png](./S08_COOKING_HISTORY-v3.png) | 853 × 1844 |
-| 表单中段（食材与步骤） | [S03_RECIPE_FORM_MIDDLE-v3.png](./S03_RECIPE_FORM_MIDDLE-v3.png) | 853 × 1844 |
-| 厨房横屏两栏 | [S06_KITCHEN_LANDSCAPE-v3.png](./S06_KITCHEN_LANDSCAPE-v3.png) | 1448 × 1086 |
+| 画面                   | 当前设计图                                                       | 高清尺寸    |
+| ---------------------- | ---------------------------------------------------------------- | ----------- |
+| 技术验证页             | [S00_HOME-v3.png](./S00_HOME-v3.png)                             | 853 × 1844  |
+| 菜谱一览与随机推荐     | [S01_RECIPE_LIST-v3.png](./S01_RECIPE_LIST-v3.png)               | 853 × 1844  |
+| 菜谱详情与目标份数     | [S02_RECIPE_DETAIL-v3.png](./S02_RECIPE_DETAIL-v3.png)           | 853 × 1844  |
+| 新增菜谱宽松首屏       | [S03_RECIPE_CREATE-v3.png](./S03_RECIPE_CREATE-v3.png)           | 853 × 1844  |
+| 编辑菜谱宽松首屏       | [S04_RECIPE_EDIT-v3.png](./S04_RECIPE_EDIT-v3.png)               | 853 × 1844  |
+| JSON批量导入           | [S05_RECIPE_IMPORT-v3.png](./S05_RECIPE_IMPORT-v3.png)           | 853 × 1844  |
+| Android厨房竖屏步骤页  | [S06_KITCHEN_DISPLAY-v3.png](./S06_KITCHEN_DISPLAY-v3.png)       | 1086 × 1448 |
+| 发送到厨房弹层         | [S07_KITCHEN_PANEL-v3.png](./S07_KITCHEN_PANEL-v3.png)           | 853 × 1844  |
+| 做饭历史               | [S08_COOKING_HISTORY-v3.png](./S08_COOKING_HISTORY-v3.png)       | 853 × 1844  |
+| 表单中段（食材与步骤） | [S03_RECIPE_FORM_MIDDLE-v3.png](./S03_RECIPE_FORM_MIDDLE-v3.png) | 853 × 1844  |
+| 厨房横屏两栏           | [S06_KITCHEN_LANDSCAPE-v3.png](./S06_KITCHEN_LANDSCAPE-v3.png)   | 1448 × 1086 |
 
 [唯一提示词入口与实际生成/修正记录](./PROMPTS.md) · [画面设计索引](../../README.md)。
 
@@ -26,7 +26,7 @@
 
 - 统一奶油白、蜂蜜黄、深棕文字、圆角便签卡、轻虚线与少量CSS几何装饰。厨房使用相同彩色风格，不再采用旧黑白方案。
 - 手机首屏不强塞完整长表单；S03/S04只展示宽松基本信息区，食材控件、换算开关、步骤及其他字段通过正常滚动查看。中段图是同一表单的滚动位置，不是新增路由；编辑页复用相同表单。
-- 厨房竖屏示例是第2/2页，底部上一页与下一道；横屏示例第一道可合并一页，食材/步骤/tips两栏呈现，后面仍有其他菜，因此只有下一道。实际放不下仍要分页，不能裁字或缩小字号。
+- 厨房图中的页码和分页按钮是旧交互，当前改为当前一道菜的内容纵向滚动，并通过菜单或上下道按钮切换菜谱；图片仅作Memo配色、卡片与横屏分栏的视觉参考。
 - 用户的Android平板约10寸；屏幕英寸不能推导CSS视口。750×1000与1000×750只是参考比例，最终按系统缩放、浏览器、文字换行和安全区真机验收。
 - S08首次有PNG：按每次做饭分组，显示当时菜名/目标份数和查看最新做法入口；无统计、库存或通知功能。
 - S05的JSON只显示结构片段，缺少完整食材和步骤，不能作为有效导入文件；完整示例以业务Contract为准。

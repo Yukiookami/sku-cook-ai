@@ -1,6 +1,6 @@
 # A03 GET /api/recipes/tags
 
-状态：待实现。调用方：[S01](../screens/S01_RECIPE_LIST.md)、表单可选标签建议。shared建议 `RecipeTagsResponseSchema`。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A03真实数据库HTTP行为尚未单独验收。调用方：[S01](../screens/S01_RECIPE_LIST.md)、表单可选标签建议。shared Contract：`RecipeTagsResponseSchema`。
 
 ## 请求 / 成功200
 

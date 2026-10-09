@@ -1,6 +1,6 @@
 # A08 POST /api/recipes/import/validate
 
-状态：待实现。调用方：[S05](../screens/S05_RECIPE_IMPORT.md)。建议 shared `RecipeImportInputSchema` / `RecipeImportValidationResponseSchema`，复用RecipeInput；服务层复用正式导入的校验函数。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A08仅做导入校验，真实HTTP行为尚未单独验收。调用方：[S05](../screens/S05_RECIPE_IMPORT.md)。shared提供宽松外层 `RecipeImportValidationRequestSchema` / 严格条目Contract与 `RecipeImportValidationResponseSchema`，服务端逐条复用RecipeInput校验。
 
 ## 请求
 

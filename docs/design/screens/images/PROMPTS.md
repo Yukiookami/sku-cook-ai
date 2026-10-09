@@ -825,28 +825,28 @@ Android厨房使用相同奶油黄/深棕配色，减少波浪装饰占高，菜
 无照片、无封面、无插画、无渐变、无动画感，卡片仅轻微阴影、装饰减少；系统字体，菜名至少28px，
 步骤正文24px、行距1.6，左右32px，所有触摸按钮至少56px，间隔16px。
 顶部菜单“番茄炒蛋 / 青椒肉丝 / 冬瓜汤”，番茄炒蛋明确标“当前”；
-大标题“番茄炒蛋”，小字“2人份 · 第2/2页”，主体“做法”。
+大标题“番茄炒蛋”，小字“目标2人份（原2人份）”，主体依次展示食材和做法。
 人份旁明确“参考用量，调料按口味调整”，目标与原份数不同时显示两者，不画厨房份数加减按钮。
-按大号01、02、03呈现：
+食材、全部步骤与tips在同一个纵向滚动页面连续呈现，不显示页码、不拆分页；完整内容都可向下滚动到达。按大号01、02、03呈现：
 01 鸡蛋打散，加少许盐。
 02 热油下蛋液，凝固后盛出。
 03 下番茄炒出汁，倒回鸡蛋翻匀。
-底部固定两个大按钮“上一页”和“下一道：青椒肉丝”，不遮文字，首屏不出现滚动条。
+底部固定两个大按钮“上一道”和“下一道：青椒肉丝”，不遮文字；若只有一道菜，底部显示“完成”。允许正常纵向滚动。
 不要滑动箭头或手势、设备设置、录入、返回手机主页、播放、计时器、已完成步骤勾选或手机通知。
 这是静态操作屏，不是社交App，不生成代码。
 ```
 
 ### 补充状态
 
-1. 食材页：番茄炒蛋第1/2页，目标2人份（原2人份），列表鸡蛋3个、番茄2个（切块）、盐适量，底部仅“下一页”，无“上一页”。
-2. 单道短菜合并页：顶部只有番茄炒蛋，无多道菜单；同屏食材、上述3条短步骤和一句tips，底部只有大按钮“完成”。使用750×1000参考画板，空间不足不缩字。
-3. 最终页：冬瓜汤最后一页，底部“上一页 / 完成”，不能写“下一道”。
+1. 多道菜单：顶部按顺序显示菜名，当前菜清楚标“当前”；其他菜可用按钮切换。
+2. 单道短菜：顶部只有番茄炒蛋，无多道菜单；呈现食材、上述3条短步骤和一句tips，底部只有大按钮“完成”。
+3. 最后一道菜：完整内容向下滚动，底部“上一道 / 完成”，不能显示分页控件。
 4. 待机页：750×1000，奶油白/深棕字、浅黄便签标题，日期“2026年10月8日”，“在手机上选菜后这里会显示做法”，无按钮、无每秒时钟、无插画。
 5. 完成页：同画板，仅“今天的菜做完了”及“即将回到待机”，不画手机收到通知。
 6. 横屏：1000×750，顶部同菜单，主体左栏食材、右栏做法，底部同按钮，维持24px正文，不把两栏当图片。
-7. 断网态：步骤主图顶部加不闪烁的文字条“连接中断，显示上次内容 / 重试”，服务端切菜与完成按钮禁用；本菜本地翻页可用。
+7. 断网态：步骤主图顶部加不闪烁的文字条“连接中断，显示上次内容 / 重试”，服务端切菜与完成按钮禁用；已读取菜谱仍可纵向滚动。
 8. 换算食材页：目标3人份（原2人份），鸡蛋4.5个、番茄3个、盐适量；显示参考量提示及“步骤与时间沿用原菜谱”，保持Memo高对比大字、步骤原文，不新增份数控制。
-9. 常亮不可用：显示“无法自动保持常亮，请在系统设置中调整屏幕超时”，可收起，不挡正文，不承诺自动唤醒设备。
+9. 常亮不可用：显示“无法自动保持常亮，请在系统设置中调整屏幕超时”，关闭后记住选择，不挡正文，不承诺自动唤醒设备。
 10. 完成结果不明：保留内容/大字号，显示“完成结果暂未确认，请查看做饭历史”，不庆祝、不声称已记录。完成成功才记录整顿并清空，发送/切菜/手机清空不记。
 
 ### 历史实际生成 / 修正提示词（S06_KITCHEN_DISPLAY-v1.png）
@@ -1158,4 +1158,27 @@ Android厨房使用相同奶油黄/深棕配色，减少波浪装饰占高，菜
 已完成百分比、剩菜/库存、导出、编辑日期、清空全部、随机外卖或通知，不生成代码。
 用户补充：手机首屏放不下时自然向下滚动，不强行塞全字段。保持16px正文、14px辅助、44px输入/点击、48px固定主按钮，纵向间距16–24px，内容区为底部栏留足空间。Android平板约10寸，可以更充分利用屏幕，但尺寸/分页仍以实际CSS视口为准，不凭英寸推断。
 历史布局强调日常记录：浅黄功能顶栏，说明两行16px，每次做饭单独白圆角卡。第一卡日期18:30和厨房完成文字标签，菜名/目标份数与44px查看做法按钮明确；第二卡日期12:00和手动记录，不是分享通知。卡片内轻虚线分隔。删除这次记录用错误深红#A93D3D与文字，不是清空全部。不显示总次数、图表或进度。正文16px辅助14px，不缩小字强塞，末页已到底了在两组之后。只能这两个历史记录例子，不编造第三组。
+```
+
+
+## APP_ICON
+
+2026-10-09：饭碗与问号品牌图标。最终原图保存于 `docs/design/brand/app-logo-v1.png`，各尺寸运行资源位于 `apps/web/public/icons/`。原始生成和迭代输入如下。
+
+```text
+Use case: logo-brand
+Asset type: square PWA app icon and reusable brand logo for Chinese family recipe app 吃什么饭.
+Create ONE polished app icon, full-bleed flat honey-yellow #FFE28A background across entire square, opaque. Center a simple friendly warm-white rice bowl with a bold dark-brown #332E28 outline, small mound of rice represented by a smooth silhouette, not individual detailed grains. Above bowl a single bold softly curved steam stroke shaped like a question mark, expressing 'what to eat?'; its dot subtly sits just above bowl. Modern rounded geometric shapes, cute cream-yellow Memo style, highly legible at48px. Minimal memorable silhouette, balanced optical alignment. Central bowl and steam must fit entirely within central circular safe zone diameter 70% of square; generous yellow margins for Android maskable cropping. No text, no Chinese characters, no letters, no chopsticks, no cutlery, no extra sparkles, no open book, no plate photos, no drop shadow, no gradients, no paper texture, no mockup device, no border, no rounded outer square, no presentation sheet. Professional crisp flat edges. Single square artwork.
+```
+
+### 修改 1
+
+```text
+Edit the generated app icon: change ONLY question-mark steam including its dot to solid dark brown #332E28 for strong small-icon contrast. Replace textured/shaded yellow background with perfectly uniform solid #FFE28A and rice/bowl fill with uniform warm-white #FFFDF8, remove all texture and gradients. Keep exact same bowl silhouette, bold outline and centered composition. Move whole bowl/question symbol slightly upward to optical center, keep all foreground inside central circle radius35% of image width for Android masking; if necessary scale whole symbol to90% of current dimensions. No text or extra objects, opaque square full bleed.
+```
+
+### 修改 2
+
+```text
+Iterate this abstract app icon for 吃什么饭. Preserve the exact dark-brown question-mark shape including dot, rice-bowl silhouette, bold lines, honey-yellow background and warm-white bowl. ONLY improve spacing: move the whole question mark including its dot slightly UP (about3% of canvas height), move the rice bowl slightly DOWN (about2% of canvas height). The clear yellow gap BETWEEN bottom of question-mark dot and top of rice mound should be about6% of square canvas height, visibly more breathing room than reference. Keep both centered on same axis. Preserve generous exterior margins; all foreground inside centered circle of radius40% of canvas width for Android maskable icon. If needed reduce whole composition slightly, but don't distort either symbol. Maintain refined abstract feeling, no steam curls added, no text, no extra objects. Single opaque square full-bleed artwork. No rounded outer container. Avoid texture and gradients, use flat colors where possible.
 ```

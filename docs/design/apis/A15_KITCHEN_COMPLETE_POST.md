@@ -1,6 +1,6 @@
 # A15 POST /api/kitchen/session/complete
 
-状态：待实现。调用方：[S06](../screens/S06_KITCHEN_DISPLAY.md)“完成”。新增历史后与[A13](A13_KITCHEN_DELETE.md)“清空厨房”分开：本接口同事务记录本次菜单并清空，A13只清空、不记历史。
+状态：源码已实现；初始迁移已应用于本地开发数据库；A15历史写入、清空与事务原子性尚未通过真实HTTP验收。调用方：[S06](../screens/S06_KITCHEN_DISPLAY.md)“完成”。新增历史后与[A13](A13_KITCHEN_DELETE.md)“清空厨房”分开：本接口同事务记录本次菜单并清空，A13只清空、不记历史。
 
 ## 请求与响应
 
