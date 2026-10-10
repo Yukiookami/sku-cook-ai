@@ -113,7 +113,7 @@ sku-cook-ai/
 | `apps/web/tsconfig.json`                         | 汇总浏览器应用与Node工具配置的TypeScript引用。                             |
 | `apps/web/tsconfig.app.json`                     | Vue/浏览器源码与DOM/PWA类型检查范围。                                      |
 | `apps/web/tsconfig.node.json`                    | Vite/Vitest工具配置的Node类型检查范围。                                    |
-| `apps/web/vite.config.ts`                        | Vue编译、开发代理、Tailscale主机白名单、“吃什么饭”PWA Manifest与构建配置。 |
+| `apps/web/vite.config.ts`                        | Vue编译、开发代理、Tailscale白名单、开发/生产共用的全站安装Manifest与PWA构建；开发不注册Service Worker。 |
 | `apps/web/vitest.config.ts`                      | Vue插件、jsdom和组件测试文件匹配。                                         |
 
 ### 2.5 Web 源码与测试
@@ -139,22 +139,23 @@ sku-cook-ai/
 | `apps/web/src/components/recipes/IngredientEditor.vue` | 单条食材编辑、组合用量、快捷项与高级选项；仅接收字段级错误。               |
 | `apps/web/src/components/recipes/RecipeStepsEditor.vue` | 步骤编辑、添加/删除/重排；通过数组更新事件传递修改。                       |
 | `apps/web/src/components/recipes/RecipeForm.test.ts` | 验证shared字段限制、提交后实时校验、必填提示及数量/单位组合联想。            |
-| `apps/web/src/components/kitchen/KitchenMenuPanel.vue` | S07查看/发送/清空弹层、目标份数与冲突刷新。                                |
-| `apps/web/src/components/kitchen/KitchenMenuPanel.test.ts` | 验证开弹层读取、独立份数调整及按revision发送。                             |
+| `apps/web/src/components/kitchen/KitchenMenuPanel.vue` | S07查看/发送/清空弹层、目标份数、冲突刷新及A11成功确认弹窗。                |
+| `apps/web/src/components/kitchen/KitchenMenuPanel.test.ts` | 验证开弹层读取、独立份数调整、A11成功确认操作及冲突不误报成功。           |
 | `apps/web/src/views/kitchen/KitchenDisplayView.test.ts` | 验证A15完成、整菜连续滚动、返回滚动恢复及常亮提醒收起状态。                 |
 | `apps/web/src/composables/useWakeLock.ts`        | 厨房页可见状态下申请/释放Screen Wake Lock及安全降级。                         |
 | `apps/web/src/composables/useWakeLock.test.ts`  | 验证迟到的Wake Lock sentinel在菜单清空或组件卸载后释放。                     |
 | `apps/web/src/domain/recipe-form.ts` | 菜谱草稿类型、回填、数量单位解析、shared校验映射与错误字段定位的纯函数。      |
 | `apps/web/src/domain/recipe-form.test.ts` | 验证编辑回填保留原数量/单位边界、可选数字与自定义/范围用量解析。              |
 | `apps/web/src/router/index.ts`                   | `/`正式重定向菜谱，注册S00–S08及未知路径。                                    |
-| `apps/web/src/styles/main.css`                   | 奶油黄Memo主题、响应式页面、厨房横竖屏和安全区布局。                          |
+| `apps/web/src/styles/main.css`                   | 奶油黄Memo主题、响应式页面、厨房横竖屏、发送成功弹窗与安全区布局。            |
 | `apps/web/src/styles/vant-theme.css`              | 奶油黄Memo色彩与Vant文字/背景/边框变量。                                      |
 | `apps/web/src/views/system/HomeView.vue` | S00技术联通检查页；不验证数据库，不是正式业务首页。                            |
 | `apps/web/src/views/system/HomeView.test.ts` | 验证health初始、成功、失败提示与重试。                                         |
 | `apps/web/src/views/recipes/RecipeListView.vue` | S01列表、搜索/tag过滤、分页、随机推荐、多选与导航。                          |
-| `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发与初次加载错误状态。                                  |
+| `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发、初次加载错误与发送后回到菜谱一览。                  |
 | `apps/web/src/views/recipes/RecipeImportView.test.ts` | 验证A08/A09导入流程、A19下载状态及文件选择/模式切换竞态。                  |
 | `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情、份数参考换算、编辑/删除/手动历史入口及单菜发送。                   |
+| `apps/web/src/views/recipes/RecipeDetailView.test.ts` | 验证发送到厨房成功后留在详情或返回菜谱一览。                              |
 | `apps/web/src/views/recipes/RecipeCreateView.vue` | S03新增页，使用共用表单并保留失败草稿。                                      |
 | `apps/web/src/views/recipes/RecipeCreateView.test.ts` | 验证新增保存成功后跳转不会误触发未保存提醒。                               |
 | `apps/web/src/views/recipes/RecipeEditView.vue` | S04读取、回填并完整替换菜谱，复用新增表单。                                 |

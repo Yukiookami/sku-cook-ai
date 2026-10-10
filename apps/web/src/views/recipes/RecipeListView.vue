@@ -174,6 +174,11 @@ function onKitchenSent() {
   selectionOrder.value.clear();
 }
 
+function returnToRecipeList() {
+  showKitchen.value = false;
+  void router.push('/recipes');
+}
+
 async function requestRecommendation(exclude?: number) {
   const request = ++randomSequence;
   randomLoading.value = true;
@@ -503,6 +508,7 @@ onBeforeUnmount(() => {
       :selections="selectedRecipes"
       @close="showKitchen = false"
       @sent="onKitchenSent"
+      @return-to-recipes="returnToRecipeList"
     />
   </main>
 </template>

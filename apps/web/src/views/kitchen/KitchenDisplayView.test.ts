@@ -73,7 +73,7 @@ const secondRecipe = {
   title: '第二道菜',
   steps: [
     { order: 1, text: '第二道菜步骤一' },
-    { order: 2, text: '第二道菜步骤二' },
+    { order: 2, text: '第二道菜步骤二\n这一行继续说明步骤细节，文字换行后仍完整显示。' },
     { order: 3, text: '第二道菜步骤三' },
   ],
 };
@@ -146,6 +146,10 @@ describe('KitchenDisplayView A15 completion', () => {
     expect(wrapper.text()).toContain('第二道菜步骤二');
     expect(wrapper.text()).toContain('第二道菜步骤三');
     expect(wrapper.findAll('.kitchen-column ol li')).toHaveLength(3);
+    expect(wrapper.findAll('.kitchen-step-row')).toHaveLength(3);
+    expect(wrapper.findAll('.kitchen-step-text')[1]?.element.textContent).toBe(
+      '第二道菜步骤二\n这一行继续说明步骤细节，文字换行后仍完整显示。',
+    );
     expect(wrapper.text()).not.toContain('第 1 / 3 页');
     expect(wrapper.get('.kitchen-primary').text()).toBe('完成');
     await flushPromises();

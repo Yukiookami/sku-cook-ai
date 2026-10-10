@@ -42,7 +42,11 @@ Tailscale Serve 可将本机 Web 开发服务器以仅限 Tailnet 访问的 HTTP
 
 4. iPhone 连上 Tailscale 后，在 Safari 打开该 HTTPS 地址，点“分享”→“添加到主屏幕”；若出现“作为 Web App 打开”选项，保持开启。Android 连上 Tailscale 后，在 Chrome 打开同一地址，通过菜单选择“安装应用”或“添加到主屏幕”。
 
-iPhone 使用 HTML 中的 Apple touch icon。当前 `pnpm dev` 开发服务不会注入生产 Web App Manifest，因此 Android Chrome 可能只提供普通快捷方式；Android 的完整 PWA 安装与图标需在带 HTTPS 的生产构建环境验收。若图标更新前已经安装，可先移除旧桌面入口/应用，再重新添加；系统可能缓存已安装应用的图标。此处仍连接 Windows 上正在运行的本地开发环境；不是公网部署，离线写入也不受支持。
+iPhone 使用 HTML 中的 Apple touch icon。`pnpm dev` 与生产构建提供同一份 Web App Manifest，明确使用 `start_url: "/"`、`scope: "/"` 和 `display: "standalone"`，覆盖菜谱、厨房与历史路由；开发环境只提供安装元数据，不注册 Service Worker。Android 的完整 PWA 安装仍需在带 HTTPS 的生产构建环境验收。
+
+旧主屏幕入口可能保留添加时的导航范围。如果从首页进入厨房或历史页出现带关闭按钮的浏览器窗口，请先移除旧主屏幕入口，在 Safari 打开当前设备的同一地址，再重新“添加到主屏幕”，保持“作为 Web App 打开”开启。重新安装后验证首页、厨房和历史均留在独立应用内；不同主机名、IP、协议或端口仍是不同站点，不能混用。HTTP 下 iOS 是否采用 Manifest 范围需要真机确认；如仍无法正常使用，应在同一设备的 Tailscale HTTPS 地址重新安装验证，而不是通过 CSS 隐藏系统工具栏。
+
+此处仍连接本机正在运行的开发环境；不是公网部署，离线写入也不受支持。
 
 ## 首次初始化或新克隆仓库
 

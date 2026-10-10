@@ -349,9 +349,13 @@ onBeforeUnmount(() => {
         <article v-if="stepLines.length" class="kitchen-column">
           <h2>做法</h2>
           <ol>
-            <li v-for="(line, index) in stepLines" :key="`${line.label}-${index}`">
+            <li
+              v-for="(line, index) in stepLines"
+              :key="`${line.label}-${index}`"
+              class="kitchen-step-row"
+            >
               <span class="kitchen-step-label">{{ line.label }}</span>
-              <p>{{ line.text }}</p>
+              <p class="kitchen-step-text">{{ line.text }}</p>
             </li>
           </ol>
         </article>
