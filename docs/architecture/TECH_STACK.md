@@ -16,13 +16,13 @@ V1另有主动随机菜谱推荐与“换一个”，从已有菜谱抽取，不
 | -------------- | -------------------------- | ----------------------------------------------- |
 | Git            | 版本管理与回退             | 每个验收通过的小步骤单独提交                    |
 | pnpm workspace | 管理 Monorepo 的依赖与脚本 | 不加入 Nx / Turborepo                           |
-| Node.js        | 前端工具链与后端运行环境   | 初始化时选择受支持的 LTS，并记录版本            |
+| Node.js        | 前端工具链与后端运行环境   | 使用受支持的 LTS，并记录版本                    |
 | TypeScript     | 前后端与共享包的类型检查   | 启用 strict；构建和类型检查分别验证             |
 | Docker Compose | 启动开发依赖               | 初期至少运行 PostgreSQL，Web / API 在宿主机运行 |
 
 具体依赖版本在初始化时检查兼容性并通过 pnpm-lock.yaml 固定。不要在未确认适配关系时直接把全部依赖升级到最新版。
 
-基础工程使用 Node.js 22 LTS（最低 22.18.0）、pnpm 10.34.6、TypeScript 5.9、Vue 3、Vant 4、Vite 7、Fastify 5、Zod 4、Prisma 6.19.3、Vitest 3 与 ESLint 10。Prisma CLI / Client 保持相同版本；采用 6.x 内置 PostgreSQL 连接方案，不混入 Prisma 7 的 adapter 配置。精确安装版本以 lockfile 为准，启动与检查命令见 [SETUP.md](../development/SETUP.md)。
+基础工程使用 Node.js 24 LTS（最低 24.20.0）、pnpm 12.10.1、@types/node 24、TypeScript 5.9、Vue 3、Vant 4、Vite 7、Fastify 5、Zod 4、Prisma 6.19.3、Vitest 3 与 ESLint 10。Prisma CLI / Client 保持相同版本；采用 6.x 内置 PostgreSQL 连接方案，不混入 Prisma 7 的 adapter 配置。精确安装版本以 lockfile 为准，启动与检查命令见 [SETUP.md](../development/SETUP.md)。
 
 ## 3. 前端：apps/web
 

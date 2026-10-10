@@ -20,7 +20,7 @@
     "workbox-window": "^7.4.1"
   },
   "devDependencies": {
-    "@types/node": "^22.18.0",
+    "@types/node": "^24.19.2",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/test-utils": "^2.4.6",
     "jsdom": "^26.1.0",

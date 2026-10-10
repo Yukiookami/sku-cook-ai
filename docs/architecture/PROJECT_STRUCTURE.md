@@ -20,7 +20,7 @@ sku-cook-ai/
 ├── pnpm-workspace.yaml                    【基础】workspace 范围
 ├── pnpm-lock.yaml                         【基础】依赖安装后生成并提交
 ├── tsconfig.base.json                     【基础】公共 TypeScript 选项
-├── .node-version                          【基础】Node.js 22.18.0
+├── .node-version                          【基础】Node.js 24.20.0
 ├── eslint.config.mjs                      【基础】公共 lint 配置
 ├── .prettierrc.json                       【基础】格式规则
 ├── .prettierignore                        【基础】格式检查排除项

@@ -51,9 +51,7 @@ describe('recipe route boundary validation (database not exercised)', () => {
       expect.arrayContaining([expect.objectContaining({ path: ['version'] })]),
     );
     expect(invalidImport.body.error.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ path: ['recipes', 0, 'title'] }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ path: ['recipes', 0, 'title'] })]),
     );
   });
 

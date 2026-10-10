@@ -1,9 +1,9 @@
 {
   "name": "sku-cook-ai",
   "private": true,
-  "packageManager": "pnpm@10.34.6",
+  "packageManager": "pnpm@12.10.1",
   "engines": {
-    "node": ">=22.18.0 <23"
+    "node": ">=24.20.0 <25"
   },
   "scripts": {
     "dev": "pnpm --filter @sku-cook/shared build && pnpm --parallel -r dev",
@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^22.18.0",
+    "@types/node": "^24.19.2",
     "eslint": "^10.12.0",
     "eslint-plugin-vue": "^10.5.0",
     "globals": "^16.5.0",

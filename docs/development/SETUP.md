@@ -48,8 +48,8 @@ iPhone 使用 HTML 中的 Apple touch icon。当前 `pnpm dev` 开发服务不�
 
 ### 1. 准备运行环境
 
-- Node.js `22.18.0` 以上、`23` 以下。
-- pnpm `10.34.6`，版本由根目录 `package.json` 固定。
+- Node.js `24.20.0` 以上、`25` 以下。
+- pnpm `12.10.1`，版本由根目录 `package.json` 固定。
 - Docker Desktop（用于本地 PostgreSQL）。
 
 可检查安装：
