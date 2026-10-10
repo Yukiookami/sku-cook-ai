@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 5173,
       strictPort: true,
-      allowedHosts: ['shiro-windows', '.ts.net'],
+      allowedHosts: ['shiro-windows', 'shiro-mac-home', '.ts.net'],
       proxy: { '/api': env.API_PROXY_TARGET || 'http://127.0.0.1:3000' },
     },
   };
