@@ -1,12 +1,12 @@
 # 本地启动指南
 
-本文适用于 Windows PowerShell。命令从仓库根目录 `F:\codeForStudy\sku-cook-ai` 执行。
+除特别注明外，以下命令从仓库根目录执行。macOS 命令适用于 zsh；Windows 命令适用于 PowerShell。
 
 ## 平时启动
 
 当前本地开发环境此前已完成依赖安装、数据库迁移和 Seed。若没有主动删除数据库数据，之后每次启动通常只需要：
 
-```powershell
+```sh
 docker compose up -d postgres
 docker compose ps
 pnpm dev
@@ -19,13 +19,13 @@ pnpm dev
 
 `pnpm dev` 会先构建 shared，再启动 shared 监听、Web 和 API。该命令保持前台运行，关闭终端或按 `Ctrl+C` 会停止开发进程。数据库容器可以继续运行；需要停止时执行：
 
-```powershell
+```sh
 docker compose stop postgres
 ```
 
 再次启动仍执行 `docker compose up -d postgres`。不要用 `docker compose down -v`，它会删除数据库 Volume 和其中的数据。
 
-## iPhone 通过 Tailscale 使用
+## Windows 上通过 Tailscale 使用 iPhone
 
 Tailscale Serve 可将本机 Web 开发服务器以仅限 Tailnet 访问的 HTTPS 地址提供给手机；不要使用 Funnel，也不要把 API 或 PostgreSQL 端口转发到公网。
 
@@ -48,35 +48,53 @@ iPhone 使用 HTML 中的 Apple touch icon。当前 `pnpm dev` 开发服务不�
 
 ### 1. 准备运行环境
 
-- Node.js `24.20.0` 以上、`25` 以下。
+- Node.js `24.20.0` 以上、`25` 以下；仓库 `.node-version` 固定为 `24.20.0`。
 - pnpm `12.10.1`，版本由根目录 `package.json` 固定。
 - Docker Desktop（用于本地 PostgreSQL）。
 
-可检查安装：
+在 macOS 上，如果已安装 nvm，可在仓库根目录切换到项目指定版本，再安装指定 pnpm：
 
-```powershell
+```sh
+nvm install 24.20.0
+nvm use 24.20.0
+npm install --global pnpm@12.10.1
+```
+
+在 Windows 上通过 Node.js 安装程序或版本管理器安装兼容的 Node.js，再运行 `npm install --global pnpm@12.10.1`。两种系统均可用以下命令检查：
+
+```sh
 node --version
 pnpm --version
 docker compose version
 ```
 
+继续前确认 Node.js 版本不低于 `24.20.0` 且小于 `25`，pnpm 为 `12.10.1`。在 Mac 新开终端后如果仍报 `/usr/local/bin/pnpm: No such file or directory`，先执行 `exec zsh -l` 进入已加载 nvm 配置的登录 zsh，再检查版本；不要继续使用旧 Bash 会话里的 pnpm 路径。
+
 ### 2. 安装依赖并准备本地配置
 
-在仓库根目录运行。下面的复制命令只在文件不存在时执行，不会覆盖已经填写的本地配置：
+在 macOS / Linux（zsh、bash）的仓库根目录运行。下面的复制命令只在文件不存在时执行，不会覆盖已有的本地配置：
+
+```sh
+[ -f .env ] || cp .env.example .env
+[ -f apps/api/.env ] || cp apps/api/.env.example apps/api/.env
+[ -f apps/web/.env ] || cp apps/web/.env.example apps/web/.env
+pnpm install --frozen-lockfile
+pnpm db:generate
+```
+
+Windows PowerShell 使用以下复制命令，再执行相同的 `pnpm install --frozen-lockfile` 和 `pnpm db:generate`：
 
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 if (-not (Test-Path apps\api\.env)) { Copy-Item apps\api\.env.example apps\api\.env }
 if (-not (Test-Path apps\web\.env)) { Copy-Item apps\web\.env.example apps\web\.env }
-pnpm install --frozen-lockfile
-pnpm db:generate
 ```
 
-三个 `.env` 文件用途不同：根目录 `.env` 给 Docker Compose 使用；`apps\api\.env` 给 API 和 Prisma 使用；`apps\web\.env` 配置 Vite。确保 API 的 `DATABASE_URL` 与根目录 `.env` 中数据库名、用户名、密码和端口一致；连接字符串中的特殊密码字符要进行 URL 编码。真实 `.env` 不提交 Git，也不要把密码复制到文档或聊天记录。
+三个 `.env` 文件用途不同：根目录 `.env` 给 Docker Compose 使用；`apps/api/.env` 给 API 和 Prisma 使用；`apps/web/.env` 配置 Vite。确保 API 的 `DATABASE_URL` 与根目录 `.env` 中数据库名、用户名、密码和端口一致；连接字符串中的特殊密码字符要进行 URL 编码。真实 `.env` 不提交 Git，也不要把密码复制到文档或聊天记录。
 
 ### 3. 初始化本地数据库
 
-```powershell
+```sh
 docker compose up -d postgres
 docker compose ps
 pnpm --filter @sku-cook/api db:deploy
@@ -88,6 +106,8 @@ pnpm db:seed
 ## 常见问题
 
 - PostgreSQL 尚未 `healthy`：等待片刻后再运行 `docker compose ps`；也可查看 `docker compose logs postgres`。
+- `pnpm` 提示 `/usr/local/bin/pnpm: No such file or directory`：在 Mac 新终端执行 `exec zsh -l`，并确认 `node --version` 与 `pnpm --version` 符合项目要求。
+- 在 macOS 终端执行 `Test-Path` 或 `Copy-Item` 报语法错误：这些是 PowerShell 命令；macOS 请使用首次初始化第 2 步中的 `cp` 命令。
 - API 数据库连接失败：确认 PostgreSQL 已健康，并检查根目录 `.env` 与 `apps\api\.env` 的数据库连接信息是否一致。
 - Web 能打开但 API 不通：查看运行 `pnpm dev` 的终端输出；健康检查地址为 <http://127.0.0.1:3000/api/health>。
 - 5173、3000 或 5432 端口已被占用：先确认占用进程是否是本项目，不要直接终止不明进程。
