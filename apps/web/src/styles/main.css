@@ -1101,7 +1101,7 @@ p {
 .json-input {
   min-height: 270px !important;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .example-row {
