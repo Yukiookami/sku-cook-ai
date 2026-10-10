@@ -79,6 +79,7 @@ describe('RecipeImportView', () => {
       }),
     );
     const wrapper = await mountView();
+    expect(wrapper.get('h1').text()).toBe('菜谱导入 / 导出');
     await wrapper.get('.json-input').setValue(validImport);
     await wrapper.get('.fixed-action button').trigger('click');
     await flushPromises();

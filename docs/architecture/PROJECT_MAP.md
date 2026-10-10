@@ -159,7 +159,7 @@ sku-cook-ai/
 | `apps/web/src/views/recipes/RecipeCreateView.test.ts` | 验证新增保存成功后跳转不会误触发未保存提醒。                               |
 | `apps/web/src/views/recipes/RecipeEditView.vue` | S04读取、回填并完整替换菜谱，复用新增表单。                                 |
 | `apps/web/src/views/recipes/RecipeEditView.test.ts` | 验证菜谱ID切换后逆序返回的旧GET不会覆盖当前编辑数据。                      |
-| `apps/web/src/views/recipes/RecipeImportView.vue` | S05 JSON文件/粘贴、预校验、批量导入与完整菜库JSON导出。                   |
+| `apps/web/src/views/recipes/RecipeImportView.vue` | S05 菜谱JSON导入/导出、文件/粘贴、预校验与完整菜库备份。                |
 | `apps/web/src/views/kitchen/KitchenDisplayView.vue` | S06厨房轮询、版本写入、整菜滚动/切换、完成历史及Wake Lock。                |
 | `apps/web/src/views/history/CookingHistoryView.test.ts` | 验证历史初次读取失败后可重试并恢复空列表状态。                         |
 | `apps/web/src/views/history/CookingHistoryView.vue` | S08历史分页、最新菜谱打开与删除误记。                                      |

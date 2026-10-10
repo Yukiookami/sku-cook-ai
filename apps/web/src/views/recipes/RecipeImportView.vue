@@ -132,7 +132,7 @@ async function exportAllRecipes() {
     window.setTimeout(() => revokeObjectURL(url), 1000);
     exportStatus.value =
       data.recipes.length > 0
-        ? `已导出 ${data.recipes.length} 道菜谱，可在另一台设备的批量导入页恢复。`
+        ? `已导出 ${data.recipes.length} 道菜谱，可在另一台设备的菜谱导入 / 导出页恢复。`
         : '菜库为空，已导出空菜谱文件。';
   } catch (cause) {
     error.value = apiErrorMessage(cause, '导出失败，请检查网络后重试。');
@@ -283,7 +283,7 @@ function leave() {
 
 <template>
   <main class="page import-page">
-    <PageHeader title="批量导入" @back="leave" />
+    <PageHeader title="菜谱导入 / 导出" @back="leave" />
     <section class="paper-card import-intro">
       <p>
         JSON 菜谱迁移：导出当前完整菜库，或导入备份文件。单次最多 1000 道、10

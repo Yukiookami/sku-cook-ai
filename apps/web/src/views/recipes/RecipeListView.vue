@@ -303,7 +303,7 @@ onBeforeUnmount(() => {
       <p v-else class="muted">按下按钮，为今天找一道灵感。</p>
       <p v-if="randomError.includes('还没有菜谱')" class="inline-links">
         <RouterLink to="/recipes/new">新增菜谱</RouterLink>
-        <button class="text-button" type="button" @click="openImport">批量导入</button>
+        <button class="text-button" type="button" @click="openImport">菜谱导入 / 导出</button>
       </p>
       <div class="recommend-actions">
         <button
@@ -415,7 +415,7 @@ onBeforeUnmount(() => {
         </button>
         <RouterLink v-else class="button button-primary" to="/recipes/new">去新增</RouterLink>
         <button v-if="!hasFilters" class="text-button" type="button" @click="openImport">
-          批量导入
+          菜谱导入 / 导出
         </button>
       </div>
     </section>
@@ -482,7 +482,7 @@ onBeforeUnmount(() => {
           >
             ×
           </button>
-          <button class="menu-action" type="button" @click="openImport">批量导入</button>
+          <button class="menu-action" type="button" @click="openImport">菜谱导入 / 导出</button>
           <button class="menu-action" type="button" @click="openKitchen('view')">
             查看厨房菜单
           </button>

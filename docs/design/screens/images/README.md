@@ -13,7 +13,7 @@
 | 菜谱详情与目标份数     | [S02_RECIPE_DETAIL-v3.png](./S02_RECIPE_DETAIL-v3.png)           | 853 × 1844  |
 | 新增菜谱宽松首屏       | [S03_RECIPE_CREATE-v3.png](./S03_RECIPE_CREATE-v3.png)           | 853 × 1844  |
 | 编辑菜谱宽松首屏       | [S04_RECIPE_EDIT-v3.png](./S04_RECIPE_EDIT-v3.png)               | 853 × 1844  |
-| JSON批量导入           | [S05_RECIPE_IMPORT-v3.png](./S05_RECIPE_IMPORT-v3.png)           | 853 × 1844  |
+| 菜谱导入 / 导出        | [S05_RECIPE_IMPORT-v3.png](./S05_RECIPE_IMPORT-v3.png)           | 853 × 1844  |
 | Android厨房竖屏步骤页  | [S06_KITCHEN_DISPLAY-v3.png](./S06_KITCHEN_DISPLAY-v3.png)       | 1086 × 1448 |
 | 发送到厨房弹层         | [S07_KITCHEN_PANEL-v3.png](./S07_KITCHEN_PANEL-v3.png)           | 853 × 1844  |
 | 做饭历史               | [S08_COOKING_HISTORY-v3.png](./S08_COOKING_HISTORY-v3.png)       | 853 × 1844  |
