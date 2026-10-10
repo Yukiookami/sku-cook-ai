@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { showToast } from 'vant';
 import type { RecipeSummary } from '@sku-cook/shared';
 import { apiErrorMessage } from '../../api/errors';
 import { clearKitchenMenu, getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
@@ -74,6 +75,10 @@ function adjust(recipeId: number, difference: number) {
   targets.value = new Map(targets.value).set(recipeId, next);
 }
 
+function closePanel() {
+  if (!saving.value) emit('close');
+}
+
 async function readKitchen() {
   const sequence = ++requestSequence;
   loading.value = true;
@@ -107,6 +112,7 @@ async function sendMenu() {
       expectedRevision: session.value.revision,
     });
     sessionResult.value = state;
+    showToast({ message: '已发送，厨房屏将在几秒内更新', type: 'success' });
     emit('sent');
     emit('close');
   } catch (cause) {
@@ -149,12 +155,18 @@ async function emptyKitchen() {
 
 <template>
   <Teleport to="body">
-    <div v-if="show" class="panel-scrim" @click.self="emit('close')">
+    <div v-if="show" class="panel-scrim" @click.self="closePanel">
       <section class="kitchen-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
         <div class="panel-handle" aria-hidden="true" />
         <header class="panel-heading">
           <h2 id="panel-title">{{ mode === 'send' ? '发送到厨房' : '厨房当前菜单' }}</h2>
-          <button class="icon-button" type="button" aria-label="关闭" @click="emit('close')">
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="关闭"
+            :disabled="saving"
+            @click="closePanel"
+          >
             ×
           </button>
         </header>
@@ -215,12 +227,15 @@ async function emptyKitchen() {
             </p>
           </template>
         </div>
+        <p v-if="saving && mode === 'send'" class="panel-operation-status" role="status">
+          正在发送菜单，请稍候…
+        </p>
         <footer class="panel-actions">
           <button
             class="button button-secondary"
             type="button"
             :disabled="saving"
-            @click="emit('close')"
+            @click="closePanel"
           >
             {{ mode === 'send' ? '取消' : '关闭' }}
           </button>
@@ -229,9 +244,10 @@ async function emptyKitchen() {
             class="button button-primary"
             type="button"
             :disabled="!session || !stateFresh || loading || saving || !selected.length"
+            :aria-busy="saving"
             @click="sendMenu"
           >
-            {{ saving ? '发送中…' : hasCurrentMenu ? '替换厨房菜单' : '发送到厨房' }}
+            {{ saving ? '正在发送…' : hasCurrentMenu ? '替换厨房菜单' : '发送到厨房' }}
           </button>
           <button
             v-else-if="hasCurrentMenu"

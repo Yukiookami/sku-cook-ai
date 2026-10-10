@@ -864,6 +864,17 @@ p {
   padding-top: 10px;
 }
 
+.panel-operation-status {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--ink);
+  background: #fff4c2;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
 .panel-actions .button {
   flex: 1;
 }

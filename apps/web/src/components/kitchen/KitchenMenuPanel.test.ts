@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { showToast } from 'vant';
 import KitchenMenuPanel from './KitchenMenuPanel.vue';
 import { clearKitchenMenu, getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
 import { KitchenStateResponseSchema, RecipeSummarySchema } from '@sku-cook/shared';
@@ -9,6 +10,11 @@ vi.mock('../../api/kitchen', () => ({
   replaceKitchenMenu: vi.fn(),
   clearKitchenMenu: vi.fn(),
 }));
+
+vi.mock('vant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vant')>();
+  return { ...actual, showToast: vi.fn() };
+});
 
 const recipe = RecipeSummarySchema.parse({
   id: 11,
@@ -104,6 +110,56 @@ describe('KitchenMenuPanel', () => {
       expectedRevision: 7,
     });
     expect(wrapper.emitted('sent')).toHaveLength(1);
+    expect(showToast).toHaveBeenCalledWith({
+      message: '已发送，厨房屏将在几秒内更新',
+      type: 'success',
+    });
+  });
+
+  it('shows a pending state, blocks closing and duplicate sends, then confirms success', async () => {
+    let resolveSend: ((value: typeof currentKitchen) => void) | undefined;
+    const sendPromise = new Promise<typeof currentKitchen>((resolve) => {
+      resolveSend = resolve;
+    });
+    vi.mocked(replaceKitchenMenu).mockReturnValue(sendPromise);
+
+    const wrapper = mount(KitchenMenuPanel, {
+      props: { show: false, mode: 'send', selections: [recipe] },
+      global: { stubs: { Teleport: true } },
+    });
+    await wrapper.setProps({ show: true });
+    await flushPromises();
+
+    const sendButton = wrapper.get('.button-primary');
+    expect(getKitchenState).toHaveBeenCalledTimes(1);
+    expect(sendButton.attributes('disabled')).toBeUndefined();
+    await sendButton.trigger('click');
+    await flushPromises();
+    expect(wrapper.get('[role="status"]').text()).toContain('正在发送菜单，请稍候');
+    const pendingButton = wrapper.get('.button-primary');
+    expect(pendingButton.text()).toContain('正在发送…');
+    expect(pendingButton.attributes('aria-busy')).toBe('true');
+    expect(pendingButton.attributes('disabled')).toBeDefined();
+    expect(wrapper.get('[aria-label="关闭"]').attributes('disabled')).toBeDefined();
+
+    await pendingButton.trigger('click');
+    await wrapper.get('.panel-scrim').trigger('click');
+    expect(wrapper.emitted('close')).toBeUndefined();
+    expect(replaceKitchenMenu).toHaveBeenCalledTimes(1);
+    expect(showToast).not.toHaveBeenCalled();
+
+    resolveSend?.({
+      ...currentKitchen,
+      session: { ...currentKitchen.session, revision: 8 },
+    });
+    await flushPromises();
+
+    expect(showToast).toHaveBeenCalledWith({
+      message: '已发送，厨房屏将在几秒内更新',
+      type: 'success',
+    });
+    expect(wrapper.emitted('sent')).toHaveLength(1);
+    expect(wrapper.emitted('close')).toHaveLength(1);
   });
 
   it('retains the recipe serving target and does not read while closed', async () => {
