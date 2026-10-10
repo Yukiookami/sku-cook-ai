@@ -3,7 +3,9 @@ import {
   RecipeImportInputSchema,
   RecipeImportValidationRequestSchema,
   RecipeInputSchema,
+  RecipeExportResponseSchema,
   RecipeListQuerySchema,
+  RECIPE_IMPORT_MAX_RECIPES,
 } from './recipe.js';
 import { KitchenReplaceInputSchema } from './kitchen.js';
 import { CookingHistoryInputSchema } from './history.js';
@@ -92,5 +94,26 @@ describe('query and kitchen/history contracts', () => {
     const request = { version: 1, recipes: [{ title: '', unknown: true }] };
     expect(RecipeImportValidationRequestSchema.safeParse(request).success).toBe(true);
     expect(RecipeImportInputSchema.safeParse(request).success).toBe(false);
+  });
+
+  it('allows migration exports to be empty and imports to contain up to 1000 recipes', () => {
+    expect(RecipeExportResponseSchema.parse({ version: 1, recipes: [] })).toEqual({
+      version: 1,
+      recipes: [],
+    });
+    const recipes = Array.from({ length: RECIPE_IMPORT_MAX_RECIPES }, (_, index) => ({
+      title: `菜谱${index}`,
+      ingredients: [{ name: '盐' }],
+      steps: [{ order: 1, text: '调味' }],
+    }));
+    expect(RecipeImportValidationRequestSchema.safeParse({ version: 1, recipes }).success).toBe(
+      true,
+    );
+    expect(
+      RecipeImportValidationRequestSchema.safeParse({
+        version: 1,
+        recipes: [...recipes, recipes[0]],
+      }).success,
+    ).toBe(false);
   });
 });

@@ -4,7 +4,7 @@
 
 ## 1. 实现边界
 
-Vue 3 + Vant 4 + CSS，页面使用 Composition API；Axios 请求集中于 api 目录。后端 Fastify route → service → Prisma，只有确有需要才拆 controller / repository。PostgreSQL 保存数据；V1 不上传或保存文件，JSON 导入读取文本后提交 application/json。
+Vue 3 + Vant 4 + CSS，页面使用 Composition API；Axios 请求集中于 api 目录。后端 Fastify route → service → Prisma，只有确有需要才拆 controller / repository。PostgreSQL 保存数据；JSON导出由浏览器下载，导入读取文本后提交 application/json，不在服务端上传或保存文件。
 
 所有业务归属由服务端 `DEFAULT_USER_ID` 确定，客户端不提供 userId。每次查改删都带服务端用户过滤；无登录仅限可信家庭局域网，不是公网安全方案。业务 API 返回 `Cache-Control: no-store`，Service Worker 不缓存 API。
 
@@ -156,7 +156,7 @@ Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不�
 
 ### 3.4 导入
 
-请求是 `{ "version": 1, "recipes": [RecipeInput] }`，1～100 条，总体最多 1 MiB（1,048,576 字节，UTF-8 请求体）；不使用 multipart、Base64、Excel 或图片。文件输入检查原始字节，粘贴检查 UTF-8 字节，API 最终检查 bodyLimit。
+请求是 `{ "version": 1, "recipes": [RecipeInput] }`，1～1000 条，总体最多 10 MiB（10,485,760 字节，UTF-8 请求体）；不使用 multipart、Base64、Excel 或图片。文件输入检查原始字节，粘贴检查 UTF-8 字节，API 最终检查 bodyLimit。导出复用 version 1 RecipeInput 数据结构，完整导出最多1000道且格式化JSON不超过10 MiB；超限明确失败，不返回部分菜库。
 
 预校验成功返回 `{ valid: true, count: N, issues: [] }`；业务校验失败是 422，错误报告含全部可识别的问题，前端按 index +1 显示第几条。语法错误无法继续检查条目时为 400。
 

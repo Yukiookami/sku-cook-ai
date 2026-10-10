@@ -1,10 +1,10 @@
 # 吃什么饭 · 实际项目目录与文件职责
 
-这是项目的**实际文件地图**，按目录分组列出每个现存文件及职责。更新基线：2026-10-08；以后增删、移动、改名或职责改变时同次维护，不把日期当作完成进度。
+这是项目的**实际文件地图**，按目录分组列出每个现存文件及职责。更新基线：2026-10-10；以后增删、移动、改名或职责改变时同次维护，不把日期当作完成进度。
 
 [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)是目标规划，不是这份实际清单。地图只记录源码、配置、测试、文档与可提交资源；不展开.git、node_modules、dist、coverage、真实.env、运行数据和空目录。依赖、构建与真实配置用途见第3节。
 
-产品名称为“吃什么饭”；仓库和包名保持原工程标识。设计图生成/修改的唯一提示词入口是[提示词文件](../design/screens/images/PROMPTS.md)，按S00–S08查找当前Memo规范、主提示词及补充状态；画面设计书负责交互、字段与验收，不存提示词副本。后续视觉提示更新集中在该文件，业务变更仍同步相关设计；生成新图同时维护图集索引、实际生成记录与本地图，详见[AI工作流](../development/AI_WORKFLOW.md#7-设计图提示词与版本维护)。S00技术验证页保留在`/health-check`（非正式产品首页），`/`现导向菜谱一览。S01–S08 Web界面已实现并按V3 Memo图稿还原；API client已按shared Contract接入，A02–A18源码已实现。初始迁移已应用于本地Docker开发数据库，Seed连续两次运行保持一个默认用户；A01、A02、A10、A16已通过真实HTTP只读冒烟检查，但写入事务及完整数据库集成仍待验收。浏览器图稿对照与Android真机验收亦待执行。新版Memo已有9张主图及2张补充图，旧V1/V2 PNG已按用户要求删除，历史输入记录保留。
+产品名称为“吃什么饭”；仓库和包名保持原工程标识。设计图生成/修改的唯一提示词入口是[提示词文件](../design/screens/images/PROMPTS.md)，按S00–S08查找当前Memo规范、主提示词及补充状态；画面设计书负责交互、字段与验收，不存提示词副本。后续视觉提示更新集中在该文件，业务变更仍同步相关设计；生成新图同时维护图集索引、实际生成记录与本地图，详见[AI工作流](../development/AI_WORKFLOW.md#7-设计图提示词与版本维护)。S00技术验证页保留在`/health-check`（非正式产品首页），`/`现导向菜谱一览。S01–S08 Web界面已实现并按V3 Memo图稿还原；API client已按shared Contract接入，A02–A19源码已实现。初始迁移已应用于本地Docker开发数据库，Seed连续两次运行保持一个默认用户；A01、A02、A10、A16已通过真实HTTP只读冒烟检查，但写入事务及完整数据库集成仍待验收。浏览器图稿对照与Android真机验收亦待执行。新版Memo已有9张主图及2张补充图，旧V1/V2 PNG已按用户要求删除，历史输入记录保留。
 
 ## 1. 目录总览
 
@@ -125,11 +125,11 @@ sku-cook-ai/
 | `apps/web/src/vite-env.d.ts`          | Vite和PWA虚拟模块的类型声明。                                |
 | `apps/web/src/api/client.ts`                    | Axios统一baseURL与超时配置。                                                 |
 | `apps/web/src/api/health.ts`                    | 请求health并用shared Schema校验响应。                                        |
-| `apps/web/src/api/recipes.ts`                   | A02–A09、A14菜谱接口 typed client；请求与响应由shared Schema校验。            |
+| `apps/web/src/api/recipes.ts`                   | A02–A09、A14、A19菜谱接口 typed client；请求与响应由shared Schema校验。        |
 | `apps/web/src/api/kitchen.ts`                   | A10–A13、A15厨房接口 typed client；携带会话revision。                         |
 | `apps/web/src/api/cooking-history.ts`           | A16–A18做饭历史接口 typed client。                                            |
 | `apps/web/src/api/errors.ts`                    | 将网络与HTTP状态转换为可读提示，并从shared错误Contract提取导入问题。          |
-| `apps/web/src/api/clients.test.ts`              | 使用Contract合法响应和测试HTTP Adapter验证四组业务API client的路径/请求体/响应层级/204。 |
+| `apps/web/src/api/clients.test.ts`              | 使用Contract合法响应和测试HTTP Adapter验证业务API路径/请求体/响应层级/204。 |
 | `apps/web/src/components/common/PageHeader.vue` | 业务子页统一返回、标题与右侧操作。                                            |
 | `apps/web/src/components/recipes/RecipeForm.vue` | 新增/编辑表单协调：草稿、shared校验、标签读取、提交与子组件组合。             |
 | `apps/web/src/components/recipes/AutocompleteInput.vue` | 菜谱表单联想输入、焦点/键盘选择和显式边界内的弹层布局。                  |
@@ -153,13 +153,13 @@ sku-cook-ai/
 | `apps/web/src/views/system/HomeView.test.ts` | 验证health初始、成功、失败提示与重试。                                         |
 | `apps/web/src/views/recipes/RecipeListView.vue` | S01列表、搜索/tag过滤、分页、随机推荐、多选与导航。                          |
 | `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发与初次加载错误状态。                                  |
-| `apps/web/src/views/recipes/RecipeImportView.test.ts` | 验证A08聚合错误、A09 shared默认值及校验/文件选择/模式切换竞态。             |
+| `apps/web/src/views/recipes/RecipeImportView.test.ts` | 验证A08/A09导入流程、A19下载状态及文件选择/模式切换竞态。                  |
 | `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情、份数参考换算、编辑/删除/手动历史入口及单菜发送。                   |
 | `apps/web/src/views/recipes/RecipeCreateView.vue` | S03新增页，使用共用表单并保留失败草稿。                                      |
 | `apps/web/src/views/recipes/RecipeCreateView.test.ts` | 验证新增保存成功后跳转不会误触发未保存提醒。                               |
 | `apps/web/src/views/recipes/RecipeEditView.vue` | S04读取、回填并完整替换菜谱，复用新增表单。                                 |
 | `apps/web/src/views/recipes/RecipeEditView.test.ts` | 验证菜谱ID切换后逆序返回的旧GET不会覆盖当前编辑数据。                      |
-| `apps/web/src/views/recipes/RecipeImportView.vue` | S05 JSON文件/粘贴、预校验、问题展示与批量导入。                            |
+| `apps/web/src/views/recipes/RecipeImportView.vue` | S05 JSON文件/粘贴、预校验、批量导入与完整菜库JSON导出。                   |
 | `apps/web/src/views/kitchen/KitchenDisplayView.vue` | S06厨房轮询、版本写入、整菜滚动/切换、完成历史及Wake Lock。                |
 | `apps/web/src/views/history/CookingHistoryView.test.ts` | 验证历史初次读取失败后可重试并恢复空列表状态。                         |
 | `apps/web/src/views/history/CookingHistoryView.vue` | S08历史分页、最新菜谱打开与删除误记。                                      |
@@ -187,10 +187,10 @@ sku-cook-ai/
 | `apps/api/src/modules/common/errors.ts`       | 统一业务错误、Zod issue格式化及可识别数据库/唯一键错误分类。 |
 | `apps/api/src/modules/health/health.route.ts` | 无数据库查询的GET /api/health存活接口。                |
 | `apps/api/src/modules/health/health.test.ts`  | Supertest验证health Contract、404与500不泄漏内部信息。 |
-| `apps/api/src/modules/recipes/recipe.route.ts` | A02–A09/A14路由、导入逐条校验/整批事务与响应Contract。 |
-| `apps/api/src/modules/recipes/recipe.service.ts` | 菜谱DTO/summary转换、归一化输入、用户锁与菜谱写入公共业务。 |
+| `apps/api/src/modules/recipes/recipe.route.ts` | A02–A09/A14/A19路由、菜谱导入事务、完整导出与响应Contract。 |
+| `apps/api/src/modules/recipes/recipe.service.ts` | 菜谱DTO/导出输入转换、summary、归一化输入、用户锁与菜谱写入公共业务。 |
 | `apps/api/src/modules/recipes/recipe.route.test.ts` | 不连接数据库的路由参数/未知字段/错误envelope边界测试。 |
-| `apps/api/src/modules/recipes/recipe.service.test.ts` | 注入抽样函数测试随机候选索引边界，不模拟数据库业务集成。 |
+| `apps/api/src/modules/recipes/recipe.service.test.ts` | 测试随机候选索引边界与菜谱导出DTO，不模拟数据库业务集成。 |
 | `apps/api/src/modules/kitchen/kitchen.route.ts` | A10–A13/A15厨房快照、revision写入、完成记历史并清空。 |
 | `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及默认用户事务锁。 |
 | `apps/api/src/modules/history/history.route.ts` | A16–A18历史分页、手动记录与整次删除。 |
@@ -205,8 +205,8 @@ sku-cook-ai/
 | `packages/shared/src/index.ts`               | Health及菜谱、厨房、历史Contract和份数函数公开出口。 |
 | `packages/shared/src/schemas/health.ts`      | health运行时Zod响应Contract及HealthResponse类型。 |
 | `packages/shared/src/schemas/health.test.ts` | 验证合法health解析与非法状态拒绝。                |
-| `packages/shared/src/schemas/recipe.ts`      | 菜谱输入/响应、摘要、查询、随机和JSON导入Schema/类型。 |
-| `packages/shared/src/schemas/recipe.test.ts` | 验证菜谱字段默认/边界、严格未知字段、分页、厨房/导入约束。 |
+| `packages/shared/src/schemas/recipe.ts`      | 菜谱输入/响应、摘要、查询、随机、JSON导入/导出Schema与限制常量。 |
+| `packages/shared/src/schemas/recipe.test.ts` | 验证菜谱字段默认/边界、严格未知字段、分页、厨房及迁移导入/导出约束。 |
 | `packages/shared/src/schemas/kitchen.ts`     | 厨房会话/菜单/切换/版本请求Contract与DTO类型。 |
 | `packages/shared/src/schemas/history.ts`     | 做饭历史及分页/手动写入/参数Contract与DTO类型。 |
 | `packages/shared/src/domain/servings.ts`     | 精确十进制份数换算和菜谱总分钟纯函数。 |
@@ -234,7 +234,7 @@ sku-cook-ai/
 | `docs/design/screens/S02_RECIPE_DETAIL.md`   | 详情/份数换算、删除/发送、手动记录做过及历史目标初始化设计与验收。            |
 | `docs/design/screens/S03_RECIPE_CREATE.md`   | 新增表单、动态食材/步骤、校验、验收与独立提示词链接。                         |
 | `docs/design/screens/S04_RECIPE_EDIT.md`     | 编辑回填、完整替换、离开提醒、验收与独立提示词链接。                          |
-| `docs/design/screens/S05_RECIPE_IMPORT.md`   | JSON输入、预校验/正式导入、错误报告、验收与独立提示词链接。                   |
+| `docs/design/screens/S05_RECIPE_IMPORT.md`   | 菜谱JSON导入/导出、预校验、错误报告、验收与独立提示词链接。                   |
 | `docs/design/screens/S06_KITCHEN_DISPLAY.md` | 厨房多状态/整菜滚动/切换/轮询/常亮/断网设计、验收与独立提示词链接。            |
 | `docs/design/screens/S07_KITCHEN_PANEL.md`   | 手机发送/查看/替换/清空厨房菜单弹层设计、验收与独立提示词链接。               |
 | `docs/design/screens/S08_COOKING_HISTORY.md` | 历史分组/触底分页、最新做法与目标份数、已删菜保留及整次误记删除设计；Web已实现，数据库验收待做。 |
@@ -284,6 +284,7 @@ sku-cook-ai/
 | `docs/design/apis/A16_COOKING_HISTORY_GET.md`    | 用户历史分页、有序菜名/目标快照和删菜可空引用响应设计，待实现。                    |
 | `docs/design/apis/A17_COOKING_HISTORY_POST.md`   | 单菜手动记录、服务端时间/菜名/份数与厨房无副作用设计，待实现。                     |
 | `docs/design/apis/A18_COOKING_HISTORY_DELETE.md` | 删除整次误记历史、归属/事务/204及不恢复厨房的设计，待实现。                        |
+| `docs/design/apis/A19_RECIPE_EXPORT_GET.md`      | 默认用户完整菜库JSON快照导出、迁移格式、超限失败与验收设计。                      |
 
 ## 3. 不展开的目录与运行文件
 
@@ -296,7 +297,7 @@ sku-cook-ai/
 
 ## 4. 当前边界与维护
 
-已实现基础首页、health、完整shared业务Contract、A02–A18业务源码、Prisma Schema、默认User模型/Seed源码、工程工具与PWA基础。当前未生成Prisma迁移（数据库未准备），业务数据库集成、Seed真实运行、HTTPS/PWA和Wake Lock实测仍待验收；不凭源码/Schema存在断言运行时已成功。
+已实现基础首页、health、完整shared业务Contract、A02–A19业务源码、Prisma Schema、默认User模型/Seed源码、工程工具与PWA基础。初始版本化迁移已应用于本地开发数据库；仍需按具体设计书确认业务数据库集成、HTTPS/PWA和Wake Lock实测，不凭源码/Schema存在断言运行时已成功。
 
 本次新增Instructions、6个Skills、3个Agents和只读地图检查工具。没有AGENTS.md，避免双份全局规则漂移；角色工具权限与操作流程见 [AI_WORKFLOW.md](../development/AI_WORKFLOW.md)。
 

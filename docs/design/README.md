@@ -1,6 +1,6 @@
 # 吃什么饭 · V1 设计书索引
 
-状态：2026-10-08。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；A02–A18 API 源码及Prisma Schema已实现。初始版本化迁移已应用于本地Docker开发数据库，Seed幂等性验证通过；A01、A02、A10、A16真实HTTP只读冒烟检查通过。写入事务与完整数据库集成、浏览器图稿对照及Android真机验收仍待完成。
+状态：2026-10-10。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；A02–A19 API 源码及Prisma Schema已实现。初始版本化迁移已应用于本地Docker开发数据库，Seed幂等性验证通过；A01、A02、A10、A16真实HTTP只读冒烟检查通过。写入事务与完整数据库集成、浏览器图稿对照及Android真机验收仍待完成。
 
 依据：[需求文档](../requirements/REQUIREMENTS_V1.md)、[技术栈](../architecture/TECH_STACK.md)、[目录规划](../architecture/PROJECT_STRUCTURE.md)。需求定义范围，设计书细化交互与接口，实施时在 shared 中建立相应 Zod Contract。设计不新增登录、图片、AI Runtime、通知、离线写入或 TodoList。
 
@@ -17,7 +17,7 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 | S02  | [菜谱详情](screens/S02_RECIPE_DETAIL.md)                | `/recipes/:id`                               | 前端已实现，待联调 |
 | S03  | [新增菜谱](screens/S03_RECIPE_CREATE.md)                | `/recipes/new`                               | 前端已实现，待联调 |
 | S04  | [编辑菜谱](screens/S04_RECIPE_EDIT.md)                  | `/recipes/:id/edit`                          | 前端已实现，待联调 |
-| S05  | [批量导入](screens/S05_RECIPE_IMPORT.md)                | `/recipes/import`                            | 前端已实现，待联调 |
+| S05  | [菜谱导入 / 导出](screens/S05_RECIPE_IMPORT.md)         | `/recipes/import`                            | 前端已实现，待联调 |
 | S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                   | 前端已实现，待联调 |
 | S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                   | 前端已实现，待联调 |
 | S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                           | 前端已实现，待联调 |
@@ -48,6 +48,7 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 | A16  | [GET /api/cooking-history](apis/A16_COOKING_HISTORY_GET.md)             | S08 历史分页         | 源码已实现，待数据库验收 |
 | A17  | [POST /api/cooking-history](apis/A17_COOKING_HISTORY_POST.md)           | S02 手动记录做过     | 源码已实现，待数据库验收 |
 | A18  | [DELETE /api/cooking-history/:id](apis/A18_COOKING_HISTORY_DELETE.md)   | S08 删除整次误记     | 源码已实现，待数据库验收 |
+| A19  | [GET /api/recipes/export](apis/A19_RECIPE_EXPORT_GET.md)                | S05 菜库迁移导出     | 源码已实现，待数据库验收 |
 
 菜谱静态API路径 `tags` / `random` 与 `:id` 正整数路由明确区分，不能因新增随机入口破坏详情访问。随机区复用S01，不新增独立路由页面。
 
@@ -55,16 +56,16 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 
 `apps/web/src/api/*` 和 `RecipeForm.vue` 已按设计直接消费 shared Schema / 推导类型，没有在 View 重写请求 DTO。以下 Contract 已由 shared 入口导出；Web 类型检查/构建应由后端实现验证：
 
-| 用途                       | 预期导出                                                                                                                                                                                                                                                   |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 菜谱表单、详情与摘要       | `RecipeInputSchema` / `RecipeInput`、`Recipe`、`RecipeSummary`、`RecipeResponseSchema`                                                                                                                                                                     |
-| 列表、标签、路由参数、份数 | `RecipeListQuerySchema` / `RecipeListQuery`、`RecipeListResponseSchema` / `RecipeListResponse`、`RecipeTagsResponseSchema` / `RecipeTagsResponse`、`RecipeIdParamsSchema`、`TargetServingsSchema`                                                          |
-| 随机推荐                   | `RecipeRandomQuerySchema`、`RecipeRandomResponseSchema` / `RecipeRandomResponse`                                                                                                                                                                           |
-| JSON 导入                  | `RecipeImportValidationRequestSchema` / `RecipeImportValidationRequest`、`RecipeImportInputSchema` / `RecipeImportInput`、`RecipeImportValidationResponseSchema` / `RecipeImportValidationResponse`、`RecipeImportResponseSchema` / `RecipeImportResponse` |
-| 厨房                       | `KitchenStateResponseSchema` / `KitchenStateResponse`、`KitchenReplaceInputSchema` / `KitchenReplaceInput`、`KitchenActiveInputSchema` / `KitchenActiveInput`、`KitchenRevisionInputSchema` / `KitchenRevisionInput`                                       |
-| 做饭历史                   | `CookingHistoryInputSchema` / `CookingHistoryInput`、`CookingHistoryListQuerySchema`、`CookingHistoryListResponseSchema` / `CookingHistoryListResponse`、`CookingHistoryResponseSchema` / `CookingHistory`、`CookingHistoryIdParamsSchema`                 |
-| 通用错误                   | `ApiErrorResponseSchema`、`ApiErrorIssue`（path 与 message，A08/A09 422 issues）                                                                                                                                                                           |
-| 份数计算                   | `scaleIngredientAmount`、`recipeTotalMinutes` 为 shared 纯函数；Web当前仍保留临时版本，联调时应切换到shared实现。                                                                                                                                          |
+| 用途                       | 预期导出                                                                                                                                                                                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 菜谱表单、详情与摘要       | `RecipeInputSchema` / `RecipeInput`、`Recipe`、`RecipeSummary`、`RecipeResponseSchema`                                                                                                                                                                              |
+| 列表、标签、路由参数、份数 | `RecipeListQuerySchema` / `RecipeListQuery`、`RecipeListResponseSchema` / `RecipeListResponse`、`RecipeTagsResponseSchema` / `RecipeTagsResponse`、`RecipeIdParamsSchema`、`TargetServingsSchema`                                                                   |
+| 随机推荐                   | `RecipeRandomQuerySchema`、`RecipeRandomResponseSchema` / `RecipeRandomResponse`                                                                                                                                                                                    |
+| JSON 导入 / 导出           | `RecipeImportValidationRequestSchema` / `RecipeImportValidationRequest`、`RecipeImportInputSchema` / `RecipeImportInput`、`RecipeExportResponseSchema` / `RecipeExportResponse`、`RECIPE_IMPORT_MAX_RECIPES` / `RECIPE_IMPORT_MAX_BYTES`、导入校验/写入响应Contract |
+| 厨房                       | `KitchenStateResponseSchema` / `KitchenStateResponse`、`KitchenReplaceInputSchema` / `KitchenReplaceInput`、`KitchenActiveInputSchema` / `KitchenActiveInput`、`KitchenRevisionInputSchema` / `KitchenRevisionInput`                                                |
+| 做饭历史                   | `CookingHistoryInputSchema` / `CookingHistoryInput`、`CookingHistoryListQuerySchema`、`CookingHistoryListResponseSchema` / `CookingHistoryListResponse`、`CookingHistoryResponseSchema` / `CookingHistory`、`CookingHistoryIdParamsSchema`                          |
+| 通用错误                   | `ApiErrorResponseSchema`、`ApiErrorIssue`（path 与 message，A08/A09 422 issues）                                                                                                                                                                                    |
+| 份数计算                   | `scaleIngredientAmount`、`recipeTotalMinutes` 为 shared 纯函数；Web当前仍保留临时版本，联调时应切换到shared实现。                                                                                                                                                   |
 
 特别说明：A08 预校验必须能把语法正确但字段有误的 JSON 送到服务端收集全部问题；`RecipeImportValidationRequestSchema` 应校验 version / recipes 外层和数量边界，但不能先用严格 `RecipeInputSchema` 把所有单条字段错误挡在浏览器。A09 正式写入则使用严格 `RecipeImportInputSchema`。字段、错误形状仍遵循现有 API 设计，不因前端消费而改写。
 

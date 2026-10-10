@@ -4,7 +4,7 @@
 
 ## 请求
 
-Content-Type application/json；Body `{ "version": 1, "recipes": [RecipeInput] }`，1～100条、最多1MiB，字段例见 [A05](A05_RECIPE_POST.md#1-请求)。浏览器读取文件/粘贴文本后提交JSON，不上传文件对象、不存临时文件。拒绝未知字段、图片、其他version、空数组。
+Content-Type application/json；Body `{ "version": 1, "recipes": [RecipeInput] }`，1～1000条、最多10MiB，字段例见 [A05](A05_RECIPE_POST.md#1-请求)。浏览器读取文件/粘贴文本后提交JSON，不上传文件对象、不存临时文件。拒绝未知字段、图片、其他version、空数组。
 
 ## 响应
 
@@ -43,4 +43,4 @@ version=1继续接受省略servings/scaleWithServings的文件，分别默认1/t
 
 400 INVALID_REQUEST：畸形JSON；413 PAYLOAD_TOO_LARGE；500/503通用（数据库失败不能说valid=true或已有同名）。422包含结构、字段、version、同文件同名和库中同名错误。
 
-测试1/100/101条、空recipes、1MiB边界、中文UTF-8、全部字段定位、同文件trim重名、用户隔离、校验后数据库完全不变。正式导入使用相同规则。
+测试1/1000/1001条、空recipes、10MiB边界、中文UTF-8、全部字段定位、同文件trim重名、用户隔离、校验后数据库完全不变。正式导入使用相同规则。

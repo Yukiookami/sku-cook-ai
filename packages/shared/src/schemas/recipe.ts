@@ -4,6 +4,9 @@ const trimmedText = (max: number) => z.string().trim().max(max);
 const optionalText = (max: number) => trimmedText(max).optional();
 const PositiveIdSchema = z.number().int().positive();
 
+export const RECIPE_IMPORT_MAX_RECIPES = 1000;
+export const RECIPE_IMPORT_MAX_BYTES = 10 * 1024 * 1024;
+
 export const TargetServingsSchema = z.number().int().min(1).max(100);
 
 export const IngredientInputSchema = z
@@ -167,7 +170,7 @@ export type RecipeRandomResponse = z.infer<typeof RecipeRandomResponseSchema>;
 export const RecipeImportValidationRequestSchema = z
   .object({
     version: z.literal(1),
-    recipes: z.array(z.unknown()).min(1).max(100),
+    recipes: z.array(z.unknown()).min(1).max(RECIPE_IMPORT_MAX_RECIPES),
   })
   .strict();
 export type RecipeImportValidationRequest = z.infer<typeof RecipeImportValidationRequestSchema>;
@@ -175,10 +178,18 @@ export type RecipeImportValidationRequest = z.infer<typeof RecipeImportValidatio
 export const RecipeImportInputSchema = z
   .object({
     version: z.literal(1),
-    recipes: z.array(RecipeInputSchema).min(1).max(100),
+    recipes: z.array(RecipeInputSchema).min(1).max(RECIPE_IMPORT_MAX_RECIPES),
   })
   .strict();
 export type RecipeImportInput = z.infer<typeof RecipeImportInputSchema>;
+
+export const RecipeExportResponseSchema = z
+  .object({
+    version: z.literal(1),
+    recipes: z.array(RecipeInputSchema).max(RECIPE_IMPORT_MAX_RECIPES),
+  })
+  .strict();
+export type RecipeExportResponse = z.infer<typeof RecipeExportResponseSchema>;
 
 export const ApiErrorIssueSchema = z
   .object({
@@ -203,7 +214,7 @@ export const ApiErrorResponseSchema = z
 export const RecipeImportValidationResponseSchema = z
   .object({
     valid: z.literal(true),
-    count: z.number().int().min(1).max(100),
+    count: z.number().int().min(1).max(RECIPE_IMPORT_MAX_RECIPES),
     issues: z.array(ApiErrorIssueSchema),
   })
   .strict();
@@ -211,8 +222,8 @@ export type RecipeImportValidationResponse = z.infer<typeof RecipeImportValidati
 
 export const RecipeImportResponseSchema = z
   .object({
-    importedCount: z.number().int().min(1).max(100),
-    recipeIds: z.array(PositiveIdSchema).min(1).max(100),
+    importedCount: z.number().int().min(1).max(RECIPE_IMPORT_MAX_RECIPES),
+    recipeIds: z.array(PositiveIdSchema).min(1).max(RECIPE_IMPORT_MAX_RECIPES),
   })
   .strict();
 export type RecipeImportResponse = z.infer<typeof RecipeImportResponseSchema>;

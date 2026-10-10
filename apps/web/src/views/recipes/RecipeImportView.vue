@@ -5,14 +5,14 @@ import axios from 'axios';
 import {
   RecipeImportInputSchema,
   RecipeImportValidationRequestSchema,
+  RECIPE_IMPORT_MAX_BYTES,
   type RecipeImportInput,
 } from '@sku-cook/shared';
 import PageHeader from '../../components/common/PageHeader.vue';
 import { apiErrorIssues, apiErrorMessage } from '../../api/errors';
-import { importRecipes, validateRecipeImport } from '../../api/recipes';
+import { exportRecipes, importRecipes, validateRecipeImport } from '../../api/recipes';
 
 type InputMode = 'file' | 'paste';
-const MAX_BYTES = 1_048_576;
 const router = useRouter();
 const mode = ref<InputMode>('paste');
 const text = ref('');
@@ -24,6 +24,10 @@ const importing = ref(false);
 const validationPassed = ref(false);
 const validationCount = ref(0);
 const importedCount = ref<number | null>(null);
+const exporting = ref(false);
+const exportStatus = ref('');
+const exportProgress = ref<{ message: string; percent: number | null } | null>(null);
+const importProgress = ref<{ message: string; percent: number | null } | null>(null);
 const error = ref('');
 const issues = ref<{ path: PropertyKey[]; message: string }[]>([]);
 const inputBytes = computed(() => new TextEncoder().encode(text.value).byteLength);
@@ -87,8 +91,8 @@ async function selectFile(event: Event) {
     error.value = '请选择扩展名为 .json 的文件。';
     return;
   }
-  if (file.size > MAX_BYTES) {
-    error.value = '文件超过 1 MiB，请选择更小的 JSON 文件。';
+  if (file.size > RECIPE_IMPORT_MAX_BYTES) {
+    error.value = '文件超过 10 MiB，请选择更小的 JSON 文件。';
     return;
   }
   try {
@@ -101,6 +105,53 @@ async function selectFile(event: Event) {
   }
 }
 
+async function exportAllRecipes() {
+  if (exporting.value) return;
+  exporting.value = true;
+  exportProgress.value = { message: '正在下载备份 JSON…', percent: 0 };
+  exportStatus.value = '';
+  error.value = '';
+  try {
+    const data = await exportRecipes((percent) => {
+      exportProgress.value =
+        percent !== null && percent >= 100
+          ? { message: '下载完成，正在准备文件…', percent: null }
+          : { message: '正在下载备份 JSON…', percent };
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const revokeObjectURL = URL.revokeObjectURL.bind(URL);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `recipes-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => revokeObjectURL(url), 1000);
+    exportStatus.value =
+      data.recipes.length > 0
+        ? `已导出 ${data.recipes.length} 道菜谱，可在另一台设备的批量导入页恢复。`
+        : '菜库为空，已导出空菜谱文件。';
+  } catch (cause) {
+    error.value = apiErrorMessage(cause, '导出失败，请检查网络后重试。');
+  } finally {
+    exporting.value = false;
+    exportProgress.value = null;
+  }
+}
+
+function reportImportProgress(label: string, percent: number | null) {
+  importProgress.value =
+    percent !== null && percent >= 100
+      ? { message: `上传完成，服务端正在${label}…`, percent: null }
+      : {
+          message: percent === null ? `正在传输${label}…` : `正在上传${label}…`,
+          percent,
+        };
+}
+
 function invalidate() {
   validationPassed.value = false;
   validationCount.value = 0;
@@ -109,6 +160,7 @@ function invalidate() {
   issues.value = [];
   error.value = '';
   validating.value = false;
+  importProgress.value = null;
   requestSequence += 1;
 }
 
@@ -129,8 +181,8 @@ async function validate() {
   validating.value = true;
   error.value = '';
   issues.value = [];
-  if (inputBytes.value > MAX_BYTES) {
-    error.value = '粘贴内容超过 1 MiB，请缩减后再校验。';
+  if (inputBytes.value > RECIPE_IMPORT_MAX_BYTES) {
+    error.value = '粘贴内容超过 10 MiB，请缩减后再校验。';
     validating.value = false;
     return;
   }
@@ -152,7 +204,10 @@ async function validate() {
   }
   const input = RecipeImportInputSchema.safeParse(parsedJson);
   try {
-    const result = await validateRecipeImport(requestBody.data);
+    importProgress.value = { message: '正在上传校验数据…', percent: 0 };
+    const result = await validateRecipeImport(requestBody.data, (percent) =>
+      reportImportProgress('校验', percent),
+    );
     if (request !== requestSequence || text.value !== snapshot) return;
     validationPassed.value = true;
     validationCount.value = result.count;
@@ -167,7 +222,10 @@ async function validate() {
     }));
     error.value = apiErrorMessage(cause, '服务端校验失败，请检查网络后重试。');
   } finally {
-    if (request === requestSequence) validating.value = false;
+    if (request === requestSequence) {
+      validating.value = false;
+      importProgress.value = null;
+    }
   }
 }
 
@@ -183,10 +241,13 @@ async function importValidated() {
     return;
   }
   importing.value = true;
+  importProgress.value = { message: '正在上传菜谱数据…', percent: 0 };
   error.value = '';
   issues.value = [];
   try {
-    const result = await importRecipes(validatedBody);
+    const result = await importRecipes(validatedBody, (percent) =>
+      reportImportProgress('写入', percent),
+    );
     importedCount.value = result.importedCount;
     validationPassed.value = false;
   } catch (cause) {
@@ -201,6 +262,7 @@ async function importValidated() {
     validationPassed.value = false;
   } finally {
     importing.value = false;
+    importProgress.value = null;
   }
 }
 
@@ -223,7 +285,39 @@ function leave() {
   <main class="page import-page">
     <PageHeader title="批量导入" @back="leave" />
     <section class="paper-card import-intro">
-      <p>仅 JSON，最多 100 道、1 MiB。任意一条出错，整批不导入。</p>
+      <p>
+        JSON 菜谱迁移：导出当前完整菜库，或导入备份文件。单次最多 1000 道、10
+        MiB；任意一条出错，整批不导入。
+      </p>
+      <button
+        class="button button-secondary full-width"
+        type="button"
+        :disabled="exporting || importing || validating"
+        @click="exportAllRecipes"
+      >
+        {{ exporting ? '导出中…' : '导出全部菜谱 JSON' }}
+      </button>
+      <div v-if="exporting && exportProgress" class="transfer-progress" role="status">
+        <p>{{ exportProgress.message }}</p>
+        <div
+          class="progress-track"
+          role="progressbar"
+          aria-label="菜谱导出进度"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="exportProgress.percent ?? undefined"
+        >
+          <span
+            class="progress-fill"
+            :class="{ indeterminate: exportProgress.percent === null }"
+            :style="{
+              width: exportProgress.percent === null ? '35%' : `${exportProgress.percent}%`,
+            }"
+          />
+        </div>
+        <p v-if="exportProgress.percent !== null" class="muted">{{ exportProgress.percent }}%</p>
+      </div>
+      <p v-if="exportStatus" class="validation-success" role="status">{{ exportStatus }}</p>
     </section>
     <div v-if="importedCount !== null" class="paper-card import-success" role="status">
       <h2>已导入 {{ importedCount }} 道菜谱</h2>
@@ -251,6 +345,7 @@ function leave() {
             role="tab"
             :aria-selected="mode === 'file'"
             :class="{ active: mode === 'file' }"
+            :disabled="importing"
             @click="changeMode('file')"
           >
             选择 JSON 文件
@@ -260,6 +355,7 @@ function leave() {
             role="tab"
             :aria-selected="mode === 'paste'"
             :class="{ active: mode === 'paste' }"
+            :disabled="importing"
             @click="changeMode('paste')"
           >
             粘贴 JSON
@@ -272,11 +368,13 @@ function leave() {
             type="file"
             accept=".json,application/json"
             aria-label="选择 JSON 文件"
+            :disabled="importing"
             @change="selectFile"
           />
           <button
             class="button button-secondary full-width"
             type="button"
+            :disabled="importing"
             @click="fileInput?.click()"
           >
             {{ fileName || '选择 JSON 文件' }}
@@ -286,6 +384,7 @@ function leave() {
             <button
               class="text-button"
               type="button"
+              :disabled="importing"
               @click="
                 text = '';
                 fileName = '';
@@ -303,10 +402,11 @@ function leave() {
             class="json-input"
             rows="12"
             spellcheck="false"
+            :disabled="importing"
             placeholder="请粘贴完整的 JSON 文本"
             @input="invalidate"
           />
-          <span class="muted">{{ inputBytes.toLocaleString() }} / 1,048,576 字节</span>
+          <span class="muted">{{ inputBytes.toLocaleString() }} / 10,485,760 字节</span>
         </label>
         <div class="example-row">
           <p class="muted">完整示例包含食材和步骤；结构片段不能直接导入。</p>
@@ -317,6 +417,26 @@ function leave() {
         <div v-if="showExample" class="example-content">
           <pre>{{ example }}</pre>
           <button class="text-button" type="button" @click="copyExample">复制示例</button>
+        </div>
+        <div v-if="importProgress" class="transfer-progress" role="status">
+          <p>{{ importProgress.message }}</p>
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-label="菜谱导入进度"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :aria-valuenow="importProgress.percent ?? undefined"
+          >
+            <span
+              class="progress-fill"
+              :class="{ indeterminate: importProgress.percent === null }"
+              :style="{
+                width: importProgress.percent === null ? '35%' : `${importProgress.percent}%`,
+              }"
+            />
+          </div>
+          <p v-if="importProgress.percent !== null" class="muted">{{ importProgress.percent }}%</p>
         </div>
         <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
         <div v-if="issues.length" class="issue-list" role="alert">
@@ -355,3 +475,52 @@ function leave() {
     <div class="bottom-spacer" aria-hidden="true" />
   </main>
 </template>
+
+<style scoped>
+.transfer-progress {
+  margin-top: 12px;
+}
+
+.transfer-progress p {
+  margin: 0 0 8px;
+}
+
+.progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #fff4c2;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #ffe28a;
+  transition: width 160ms ease-out;
+}
+
+.progress-fill.indeterminate {
+  animation: transfer-progress 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes transfer-progress {
+  from {
+    transform: translateX(-30%);
+  }
+
+  to {
+    transform: translateX(190%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill {
+    transition: none;
+  }
+
+  .progress-fill.indeterminate {
+    animation: none;
+  }
+}
+</style>

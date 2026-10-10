@@ -1,10 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RecipeImportView from './RecipeImportView.vue';
-import { importRecipes, validateRecipeImport } from '../../api/recipes';
+import { exportRecipes, importRecipes, validateRecipeImport } from '../../api/recipes';
 
 vi.mock('../../api/recipes', () => ({
+  exportRecipes: vi.fn(),
   importRecipes: vi.fn(),
   validateRecipeImport: vi.fn(),
 }));
@@ -56,6 +57,7 @@ function mountView() {
 
 describe('RecipeImportView', () => {
   beforeEach(() => vi.resetAllMocks());
+  afterEach(() => vi.unstubAllGlobals());
 
   it('shows all server validation issues with 1-based recipe indices', async () => {
     vi.mocked(validateRecipeImport).mockRejectedValueOnce(
@@ -88,6 +90,112 @@ describe('RecipeImportView', () => {
     wrapper.unmount();
   });
 
+  it('downloads the complete import-compatible JSON export and reports its recipe count', async () => {
+    vi.mocked(exportRecipes).mockResolvedValueOnce({
+      version: 1,
+      recipes: [
+        {
+          title: '番茄炒蛋',
+          servings: 2,
+          tags: [],
+          ingredients: [{ name: '鸡蛋', scaleWithServings: true }],
+          steps: [{ order: 1, text: '炒熟。' }],
+        },
+      ],
+    });
+    const createObjectURL = vi.fn(() => 'blob:recipes');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const wrapper = await mountView();
+
+    await wrapper.get('button.full-width').trigger('click');
+    await flushPromises();
+
+    expect(exportRecipes).toHaveBeenCalledOnce();
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(click).toHaveBeenCalledOnce();
+    expect(wrapper.text()).toContain('已导出 1 道菜谱');
+    wrapper.unmount();
+  });
+
+  it('shows the measured export download percentage while the request is active', async () => {
+    const pending = deferred<{
+      version: 1;
+      recipes: [];
+    }>();
+    vi.mocked(exportRecipes).mockImplementationOnce((onProgress) => {
+      onProgress?.(42);
+      return pending.promise;
+    });
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn(() => 'blob:recipes'),
+      revokeObjectURL: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const wrapper = await mountView();
+
+    await wrapper.get('button.full-width').trigger('click');
+    expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('42');
+
+    pending.resolve({ version: 1, recipes: [] });
+    await flushPromises();
+    wrapper.unmount();
+  });
+
+  it('shows upload percentage during import validation and server-side processing afterward', async () => {
+    const pending = deferred<{ valid: true; count: number; issues: [] }>();
+    vi.mocked(validateRecipeImport).mockImplementationOnce((_input, onProgress) => {
+      onProgress?.(100);
+      return pending.promise;
+    });
+    const wrapper = await mountView();
+    await wrapper.get('.json-input').setValue(validImport);
+    await wrapper.get('.fixed-action button').trigger('click');
+
+    expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBeUndefined();
+    expect(wrapper.text()).toContain('服务端正在校验');
+
+    pending.resolve({ valid: true, count: 1, issues: [] });
+    await flushPromises();
+    wrapper.unmount();
+  });
+
+  it('shows the measured upload percentage while the validated batch is being imported', async () => {
+    const pending = deferred<{ importedCount: number; recipeIds: number[] }>();
+    vi.mocked(validateRecipeImport).mockResolvedValueOnce({
+      valid: true,
+      count: 1,
+      issues: [],
+    });
+    vi.mocked(importRecipes).mockImplementationOnce((_input, onProgress) => {
+      onProgress?.(57);
+      return pending.promise;
+    });
+    const wrapper = await mountView();
+    await wrapper.get('.json-input').setValue(validImport);
+    await wrapper.get('.fixed-action button').trigger('click');
+    await flushPromises();
+    await wrapper.get('.fixed-action button').trigger('click');
+
+    expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('57');
+
+    pending.resolve({ importedCount: 1, recipeIds: [103] });
+    await flushPromises();
+    wrapper.unmount();
+  });
+
+  it('shows a clear error if exporting fails', async () => {
+    vi.mocked(exportRecipes).mockRejectedValueOnce(new Error('offline'));
+    const wrapper = await mountView();
+
+    await wrapper.get('button.full-width').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('导出失败');
+    wrapper.unmount();
+  });
+
   it('imports the same validated JSON with shared defaults after A08 passes', async () => {
     vi.mocked(validateRecipeImport).mockResolvedValueOnce({
       valid: true,
@@ -102,7 +210,7 @@ describe('RecipeImportView', () => {
     await wrapper.get('.fixed-action button').trigger('click');
     await flushPromises();
 
-    expect(validateRecipeImport).toHaveBeenCalledWith({
+    expect(vi.mocked(validateRecipeImport).mock.calls[0]?.[0]).toEqual({
       version: 1,
       recipes: [
         {
@@ -112,7 +220,7 @@ describe('RecipeImportView', () => {
         },
       ],
     });
-    expect(importRecipes).toHaveBeenCalledWith({
+    expect(vi.mocked(importRecipes).mock.calls[0]?.[0]).toEqual({
       version: 1,
       recipes: [
         {
@@ -160,7 +268,7 @@ describe('RecipeImportView', () => {
     await flushPromises();
     await wrapper.get('.fixed-action button').trigger('click');
     await flushPromises();
-    expect(importRecipes).toHaveBeenCalledWith({
+    expect(vi.mocked(importRecipes).mock.calls[0]?.[0]).toEqual({
       version: 1,
       recipes: [
         {

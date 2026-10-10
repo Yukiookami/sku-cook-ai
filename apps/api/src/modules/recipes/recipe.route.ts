@@ -2,6 +2,9 @@ import {
   RecipeIdParamsSchema,
   RecipeImportInputSchema,
   RecipeImportValidationRequestSchema,
+  RecipeExportResponseSchema,
+  RECIPE_IMPORT_MAX_BYTES,
+  RECIPE_IMPORT_MAX_RECIPES,
   RecipeListQuerySchema,
   RecipeListResponseSchema,
   RecipeRandomQuerySchema,
@@ -21,6 +24,7 @@ import {
   lockDefaultUser,
   parseRecipeInput,
   randomCandidateIndex,
+  recipeExportDto,
   recipeDto,
   summaryDto,
 } from './recipe.service.js';
@@ -44,7 +48,11 @@ async function inspectImport(
     return { inputs: [], issues };
   }
   const rawRecipes = (payload as { recipes?: unknown }).recipes;
-  if (!Array.isArray(rawRecipes) || rawRecipes.length < 1 || rawRecipes.length > 100) {
+  if (
+    !Array.isArray(rawRecipes) ||
+    rawRecipes.length < 1 ||
+    rawRecipes.length > RECIPE_IMPORT_MAX_RECIPES
+  ) {
     return { inputs: [], issues };
   }
   const inputs: ReturnType<typeof parseRecipeInput>[] = [];
@@ -120,6 +128,36 @@ export async function recipeRoutes(app: FastifyInstance) {
     return RecipeTagsResponseSchema.parse({ tags });
   });
 
+  app.get('/recipes/export', async (_request, reply) => {
+    const records = await app.prisma.$transaction(
+      (tx) =>
+        tx.recipe.findMany({
+          where: { userId: app.defaultUserId },
+          include: {
+            ingredients: { orderBy: { position: 'asc' } },
+            steps: { orderBy: { order: 'asc' } },
+            tags: { orderBy: { position: 'asc' } },
+          },
+          take: RECIPE_IMPORT_MAX_RECIPES + 1,
+          orderBy: [{ id: 'asc' }],
+        }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 15_000 },
+    );
+    if (records.length > RECIPE_IMPORT_MAX_RECIPES) {
+      throw new ApiError(413, 'PAYLOAD_TOO_LARGE', '菜谱超过单次迁移的 1000 道上限');
+    }
+    const exported = RecipeExportResponseSchema.parse({
+      version: 1,
+      recipes: records.map(recipeExportDto),
+    });
+    if (Buffer.byteLength(JSON.stringify(exported, null, 2), 'utf8') > RECIPE_IMPORT_MAX_BYTES) {
+      throw new ApiError(413, 'PAYLOAD_TOO_LARGE', '菜谱备份超过 10 MiB，无法通过当前导入限制恢复');
+    }
+    return reply
+      .header('Content-Disposition', 'attachment; filename="recipes-v1.json"')
+      .send(exported);
+  });
+
   app.get('/recipes/random', async (request) => {
     const query = RecipeRandomQuerySchema.parse(request.query);
     const records = await app.prisma.recipe.findMany({
@@ -162,7 +200,7 @@ export async function recipeRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post('/recipes/import/validate', async (request) => {
+  app.post('/recipes/import/validate', { bodyLimit: RECIPE_IMPORT_MAX_BYTES }, async (request) => {
     const result = await inspectImport(app, request.body);
     if (result.issues.length) throw importValidationFailed(result.issues);
     return RecipeImportValidationResponseSchema.parse({
@@ -172,7 +210,7 @@ export async function recipeRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post('/recipes/import', async (request, reply) => {
+  app.post('/recipes/import', { bodyLimit: RECIPE_IMPORT_MAX_BYTES }, async (request, reply) => {
     const outer = RecipeImportInputSchema.safeParse(request.body);
     if (!outer.success) {
       const checked = await inspectImport(app, request.body);
@@ -221,7 +259,7 @@ export async function recipeRoutes(app: FastifyInstance) {
           }
           return ids;
         },
-        { timeout: 15_000 },
+        { timeout: 60_000 },
       );
       return reply
         .code(201)

@@ -4,6 +4,7 @@ import {
   CookingHistoryListResponseSchema,
   CookingHistoryResponseSchema,
   KitchenStateResponseSchema,
+  RecipeExportResponseSchema,
   RecipeInputSchema,
   RecipeListResponseSchema,
   RecipeResponseSchema,
@@ -23,6 +24,7 @@ import { deleteCookingHistory, getCookingHistory, recordCookingHistory } from '.
 import {
   createRecipe,
   deleteRecipe,
+  exportRecipes,
   getRandomRecipe,
   getRecipe,
   getRecipeTags,
@@ -158,6 +160,8 @@ describe('Web API clients use the shared Contract and Axx routes', () => {
     responseStatus = 200;
     responseBody = { recipe: recipeSummary, reason: null };
     await getRandomRecipe(101);
+    responseBody = RecipeExportResponseSchema.parse({ version: 1, recipes: [recipeInput] });
+    await exportRecipes();
     responseBody = { valid: true, count: 1, issues: [] };
     await validateRecipeImport({ version: 1, recipes: [recipeInput] });
     responseBody = { importedCount: 1, recipeIds: [101] };
@@ -171,14 +175,15 @@ describe('Web API clients use the shared Contract and Axx routes', () => {
       ['put', '/recipes/101'],
       ['delete', '/recipes/101'],
       ['get', '/recipes/random'],
+      ['get', '/recipes/export'],
       ['post', '/recipes/import/validate'],
       ['post', '/recipes/import'],
     ]);
     expect(calls[0]?.params).toEqual({ page: 1, pageSize: 20, q: '番茄', tag: '家常菜' });
     expect(requestBody(3)).toEqual(recipeInput);
     expect(requestBody(4)).toEqual(recipeInput);
-    expect(requestBody(7)).toEqual({ version: 1, recipes: [recipeInput] });
     expect(requestBody(8)).toEqual({ version: 1, recipes: [recipeInput] });
+    expect(requestBody(9)).toEqual({ version: 1, recipes: [recipeInput] });
     expect(calls[5]?.data).toBeUndefined();
   });
 

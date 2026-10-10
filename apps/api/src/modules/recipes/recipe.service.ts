@@ -47,6 +47,31 @@ export function recipeDto(record: RecipeRecord) {
   }
 }
 
+export function recipeExportDto(record: RecipeRecord) {
+  return RecipeInputSchema.parse({
+    title: record.title,
+    ...(record.description === null ? {} : { description: record.description }),
+    servings: record.servings,
+    ...(record.prepMinutes === null ? {} : { prepMinutes: record.prepMinutes }),
+    ...(record.cookMinutes === null ? {} : { cookMinutes: record.cookMinutes }),
+    ...(record.difficulty === null ? {} : { difficulty: record.difficulty }),
+    tags: record.tags.map(({ value }) => value),
+    ingredients: record.ingredients.map(
+      ({ name, amount, unit, note, group, scaleWithServings }) => ({
+        name,
+        ...(amount === null ? {} : { amount }),
+        ...(unit === null ? {} : { unit }),
+        ...(note === null ? {} : { note }),
+        ...(group === null ? {} : { group }),
+        scaleWithServings,
+      }),
+    ),
+    steps: record.steps.map(({ order, text }) => ({ order, text })),
+    ...(record.tips === null ? {} : { tips: record.tips }),
+    ...(record.source === null ? {} : { source: record.source }),
+  });
+}
+
 export function summaryDto(record: {
   id: number;
   title: string;

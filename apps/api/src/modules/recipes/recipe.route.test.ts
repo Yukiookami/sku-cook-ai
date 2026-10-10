@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../../app.js';
 
 describe('recipe route boundary validation (database not exercised)', () => {
@@ -35,6 +35,18 @@ describe('recipe route boundary validation (database not exercised)', () => {
     expect(JSON.stringify(unknownField.body)).not.toContain('99');
   });
 
+  it('exports an empty migration bundle with a download filename', async () => {
+    const transaction = vi.spyOn(app.prisma, '$transaction').mockResolvedValue([]);
+    await app.ready();
+
+    const response = await request(app.server).get('/api/recipes/export').expect(200);
+
+    expect(response.body).toEqual({ version: 1, recipes: [] });
+    expect(response.headers['content-disposition']).toContain('recipes-v1.json');
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(transaction).toHaveBeenCalledOnce();
+  });
+
   it('rejects random-query and import-envelope errors before database access', async () => {
     await app.ready();
     const random = await request(app.server)
@@ -53,6 +65,19 @@ describe('recipe route boundary validation (database not exercised)', () => {
     expect(invalidImport.body.error.issues).toEqual(
       expect.arrayContaining([expect.objectContaining({ path: ['recipes', 0, 'title'] })]),
     );
+
+    const oversizedImport = await request(app.server)
+      .post('/api/recipes/import/validate')
+      .send({
+        version: 1,
+        recipes: Array.from({ length: 1001 }, (_, index) => ({
+          title: `菜谱${index}`,
+          ingredients: [{ name: '盐' }],
+          steps: [{ order: 1, text: '调味' }],
+        })),
+      })
+      .expect(422);
+    expect(oversizedImport.body.error.code).toBe('IMPORT_VALIDATION_FAILED');
   });
 
   it('rejects unknown kitchen and history input fields before database access', async () => {
