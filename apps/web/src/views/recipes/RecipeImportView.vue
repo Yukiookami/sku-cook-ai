@@ -297,6 +297,12 @@ function leave() {
       >
         {{ exporting ? '导出中…' : '导出全部菜谱 JSON' }}
       </button>
+      <RouterLink
+        class="button button-secondary full-width excel-import-link"
+        to="/recipes/import/excel"
+      >
+        使用 Excel 模板导入
+      </RouterLink>
       <div v-if="exporting && exportProgress" class="transfer-progress" role="status">
         <p>{{ exportProgress.message }}</p>
         <div
@@ -477,6 +483,11 @@ function leave() {
 </template>
 
 <style scoped>
+.excel-import-link {
+  margin-top: 10px;
+  text-decoration: none;
+}
+
 .transfer-progress {
   margin-top: 12px;
 }

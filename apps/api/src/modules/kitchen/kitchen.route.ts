@@ -4,24 +4,26 @@ import {
   KitchenRevisionInputSchema,
 } from '@sku-cook/shared';
 import type { FastifyInstance } from 'fastify';
+import { authenticatedUser } from '../auth/auth.session.js';
 import { ApiError } from '../common/errors.js';
 import { readKitchenState, sessionConflict, withUserLock } from './kitchen.service.js';
 
 export async function kitchenRoutes(app: FastifyInstance) {
-  app.get('/kitchen/session', async () =>
-    app.prisma.$transaction((tx) => readKitchenState(tx, app), {
+  app.get('/kitchen/session', async (request) =>
+    app.prisma.$transaction((tx) => readKitchenState(tx, app, authenticatedUser(request).id), {
       isolationLevel: 'RepeatableRead',
     }),
   );
 
   app.put('/kitchen/session', async (request) => {
+    const userId = authenticatedUser(request).id;
     const input = KitchenReplaceInputSchema.parse(request.body);
-    return withUserLock(app, async (tx) => {
-      const current = await tx.kitchenSession.findUnique({ where: { userId: app.defaultUserId } });
+    return withUserLock(app, userId, async (tx) => {
+      const current = await tx.kitchenSession.findUnique({ where: { userId } });
       const revision = current?.revision ?? 0;
       if (revision !== input.expectedRevision) throw sessionConflict();
       const recipes = await tx.recipe.findMany({
-        where: { userId: app.defaultUserId, id: { in: input.items.map((item) => item.recipeId) } },
+        where: { userId, id: { in: input.items.map((item) => item.recipeId) } },
         select: { id: true },
       });
       const available = new Set(recipes.map(({ id }) => id));
@@ -47,7 +49,7 @@ export async function kitchenRoutes(app: FastifyInstance) {
           })
         : await tx.kitchenSession.create({
             data: {
-              userId: app.defaultUserId,
+              userId,
               activeRecipeId: input.items[0]?.recipeId ?? null,
               revision: 1,
               updatedAt,
@@ -55,15 +57,16 @@ export async function kitchenRoutes(app: FastifyInstance) {
             },
           });
       void session;
-      return readKitchenState(tx, app);
+      return readKitchenState(tx, app, userId);
     });
   });
 
   app.patch('/kitchen/session/active', async (request) => {
+    const userId = authenticatedUser(request).id;
     const input = KitchenActiveInputSchema.parse(request.body);
-    return withUserLock(app, async (tx) => {
+    return withUserLock(app, userId, async (tx) => {
       const current = await tx.kitchenSession.findUnique({
-        where: { userId: app.defaultUserId },
+        where: { userId },
         include: { items: { select: { recipeId: true } } },
       });
       if ((current?.revision ?? 0) !== input.expectedRevision) throw sessionConflict();
@@ -82,14 +85,15 @@ export async function kitchenRoutes(app: FastifyInstance) {
           },
         });
       }
-      return readKitchenState(tx, app);
+      return readKitchenState(tx, app, userId);
     });
   });
 
   app.delete('/kitchen/session', async (request) => {
+    const userId = authenticatedUser(request).id;
     const input = KitchenRevisionInputSchema.parse(request.body);
-    return withUserLock(app, async (tx) => {
-      const current = await tx.kitchenSession.findUnique({ where: { userId: app.defaultUserId } });
+    return withUserLock(app, userId, async (tx) => {
+      const current = await tx.kitchenSession.findUnique({ where: { userId } });
       if ((current?.revision ?? 0) !== input.expectedRevision) throw sessionConflict();
       if (current) {
         const hasItems = await tx.kitchenSessionRecipe.count({
@@ -103,15 +107,16 @@ export async function kitchenRoutes(app: FastifyInstance) {
           });
         }
       }
-      return readKitchenState(tx, app);
+      return readKitchenState(tx, app, userId);
     });
   });
 
   app.post('/kitchen/session/complete', async (request) => {
+    const userId = authenticatedUser(request).id;
     const input = KitchenRevisionInputSchema.parse(request.body);
-    return withUserLock(app, async (tx) => {
+    return withUserLock(app, userId, async (tx) => {
       const current = await tx.kitchenSession.findUnique({
-        where: { userId: app.defaultUserId },
+        where: { userId },
         include: {
           items: {
             orderBy: { position: 'asc' },
@@ -123,12 +128,12 @@ export async function kitchenRoutes(app: FastifyInstance) {
       if (!current || current.items.length === 0) {
         throw new ApiError(409, 'KITCHEN_SESSION_EMPTY', '厨房菜单为空，无法记录完成');
       }
-      if (current.items.some((item) => item.recipe.userId !== app.defaultUserId)) {
+      if (current.items.some((item) => item.recipe.userId !== userId)) {
         throw new Error('Kitchen session contains a recipe outside its owner scope');
       }
       await tx.cookingHistory.create({
         data: {
-          userId: app.defaultUserId,
+          userId,
           source: 'kitchen',
           sourceSessionRevision: current.revision,
           items: {
@@ -146,7 +151,7 @@ export async function kitchenRoutes(app: FastifyInstance) {
         where: { id: current.id },
         data: { activeRecipeId: null, revision: { increment: 1 }, updatedAt: new Date() },
       });
-      return readKitchenState(tx, app);
+      return readKitchenState(tx, app, userId);
     });
   });
 }

@@ -111,7 +111,7 @@ export function randomCandidateIndex(candidateCount: number, random = Math.rando
   return Math.floor(sample * candidateCount);
 }
 
-export async function lockDefaultUser(tx: Prisma.TransactionClient, userId: number) {
+export async function lockUser(tx: Prisma.TransactionClient, userId: number) {
   await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
 }
 

@@ -4,7 +4,7 @@
 
 [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)是目标规划，不是这份实际清单。地图只记录源码、配置、测试、文档与可提交资源；不展开.git、node_modules、dist、coverage、真实.env、运行数据和空目录。依赖、构建与真实配置用途见第3节。
 
-产品名称为“吃什么饭”；仓库和包名保持原工程标识。设计图生成/修改的唯一提示词入口是[提示词文件](../design/screens/images/PROMPTS.md)，按S00–S08查找当前Memo规范、主提示词及补充状态；画面设计书负责交互、字段与验收，不存提示词副本。后续视觉提示更新集中在该文件，业务变更仍同步相关设计；生成新图同时维护图集索引、实际生成记录与本地图，详见[AI工作流](../development/AI_WORKFLOW.md#7-设计图提示词与版本维护)。S00技术验证页保留在`/health-check`（非正式产品首页），`/`现导向菜谱一览。S01–S08 Web界面已实现并按V3 Memo图稿还原；API client已按shared Contract接入，A02–A19源码已实现。初始迁移已应用于本地Docker开发数据库，Seed连续两次运行保持一个默认用户；A01、A02、A10、A16已通过真实HTTP只读冒烟检查，但写入事务及完整数据库集成仍待验收。浏览器图稿对照与Android真机验收亦待执行。新版Memo已有9张主图及2张补充图，旧V1/V2 PNG已按用户要求删除，历史输入记录保留。
+产品名称为“吃什么饭”；仓库和包名保持原工程标识。设计图生成/修改的唯一提示词入口是[提示词文件](../design/screens/images/PROMPTS.md)，按S00–S08查找当前Memo规范、主提示词及补充状态；画面设计书负责交互、字段与验收，不存提示词副本。后续视觉提示更新集中在该文件，业务变更仍同步相关设计；生成新图同时维护图集索引、实际生成记录与本地图，详见[AI工作流](../development/AI_WORKFLOW.md#7-设计图提示词与版本维护)。S00技术验证页保留在`/health-check`（非正式产品首页），`/`现导向菜谱一览。S01–S08 Web界面已实现并按V3 Memo图稿还原；S09为复用JSON导入链路的固定Excel模板页面，使用项目样式且没有独立设计图；API client已按shared Contract接入，A02–A19源码已实现。初始迁移已应用于本地Docker开发数据库，Seed连续两次运行保持一个默认用户；A01、A02、A10、A16已通过真实HTTP只读冒烟检查，但写入事务及完整数据库集成仍待验收。浏览器图稿对照与Android真机验收亦待执行。已有9张Memo主图及2张补充图，旧V1/V2 PNG已按用户要求删除，历史输入记录保留。
 
 ## 1. 目录总览
 
@@ -26,9 +26,9 @@ sku-cook-ai/
 │   │       │   └── kitchen/          厨房菜单弹层
 │   │       ├── composables/          厨房屏Wake Lock生命周期
 │   │       ├── domain/               菜谱草稿映射与业务纯函数
-│   │       ├── router/               正式入口及S00–S08路由
+│   │       ├── router/               正式入口及S00–S09路由
 │   │       ├── styles/               全局奶油黄Memo样式与Vant主题
-│   │       └── views/                按业务分类的S00–S08页面
+│   │       └── views/                按业务分类的S00–S09页面
 │   │           ├── system/           技术联通检查
 │   │           ├── recipes/          菜谱页面
 │   │           ├── kitchen/          厨房显示
@@ -101,7 +101,7 @@ sku-cook-ai/
 | 文件                                             | 职责                                                                       |
 | ------------------------------------------------ | -------------------------------------------------------------------------- |
 | `apps/web/.env.example`                          | Web公开API前缀与仅开发服务器使用的代理目标示例。                           |
-| `apps/web/package.json`                          | Vue/Vant/Axios等Web依赖及dev/build/preview/typecheck/test脚本。            |
+| `apps/web/package.json`                          | Vue/Vant/Axios/ExcelJS等Web依赖及dev/build/preview/typecheck/test脚本。   |
 | `apps/web/public/icons/app-icon-192-v1.png` | 饭碗与问号品牌图标；对应尺寸与平台用途见品牌说明。 |
 | `apps/web/public/icons/app-icon-512-v1.png` | 饭碗与问号品牌图标；对应尺寸与平台用途见品牌说明。 |
 | `apps/web/public/icons/app-icon-maskable-512-v1.png` | 饭碗与问号品牌图标；对应尺寸与平台用途见品牌说明。 |
@@ -113,24 +113,30 @@ sku-cook-ai/
 | `apps/web/tsconfig.json`                         | 汇总浏览器应用与Node工具配置的TypeScript引用。                             |
 | `apps/web/tsconfig.app.json`                     | Vue/浏览器源码与DOM/PWA类型检查范围。                                      |
 | `apps/web/tsconfig.node.json`                    | Vite/Vitest工具配置的Node类型检查范围。                                    |
-| `apps/web/vite.config.ts`                        | Vue编译、开发代理、Tailscale主机白名单、“吃什么饭”PWA Manifest与构建配置。 |
+| `apps/web/vite.config.ts`                        | Vue编译、开发代理、Tailscale白名单、PWA Manifest/构建及排除ExcelJS预缓存。 |
 | `apps/web/vitest.config.ts`                      | Vue插件、jsdom和组件测试文件匹配。                                         |
 
 ### 2.5 Web 源码与测试
 
 | 文件                                  | 职责                                                         |
 | ------------------------------------- | ------------------------------------------------------------ |
-| `apps/web/src/main.ts`                | 创建Vue应用、注册Pinia/Router、加载样式并挂载。              |
+| `apps/web/src/main.ts`                | 创建Vue应用、注册Pinia/Router、注入认证401处理器、加载样式并挂载。 |
 | `apps/web/src/App.vue`                | 路由出口与PWA新版本刷新提示。                                |
 | `apps/web/src/vite-env.d.ts`          | Vite和PWA虚拟模块的类型声明。                                |
-| `apps/web/src/api/client.ts`                    | Axios统一baseURL与超时配置。                                                 |
+| `apps/web/src/api/client.ts`                    | Axios统一baseURL/超时配置及业务API 401响应拦截。                              |
+| `apps/web/src/api/auth.ts`                       | A20–A23认证API客户端与shared Contract校验。                                  |
+| `apps/web/src/api/auth-errors.ts`                | 将账号操作的网络与服务端错误转换为可读提示。                                |
 | `apps/web/src/api/health.ts`                    | 请求health并用shared Schema校验响应。                                        |
 | `apps/web/src/api/recipes.ts`                   | A02–A09、A14、A19菜谱接口 typed client；请求与响应由shared Schema校验。        |
 | `apps/web/src/api/kitchen.ts`                   | A10–A13、A15厨房接口 typed client；携带会话revision。                         |
 | `apps/web/src/api/cooking-history.ts`           | A16–A18做饭历史接口 typed client。                                            |
 | `apps/web/src/api/errors.ts`                    | 将网络与HTTP状态转换为可读提示，并从shared错误Contract提取导入问题。          |
 | `apps/web/src/api/clients.test.ts`              | 使用Contract合法响应和测试HTTP Adapter验证业务API路径/请求体/响应层级/204。 |
-| `apps/web/src/components/common/PageHeader.vue` | 业务子页统一返回、标题与右侧操作。                                            |
+| `apps/web/src/components/common/PageHeader.vue` | 业务子页统一返回、标题、右侧操作和账号菜单。                                  |
+| `apps/web/src/components/common/AccountMenu.vue` | 展示当前用户名并提供退出/切换账号入口。                                       |
+| `apps/web/src/auth/session.ts`                   | 保存当前前端用户状态并协调账号切换后的页面会话。                             |
+| `apps/web/src/auth/unauthorized.ts`               | 处理业务 API 401，清理用户状态并导航到登录页。                               |
+| `apps/web/src/auth/auth.test.ts`                  | 验证会话守卫、账号登录注册/退出及业务401清理导航。                           |
 | `apps/web/src/components/recipes/RecipeForm.vue` | 新增/编辑表单协调：草稿、shared校验、标签读取、提交与子组件组合。             |
 | `apps/web/src/components/recipes/AutocompleteInput.vue` | 菜谱表单联想输入、焦点/键盘选择和显式边界内的弹层布局。                  |
 | `apps/web/src/components/recipes/AutocompleteInput.test.ts` | 验证输入/选择事件、IME、关闭、弹层边界与键盘滚动。                          |
@@ -146,20 +152,28 @@ sku-cook-ai/
 | `apps/web/src/composables/useWakeLock.test.ts`  | 验证迟到的Wake Lock sentinel在菜单清空或组件卸载后释放。                     |
 | `apps/web/src/domain/recipe-form.ts` | 菜谱草稿类型、回填、数量单位解析、shared校验映射与错误字段定位的纯函数。      |
 | `apps/web/src/domain/recipe-form.test.ts` | 验证编辑回填保留原数量/单位边界、可选数字与自定义/范围用量解析。              |
-| `apps/web/src/router/index.ts`                   | `/`正式重定向菜谱，注册S00–S08及未知路径。                                    |
+| `apps/web/src/domain/recipe-excel-import.ts` | 生成含固定示例行的菜谱Excel模板，跳过第2行示例并将其余工作表数据转换为共享导入输入形状。 |
+| `apps/web/src/domain/recipe-excel-import.test.ts` | 验证示例行跳过、模板结构、菜谱字段/多行转换及工作簿格式边界。                    |
+| `apps/web/src/domain/recipe-export.ts` | 将菜谱详情转换为符合共享导入Contract的单菜JSON导出数据。 |
+| `apps/web/src/domain/recipe-export.test.ts` | 验证单菜导出字段、可导入格式及数据库元数据排除。 |
+| `apps/web/src/router/index.ts`                   | `/`正式重定向菜谱，注册S00–S10、认证守卫及未知路径。                          |
 | `apps/web/src/styles/main.css`                   | 奶油黄Memo主题、响应式页面、厨房横竖屏和安全区布局。                          |
 | `apps/web/src/styles/vant-theme.css`              | 奶油黄Memo色彩与Vant文字/背景/边框变量。                                      |
 | `apps/web/src/views/system/HomeView.vue` | S00技术联通检查页；不验证数据库，不是正式业务首页。                            |
 | `apps/web/src/views/system/HomeView.test.ts` | 验证health初始、成功、失败提示与重试。                                         |
+| `apps/web/src/views/account/AccountView.vue` | S10登录/开放注册表单、认证错误提示及登录后站内跳转。                          |
 | `apps/web/src/views/recipes/RecipeListView.vue` | S01列表、搜索/tag过滤、分页、随机推荐、多选与导航。                          |
 | `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发与初次加载错误状态。                                  |
 | `apps/web/src/views/recipes/RecipeImportView.test.ts` | 验证A08/A09导入流程、A19下载状态及文件选择/模式切换竞态。                  |
-| `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情、份数参考换算、编辑/删除/手动历史入口及单菜发送。                   |
+| `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情、份数参考换算、单菜JSON导出、编辑/删除/手动历史入口及单菜发送。    |
+| `apps/web/src/views/recipes/RecipeDetailView.test.ts` | 验证单菜JSON文件下载及仅导出当前菜谱的入口行为。 |
 | `apps/web/src/views/recipes/RecipeCreateView.vue` | S03新增页，使用共用表单并保留失败草稿。                                      |
 | `apps/web/src/views/recipes/RecipeCreateView.test.ts` | 验证新增保存成功后跳转不会误触发未保存提醒。                               |
 | `apps/web/src/views/recipes/RecipeEditView.vue` | S04读取、回填并完整替换菜谱，复用新增表单。                                 |
 | `apps/web/src/views/recipes/RecipeEditView.test.ts` | 验证菜谱ID切换后逆序返回的旧GET不会覆盖当前编辑数据。                      |
 | `apps/web/src/views/recipes/RecipeImportView.vue` | S05 菜谱JSON导入/导出、文件/粘贴、预校验与完整菜库备份。                |
+| `apps/web/src/views/recipes/RecipeExcelImportView.vue` | S09固定Excel模板导入页面，显示解析预览并复用A08/A09校验及写入。        |
+| `apps/web/src/views/recipes/RecipeExcelImportView.test.ts` | 验证S09模板说明、A08/A09复用、错误行定位与本地解析错误拦截。           |
 | `apps/web/src/views/kitchen/KitchenDisplayView.vue` | S06厨房轮询、版本写入、整菜滚动/切换、完成历史及Wake Lock。                |
 | `apps/web/src/views/history/CookingHistoryView.test.ts` | 验证历史初次读取失败后可重试并恢复空列表状态。                         |
 | `apps/web/src/views/history/CookingHistoryView.vue` | S08历史分页、最新菜谱打开与删除误记。                                      |
@@ -168,33 +182,44 @@ sku-cook-ai/
 
 | 文件                                          | 职责                                                   |
 | --------------------------------------------- | ------------------------------------------------------ |
-| `apps/api/.env.example`                       | 数据库URL占位、监听地址、日志级别与默认用户配置模板。  |
+| `apps/api/.env.example`                       | 数据库URL占位、监听地址、日志级别与认证运行配置模板。 |
+| `apps/api/README.md`                            | V2认证配置、数据库迁移/Seed顺序与真实集成验收边界。                           |
 | `apps/api/package.json`                       | Fastify/Prisma/shared依赖及开发、生产、验证和db脚本。  |
 | `apps/api/tsconfig.json`                      | API正式源码编译、NodeNext模块解析与dist输出。          |
 | `apps/api/tsconfig.check.json`                | 把测试、Seed和工具配置一起纳入类型检查。               |
 | `apps/api/vitest.config.ts`                   | Node测试环境及API源码/集成测试匹配。                   |
 | `apps/api/prisma.config.ts`                   | Prisma6的schema、迁移目录和Seed命令配置。              |
 | `apps/api/prisma/migrations/20261008132653_initial_recipe_schema/migration.sql` | 首次创建用户、菜谱、厨房会话与做饭历史数据表、外键和索引；已应用于本地开发数据库。 |
+| `apps/api/prisma/migrations/20261011070000_add_account_auth_sessions/migration.sql` | 保留并映射既有用户为Sku001/Legacy账号，新增账号字段与持久会话表；尚未应用，Docker未运行。 |
 | `apps/api/prisma/migrations/migration_lock.toml` | 固定Prisma迁移provider为PostgreSQL。                |
-| `apps/api/prisma/schema.prisma`               | PostgreSQL数据源、保留User并定义菜谱、厨房及历史模型/外键/唯一索引；本地初始迁移已应用，其他环境未应用。 |
-| `apps/api/prisma/seed.ts`                     | 幂等upsert默认用户并负责错误报告和断开连接。           |
-| `apps/api/src/app.ts`                         | 构造Fastify实例，装配统一错误处理、Prisma、no-store及health/业务路由。 |
-| `apps/api/src/server.ts`                      | 环境读取（默认用户/轮询间隔）、监听启动、失败处理与退出。 |
-| `apps/api/src/config/env.ts`                  | Zod校验数据库、端口、监听、日志、默认用户和厨房轮询间隔。 |
+| `apps/api/prisma/schema.prisma`               | PostgreSQL User认证资料/AuthSession、菜谱/厨房/历史模型及外键索引；新增模型迁移尚未应用。 |
+| `apps/api/prisma/seed.ts`                     | 通过本机配置幂等初始化Sku001的空密码哈希，不覆盖已设密码。                       |
+| `apps/api/src/app.ts`                         | 构造Fastify实例，装配统一错误处理、Prisma、认证钩子、health与业务路由。           |
+| `apps/api/src/server.ts`                      | 读取服务/认证配置、启动监听、失败处理与退出。                                   |
+| `apps/api/src/config/env.ts`                  | Zod校验数据库、端口、监听、日志、Origin及厨房轮询间隔。                         |
 | `apps/api/src/config/env.test.ts`             | 验证配置必填、非法URL/端口与默认值。                   |
 | `apps/api/src/plugins/error-handler.ts`       | 基础校验/HTTP/内部异常映射、日志与404响应。            |
 | `apps/api/src/plugins/prisma.ts`              | Prisma Client注入与Fastify关闭时disconnect。           |
 | `apps/api/src/modules/common/errors.ts`       | 统一业务错误、Zod issue格式化及可识别数据库/唯一键错误分类。 |
 | `apps/api/src/modules/health/health.route.ts` | 无数据库查询的GET /api/health存活接口。                |
 | `apps/api/src/modules/health/health.test.ts`  | Supertest验证health Contract、404与500不泄漏内部信息。 |
-| `apps/api/src/modules/recipes/recipe.route.ts` | A02–A09/A14/A19路由、菜谱导入事务、完整导出与响应Contract。 |
-| `apps/api/src/modules/recipes/recipe.service.ts` | 菜谱DTO/导出输入转换、summary、归一化输入、用户锁与菜谱写入公共业务。 |
+| `apps/api/src/modules/recipes/recipe.route.ts` | A02–A09/A14/A19路由、认证用户范围、菜谱导入事务、完整导出与响应Contract。 |
+| `apps/api/src/modules/recipes/recipe.service.ts` | 菜谱DTO/导出输入转换、summary、归一化输入、用户事务锁与菜谱写入公共业务。 |
 | `apps/api/src/modules/recipes/recipe.route.test.ts` | 不连接数据库的路由参数/未知字段/错误envelope边界测试。 |
 | `apps/api/src/modules/recipes/recipe.service.test.ts` | 测试随机候选索引边界与菜谱导出DTO，不模拟数据库业务集成。 |
 | `apps/api/src/modules/kitchen/kitchen.route.ts` | A10–A13/A15厨房快照、revision写入、完成记历史并清空。 |
-| `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及默认用户事务锁。 |
-| `apps/api/src/modules/history/history.route.ts` | A16–A18历史分页、手动记录与整次删除。 |
+| `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及按认证用户事务锁。 |
+| `apps/api/src/modules/history/history.route.ts` | A16–A18认证用户历史分页、手动记录与整次删除。 |
 | `apps/api/src/modules/history/history.service.ts` | 历史DTO与持久化不变量校验。 |
+| `apps/api/src/modules/auth/auth.route.ts` | A20–A23注册、登录、恢复会话与退出HTTP Contract。 |
+| `apps/api/src/modules/auth/auth.route.test.ts` | Mock数据库Supertest覆盖认证边界、Cookie、异常及未登录拦截。 |
+| `apps/api/src/modules/auth/auth.service.ts` | 用户注册/登录事务、密码验证和单浏览器会话轮换。 |
+| `apps/api/src/modules/auth/auth.session.ts` | Origin保护、认证用户提取、持久Cookie与请求认证钩子。 |
+| `apps/api/src/modules/auth/auth.crypto.ts` | scrypt密码哈希、随机会话令牌及SHA-256令牌哈希。 |
+| `apps/api/src/modules/auth/auth.crypto.test.ts` | 验证密码哈希、时序安全认证及会话令牌哈希。 |
+| `apps/api/src/modules/auth/auth.bootstrap.ts` | 通过本机Seed密码为Sku001幂等初始化密码哈希。 |
+| `apps/api/src/modules/auth/auth.bootstrap.test.ts` | Mock数据库验证Seed校验、既有资料保留与重复初始化不覆盖密码。 |
+| `apps/api/src/modules/auth/auth.scope.test.ts` | 验证认证用户范围与业务数据隔离查询。 |
 
 ### 2.7 Shared
 
@@ -202,7 +227,9 @@ sku-cook-ai/
 | -------------------------------------------- | ------------------------------------------------- |
 | `packages/shared/package.json`               | Zod共享包依赖、编译/测试脚本与显式dist导出。      |
 | `packages/shared/tsconfig.json`              | 共享源码编译、声明输出与测试文件编译排除。        |
-| `packages/shared/src/index.ts`               | Health及菜谱、厨房、历史Contract和份数函数公开出口。 |
+| `packages/shared/src/index.ts`               | Health、账号、菜谱、厨房、历史Contract和份数函数公开出口。 |
+| `packages/shared/src/schemas/auth.ts`         | 用户名、8–128位密码及认证请求/用户/响应Zod Contract。 |
+| `packages/shared/src/schemas/auth.test.ts`    | 验证账号格式、密码边界、严格请求与公开响应字段。 |
 | `packages/shared/src/schemas/health.ts`      | health运行时Zod响应Contract及HealthResponse类型。 |
 | `packages/shared/src/schemas/health.test.ts` | 验证合法health解析与非法状态拒绝。                |
 | `packages/shared/src/schemas/recipe.ts`      | 菜谱输入/响应、摘要、查询、随机、JSON导入/导出Schema与限制常量。 |
@@ -218,8 +245,8 @@ sku-cook-ai/
 | ---------------------------------------- | ----------------------------------------------------------------------------------- |
 | `docs/architecture/PROJECT_MAP.md`       | 本实际文件清单和职责说明，增删移动/职责变化同次维护。                               |
 | `docs/architecture/PROJECT_STRUCTURE.md` | 完整目标目录规划与各层职责，不代表所有规划已实现。                                  |
-| `docs/architecture/TECH_STACK.md`        | 技术栈、开发边界、默认用户、部署与平板设备方案。                                    |
-| `docs/requirements/REQUIREMENTS_V1.md`   | V1纯文字菜谱、随机推荐、厨房/管理范围与验收，以及V2随机外卖分享链接需求和待定细节。 |
+| `docs/architecture/TECH_STACK.md`        | 技术栈、开发边界、家庭账号、部署与平板设备方案。                                    |
+| `docs/requirements/REQUIREMENTS_V1.md`   | V1纯文字菜谱范围与验收，以及V2随机外卖、Excel导入和账号规则/状态。                  |
 | `docs/development/SETUP.md`              | 本地环境配置、数据库首次初始化、日常启动/停止命令与常见问题。                       |
 | `docs/development/AI_WORKFLOW.md`        | Instructions、Agents、Skills的加载、选择、交接、地图及设计图提示词/版本维护方式。   |
 
@@ -235,6 +262,8 @@ sku-cook-ai/
 | `docs/design/screens/S03_RECIPE_CREATE.md`   | 新增表单、动态食材/步骤、校验、验收与独立提示词链接。                         |
 | `docs/design/screens/S04_RECIPE_EDIT.md`     | 编辑回填、完整替换、离开提醒、验收与独立提示词链接。                          |
 | `docs/design/screens/S05_RECIPE_IMPORT.md`   | 菜谱JSON导入/导出、预校验、错误报告、验收与独立提示词链接。                   |
+| `docs/design/screens/S09_RECIPE_EXCEL_IMPORT.md` | 固定单工作表模板、字段映射、本地解析、A08/A09流程与错误验收。             |
+| `docs/design/screens/S10_ACCOUNT.md`             | V2账号登录/注册、会话恢复/守卫、退出切换与错误状态设计。                  |
 | `docs/design/screens/S06_KITCHEN_DISPLAY.md` | 厨房多状态/整菜滚动/切换/轮询/常亮/断网设计、验收与独立提示词链接。            |
 | `docs/design/screens/S07_KITCHEN_PANEL.md`   | 手机发送/查看/替换/清空厨房菜单弹层设计、验收与独立提示词链接。               |
 | `docs/design/screens/S08_COOKING_HISTORY.md` | 历史分组/触底分页、最新做法与目标份数、已删菜保留及整次误记删除设计；Web已实现，数据库验收待做。 |
@@ -285,6 +314,10 @@ sku-cook-ai/
 | `docs/design/apis/A17_COOKING_HISTORY_POST.md`   | 单菜手动记录、服务端时间/菜名/份数与厨房无副作用设计，待实现。                     |
 | `docs/design/apis/A18_COOKING_HISTORY_DELETE.md` | 删除整次误记历史、归属/事务/204及不恢复厨房的设计，待实现。                        |
 | `docs/design/apis/A19_RECIPE_EXPORT_GET.md`      | 默认用户完整菜库JSON快照导出、迁移格式、超限失败与验收设计。                      |
+| `docs/design/apis/A20_AUTH_REGISTER_POST.md`    | 开放注册请求、密码约束、原子创建用户会话与业务错误设计。                         |
+| `docs/design/apis/A21_AUTH_LOGIN_POST.md`       | 大小写不敏感登录、密码验证、会话轮换及统一失败响应设计。                         |
+| `docs/design/apis/A22_AUTH_SESSION_GET.md`      | 持久会话恢复、Cookie滚动续期、401与认证用户范围设计。                           |
+| `docs/design/apis/A23_AUTH_SESSION_DELETE.md`   | 幂等撤销当前会话、清理Cookie并保留其他设备及业务数据设计。                      |
 
 ## 3. 不展开的目录与运行文件
 
@@ -297,7 +330,7 @@ sku-cook-ai/
 
 ## 4. 当前边界与维护
 
-已实现基础首页、health、完整shared业务Contract、A02–A19业务源码、Prisma Schema、默认User模型/Seed源码、工程工具与PWA基础。初始版本化迁移已应用于本地开发数据库；仍需按具体设计书确认业务数据库集成、HTTPS/PWA和Wake Lock实测，不凭源码/Schema存在断言运行时已成功。
+已实现基础首页、health、A02–A23源码/shared Contract、账号画面和认证用户业务隔离、Prisma Schema及Sku001 Seed源码。认证迁移尚未应用且Seed未运行；Docker不可用，仍需按设计书完成真实数据库、跨账号隔离、Cookie与HTTPS/PWA/Wake Lock验收，不凭源码/Schema存在断言运行时已成功。
 
 本次新增Instructions、6个Skills、3个Agents和只读地图检查工具。没有AGENTS.md，避免双份全局规则漂移；角色工具权限与操作流程见 [AI_WORKFLOW.md](../development/AI_WORKFLOW.md)。
 

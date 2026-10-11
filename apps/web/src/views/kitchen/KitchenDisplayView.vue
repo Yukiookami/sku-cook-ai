@@ -5,6 +5,7 @@ import { apiErrorMessage } from '../../api/errors';
 import { completeKitchenMenu, getKitchenState, setKitchenActiveRecipe } from '../../api/kitchen';
 import { useWakeLock } from '../../composables/useWakeLock';
 import { scaleIngredientAmount } from '@sku-cook/shared';
+import AccountMenu from '../../components/common/AccountMenu.vue';
 
 type KitchenLine = { label: string; text: string };
 const wakeLockNoticeStorageKey = 'sku-cook-ai:kitchen-wake-lock-notice-dismissed';
@@ -271,6 +272,7 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="kitchen-screen" :class="{ 'kitchen-landscape': landscape }">
+    <AccountMenu class="kitchen-account-menu" />
     <p v-if="initialLoading" class="kitchen-status" role="status">正在读取厨房菜单</p>
     <section v-else-if="loadError && !stateResult" class="kitchen-empty" role="alert">
       <h1>无法读取厨房菜单</h1>

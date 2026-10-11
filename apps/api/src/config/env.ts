@@ -10,7 +10,14 @@ const ConfigSchema = z.object({
       (url) => url.startsWith('postgres://') || url.startsWith('postgresql://'),
       'DATABASE_URL must use PostgreSQL',
     ),
-  DEFAULT_USER_ID: z.coerce.number().int().positive().default(1),
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  APP_ORIGIN: z
+    .url()
+    .refine((value) => {
+      const url = new URL(value);
+      return ['http:', 'https:'].includes(url.protocol) && url.origin === value;
+    }, 'APP_ORIGIN must be an exact HTTP(S) origin')
+    .optional(),
   KITCHEN_POLL_INTERVAL_SECONDS: z.coerce.number().int().min(5).max(300).default(10),
 });
 

@@ -1,4 +1,4 @@
-# V1 共通设计与数据 Contract
+# 共通设计与数据 Contract（V1 业务 / V2 账号）
 
 状态：设计约束已确定；shared Contract 与 A02–A18 API 源码已实现，Prisma Schema 已扩展。初始版本化迁移已应用于本地Docker开发数据库，Seed连续执行两次保持一个默认用户；A01、A02、A10、A16真实HTTP只读冒烟检查通过。业务写入、事务与并发数据库集成仍未验收。
 
@@ -6,7 +6,23 @@
 
 Vue 3 + Vant 4 + CSS，页面使用 Composition API；Axios 请求集中于 api 目录。后端 Fastify route → service → Prisma，只有确有需要才拆 controller / repository。PostgreSQL 保存数据；JSON导出由浏览器下载，导入读取文本后提交 application/json，不在服务端上传或保存文件。
 
-所有业务归属由服务端 `DEFAULT_USER_ID` 确定，客户端不提供 userId。每次查改删都带服务端用户过滤；无登录仅限可信家庭局域网，不是公网安全方案。业务 API 返回 `Cache-Control: no-store`，Service Worker 不缓存 API。
+V2 所有业务归属由服务端持久会话确定，客户端不提供 userId。每次查改删、导入预校验/正式导入、标签、随机和导出均带认证用户过滤；不再使用 `DEFAULT_USER_ID`。业务 API 返回 `Cache-Control: no-store`，Service Worker 不缓存 API。旧版默认用户的历史迁移验收不代表 V2 认证已通过数据库验收。
+
+### 1.1 V2 账号、会话与隔离
+
+状态：shared / API 已实现；新增版本化迁移由 Prisma 离线差异工具生成并补充回填。当前 Docker engine 不可用，**认证迁移未应用、Seed 未执行、真实数据库集成未验收**。Web 登录页、路由守卫、账号切换清理与调用方适配不属于本次后端交付。
+
+- 一次方法+路径一份设计：[A20 注册](apis/A20_AUTH_REGISTER_POST.md)、[A21 登录](apis/A21_AUTH_LOGIN_POST.md)、[A22 当前会话](apis/A22_AUTH_SESSION_GET.md)、[A23 退出](apis/A23_AUTH_SESSION_DELETE.md)。开放注册，不收邮箱，无密码找回、无 AI/认证框架。
+- `AuthCredentialsSchema` 为严格 `{username,password}`。username 3–32 个 ASCII 字符，以英文字母开头，后续仅字母/数字/下划线；不 trim，保留大小写显示。唯一键为小写 usernameKey，数据库唯一索引及 `username_key = lower(username)` CHECK 兜底。password 8–128 字符，不能全为空白；不 trim，不要求任意字符类别，不输出密码到日志。
+- 注册 201 / 登录 200 / 当前会话 200 均为严格 `{user:{id,username}}`（`AuthResponseSchema`），不返回 name、email、哈希、token 或业务 userId。退出 204 空响应。
+- 公开白名单仅 `GET /api/health`、注册/登录 POST 与退出 DELETE。当前会话 GET 和现有 A02–A19 全部需登录；缺失/无效 token 为 401 `UNAUTHENTICATED`，认证先于业务输入校验。外部用户的资源 id 视为 404，不披露归属；数据库不可用保持 503，不伪装成未登录或空业务数据。
+- Node crypto scrypt（版本化 `scrypt-v1`、随机盐、N=32768/r=8/p=1、64 字节派生值）保存密码哈希，验证使用 timingSafeEqual。登录不存在/无密码账号也运行 KDF，统一 401 `INVALID_CREDENTIALS`。
+- 32 字节随机不透明 token 仅通过 `sku_session` cookie 发送；数据库 `auth_sessions` 只保存 SHA-256 token 哈希、userId 与 createdAt，不设到期、空闲计时或自动清理。Cookie 为 HttpOnly、SameSite=Lax、Path=/，生产 Secure，Max-Age=10 年；认证请求滚动续期。服务端无自动失效；浏览器自身清除 cookie、设备数据删除或浏览器持久存储限制不由服务端保证。
+- 注册用户与首个会话同一事务；登录/注册成功撤销该浏览器原 token 并换发新 token，失败不改变原会话。其他设备会话不受影响。退出幂等，仅撤销当前 token，不是退出所有设备。实际撤销失败时返回错误，不返回假 204。
+- 所有非安全方法检查 Origin / Sec-Fetch-Site，拒绝跨站写入与登录 CSRF，403 `INVALID_ORIGIN`。默认精确同源；Vite 代理或反向代理场景用服务端 `APP_ORIGIN` 配置精确浏览器 origin，不开启通配 CORS。生产必须 HTTPS。
+- 用户行锁按认证 userId 隔离，厨房读取仍为 RepeatableRead 快照。厨房成员/历史引用必须属于同一认证用户；编辑/删除只同步该用户厨房。不同用户可使用相同菜名和各自 revision。
+- 迁移保留所有既有用户 id、name/email/password_hash 与业务外键；id=1 回填账号名 `Sku001`，其他旧用户回填 `Legacy<id>`。旧空密码在 Seed 通过本机 `BOOTSTRAP_USER_PASSWORD` 单向哈希初始化 id=1，已有密码不覆盖，重复 Seed 不改资料或业务数据。其他旧用户若无密码仍不可登录，不以注册重新认领已有数据。
+- S01–S09 调用注意：先取得当前会话；401 后阻止业务请求并提示登录，不以空列表替代失败；账号切换/退出须清理客户端菜谱、厨房及历史缓存和轮询。相对 `/api` 同源 cookie 自动发送，跨源必须协调精确 Origin 与 credentials（本次不新增跨源能力）。
 
 ## 2. 视觉与 AI 画图通用规则
 

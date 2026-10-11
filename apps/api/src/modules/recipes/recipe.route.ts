@@ -17,11 +17,12 @@ import {
 } from '@sku-cook/shared';
 import { Prisma } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
+import { authenticatedUser } from '../auth/auth.session.js';
 import { ApiError, isRecipeTitleUniqueViolation, validationIssues } from '../common/errors.js';
 import {
   createRecipe,
   findTitleConflicts,
-  lockDefaultUser,
+  lockUser,
   parseRecipeInput,
   randomCandidateIndex,
   recipeExportDto,
@@ -34,6 +35,7 @@ const importValidationFailed = (issues: ApiErrorIssue[]) =>
 
 async function inspectImport(
   app: FastifyInstance,
+  userId: number,
   payload: unknown,
 ): Promise<{
   inputs: ReturnType<typeof parseRecipeInput>[];
@@ -91,7 +93,7 @@ async function inspectImport(
   const candidates = [...titles.keys()];
   if (candidates.length) {
     const existing = await app.prisma.recipe.findMany({
-      where: { userId: app.defaultUserId, title: { in: candidates } },
+      where: { userId, title: { in: candidates } },
       select: { title: true },
     });
     for (const record of existing) {
@@ -117,9 +119,10 @@ function parseRecipeEntry(value: unknown): {
 export async function recipeRoutes(app: FastifyInstance) {
   // Static endpoints are declared before /recipes/:id for clarity; Fastify also gives static paths priority.
   app.get('/recipes/tags', async (request) => {
+    const userId = authenticatedUser(request).id;
     RecipeTagsQuerySchema.parse(request.query);
     const entries = await app.prisma.recipeTag.findMany({
-      where: { recipe: { userId: app.defaultUserId } },
+      where: { recipe: { userId } },
       select: { value: true },
     });
     const tags = [...new Set(entries.map(({ value }) => value))].sort((left, right) =>
@@ -128,11 +131,12 @@ export async function recipeRoutes(app: FastifyInstance) {
     return RecipeTagsResponseSchema.parse({ tags });
   });
 
-  app.get('/recipes/export', async (_request, reply) => {
+  app.get('/recipes/export', async (request, reply) => {
+    const userId = authenticatedUser(request).id;
     const records = await app.prisma.$transaction(
       (tx) =>
         tx.recipe.findMany({
-          where: { userId: app.defaultUserId },
+          where: { userId },
           include: {
             ingredients: { orderBy: { position: 'asc' } },
             steps: { orderBy: { order: 'asc' } },
@@ -159,9 +163,10 @@ export async function recipeRoutes(app: FastifyInstance) {
   });
 
   app.get('/recipes/random', async (request) => {
+    const userId = authenticatedUser(request).id;
     const query = RecipeRandomQuerySchema.parse(request.query);
     const records = await app.prisma.recipe.findMany({
-      where: { userId: app.defaultUserId },
+      where: { userId },
       include: { tags: { orderBy: { position: 'asc' } } },
       orderBy: [{ id: 'asc' }],
     });
@@ -176,8 +181,9 @@ export async function recipeRoutes(app: FastifyInstance) {
   });
 
   app.get('/recipes', async (request) => {
+    const userId = authenticatedUser(request).id;
     const query = RecipeListQuerySchema.parse(request.query);
-    const where: Prisma.RecipeWhereInput = { userId: app.defaultUserId };
+    const where: Prisma.RecipeWhereInput = { userId };
     if (query.q) {
       where.title = {
         contains: query.q.replace(/[\\%_]/g, '\\$&'),
@@ -201,7 +207,7 @@ export async function recipeRoutes(app: FastifyInstance) {
   });
 
   app.post('/recipes/import/validate', { bodyLimit: RECIPE_IMPORT_MAX_BYTES }, async (request) => {
-    const result = await inspectImport(app, request.body);
+    const result = await inspectImport(app, authenticatedUser(request).id, request.body);
     if (result.issues.length) throw importValidationFailed(result.issues);
     return RecipeImportValidationResponseSchema.parse({
       valid: true,
@@ -211,9 +217,10 @@ export async function recipeRoutes(app: FastifyInstance) {
   });
 
   app.post('/recipes/import', { bodyLimit: RECIPE_IMPORT_MAX_BYTES }, async (request, reply) => {
+    const userId = authenticatedUser(request).id;
     const outer = RecipeImportInputSchema.safeParse(request.body);
     if (!outer.success) {
-      const checked = await inspectImport(app, request.body);
+      const checked = await inspectImport(app, userId, request.body);
       throw importValidationFailed(checked.issues);
     }
     const payload = outer.data;
@@ -234,10 +241,10 @@ export async function recipeRoutes(app: FastifyInstance) {
     try {
       const recipeIds = await app.prisma.$transaction(
         async (tx) => {
-          await lockDefaultUser(tx, app.defaultUserId);
+          await lockUser(tx, userId);
           const existing = await tx.recipe.findMany({
             where: {
-              userId: app.defaultUserId,
+              userId,
               title: { in: payload.recipes.map((recipe) => recipe.title) },
             },
             select: { title: true },
@@ -254,7 +261,7 @@ export async function recipeRoutes(app: FastifyInstance) {
           }
           const ids: number[] = [];
           for (const recipe of payload.recipes) {
-            const created = await createRecipe(tx, app.defaultUserId, recipe);
+            const created = await createRecipe(tx, userId, recipe);
             ids.push(created.id);
           }
           return ids;
@@ -269,7 +276,7 @@ export async function recipeRoutes(app: FastifyInstance) {
       if (isRecipeTitleUniqueViolation(error)) {
         const conflicts = await app.prisma.recipe.findMany({
           where: {
-            userId: app.defaultUserId,
+            userId,
             title: { in: payload.recipes.map(({ title }) => title) },
           },
           select: { title: true },
@@ -290,9 +297,10 @@ export async function recipeRoutes(app: FastifyInstance) {
   });
 
   app.get('/recipes/:id', async (request) => {
+    const userId = authenticatedUser(request).id;
     const { id } = RecipeIdParamsSchema.parse(request.params);
     const record = await app.prisma.recipe.findFirst({
-      where: { id, userId: app.defaultUserId },
+      where: { id, userId },
       include: {
         ...{
           ingredients: { orderBy: { position: 'asc' as const } },
@@ -306,16 +314,17 @@ export async function recipeRoutes(app: FastifyInstance) {
   });
 
   app.post('/recipes', async (request, reply) => {
+    const userId = authenticatedUser(request).id;
     const input = parseRecipeInput(request.body);
     try {
       const recipe = await app.prisma.$transaction(async (tx) => {
-        await lockDefaultUser(tx, app.defaultUserId);
-        const duplicate = await findTitleConflicts(tx, app.defaultUserId, [input.title]);
+        await lockUser(tx, userId);
+        const duplicate = await findTitleConflicts(tx, userId, [input.title]);
         if (duplicate.length)
           throw new ApiError(409, 'RECIPE_TITLE_CONFLICT', '菜名已存在', [
             { path: ['title'], message: '已有同名菜谱' },
           ]);
-        return createRecipe(tx, app.defaultUserId, input);
+        return createRecipe(tx, userId, input);
       });
       reply.header('Location', `/api/recipes/${recipe.id}`);
       return reply.code(201).send({ recipe: recipeDto(recipe) });
@@ -330,23 +339,24 @@ export async function recipeRoutes(app: FastifyInstance) {
   });
 
   app.put('/recipes/:id', async (request) => {
+    const userId = authenticatedUser(request).id;
     const { id } = RecipeIdParamsSchema.parse(request.params);
     const input = parseRecipeInput(request.body);
     try {
       const updated = await app.prisma.$transaction(async (tx) => {
-        await lockDefaultUser(tx, app.defaultUserId);
+        await lockUser(tx, userId);
         const existing = await tx.recipe.findFirst({
-          where: { id, userId: app.defaultUserId },
+          where: { id, userId },
           select: { id: true },
         });
         if (!existing) throw new ApiError(404, 'RECIPE_NOT_FOUND', '菜谱不存在');
-        if ((await findTitleConflicts(tx, app.defaultUserId, [input.title], id)).length) {
+        if ((await findTitleConflicts(tx, userId, [input.title], id)).length) {
           throw new ApiError(409, 'RECIPE_TITLE_CONFLICT', '菜名已存在', [
             { path: ['title'], message: '已有同名菜谱' },
           ]);
         }
         const inKitchen = await tx.kitchenSessionRecipe.findFirst({
-          where: { recipeId: id, kitchenSession: { userId: app.defaultUserId } },
+          where: { recipeId: id, kitchenSession: { userId } },
           select: { kitchenSessionId: true },
         });
         const record = await tx.recipe.update({
@@ -407,16 +417,17 @@ export async function recipeRoutes(app: FastifyInstance) {
   });
 
   app.delete('/recipes/:id', async (request, reply) => {
+    const userId = authenticatedUser(request).id;
     const { id } = RecipeIdParamsSchema.parse(request.params);
     await app.prisma.$transaction(async (tx) => {
-      await lockDefaultUser(tx, app.defaultUserId);
+      await lockUser(tx, userId);
       const existing = await tx.recipe.findFirst({
-        where: { id, userId: app.defaultUserId },
+        where: { id, userId },
         select: { id: true },
       });
       if (!existing) throw new ApiError(404, 'RECIPE_NOT_FOUND', '菜谱不存在');
       const membership = await tx.kitchenSessionRecipe.findFirst({
-        where: { recipeId: id, kitchenSession: { userId: app.defaultUserId } },
+        where: { recipeId: id, kitchenSession: { userId } },
         select: { kitchenSessionId: true, kitchenSession: { select: { activeRecipeId: true } } },
       });
       if (membership) {

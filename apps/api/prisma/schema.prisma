@@ -10,6 +10,8 @@ datasource db {
 model User {
   id               Int              @id @default(autoincrement())
   name             String
+  username         String           @db.VarChar(32)
+  usernameKey      String           @unique @map("username_key") @db.VarChar(32)
   email            String?          @unique
   passwordHash     String?          @map("password_hash")
   createdAt        DateTime         @default(now()) @map("created_at")
@@ -17,8 +19,19 @@ model User {
   recipes          Recipe[]
   kitchenSession   KitchenSession?
   cookingHistories CookingHistory[]
+  authSessions     AuthSession[]
 
   @@map("users")
+}
+
+model AuthSession {
+  tokenHash String   @id @map("token_hash") @db.VarChar(64)
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_sessions")
 }
 
 model Recipe {

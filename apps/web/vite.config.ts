@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,png,ico}'],
+          globIgnores: ['**/exceljs*.js'],
           navigateFallbackDenylist: [/^\/api(?:\/|$)/],
           runtimeCaching: [],
         },

@@ -95,6 +95,10 @@ function multiRecipeState(activeRecipeId: number, revision: number) {
   });
 }
 
+function mountKitchenView() {
+  return mount(KitchenDisplayView, { global: { stubs: { AccountMenu: true } } });
+}
+
 describe('KitchenDisplayView A15 completion', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -106,7 +110,7 @@ describe('KitchenDisplayView A15 completion', () => {
   it('sends the observed revision and only celebrates after the API confirms completion', async () => {
     vi.mocked(getKitchenState).mockResolvedValueOnce(queuedState);
     vi.mocked(completeKitchenMenu).mockResolvedValueOnce(emptyState);
-    const wrapper = mount(KitchenDisplayView);
+    const wrapper = mountKitchenView();
     await flushPromises();
 
     await wrapper.get('.kitchen-primary').trigger('click');
@@ -122,7 +126,7 @@ describe('KitchenDisplayView A15 completion', () => {
     vi.mocked(completeKitchenMenu).mockRejectedValueOnce(
       Object.assign(new Error('timeout'), { isAxiosError: true }),
     );
-    const wrapper = mount(KitchenDisplayView);
+    const wrapper = mountKitchenView();
     await flushPromises();
 
     await wrapper.get('.kitchen-primary').trigger('click');
@@ -138,7 +142,7 @@ describe('KitchenDisplayView A15 completion', () => {
 
   it('shows the complete active recipe in one vertically scrollable view', async () => {
     vi.mocked(getKitchenState).mockResolvedValueOnce(multiRecipeState(102, 7));
-    const wrapper = mount(KitchenDisplayView);
+    const wrapper = mountKitchenView();
     await flushPromises();
 
     expect(wrapper.get('.kitchen-recipe-heading h1').text()).toBe('第二道菜');
@@ -157,13 +161,13 @@ describe('KitchenDisplayView A15 completion', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     vi.mocked(getKitchenState).mockResolvedValue(queuedState);
 
-    const firstVisit = mount(KitchenDisplayView);
+    const firstVisit = mountKitchenView();
     await flushPromises();
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 360 });
     firstVisit.unmount();
 
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
-    const secondVisit = mount(KitchenDisplayView);
+    const secondVisit = mountKitchenView();
     await flushPromises();
 
     expect(scrollTo).toHaveBeenLastCalledWith({
@@ -180,7 +184,7 @@ describe('KitchenDisplayView A15 completion', () => {
 
   it('remembers dismissal of the wake-lock notice on later visits', async () => {
     vi.mocked(getKitchenState).mockResolvedValue(queuedState);
-    const firstVisit = mount(KitchenDisplayView);
+    const firstVisit = mountKitchenView();
     await flushPromises();
     expect(firstVisit.find('.wake-lock-note').exists()).toBe(true);
 
@@ -188,7 +192,7 @@ describe('KitchenDisplayView A15 completion', () => {
     expect(window.localStorage.getItem(wakeLockNoticeStorageKey)).toBe('true');
     firstVisit.unmount();
 
-    const secondVisit = mount(KitchenDisplayView);
+    const secondVisit = mountKitchenView();
     await flushPromises();
     expect(secondVisit.find('.wake-lock-note').exists()).toBe(false);
     secondVisit.unmount();

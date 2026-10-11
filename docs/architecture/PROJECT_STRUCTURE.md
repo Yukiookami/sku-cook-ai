@@ -82,13 +82,19 @@ sku-cook-ai/
 │   │       ├── api/
 │   │       │   ├── client.ts              【基础】统一 Axios 实例
 │   │       │   ├── health.ts              【基础】共享 Schema 校验 API 联通响应
-│   │       │   ├── recipes.ts             【业务】菜谱 API 函数
-│   │       │   └── kitchen.ts             【业务】厨房会话 API 函数
+│       │   │   ├── auth.ts                【V2】账号 API 函数与 shared Contract 校验
+│       │   │   ├── recipes.ts             【业务】菜谱 API 函数
+│       │   │   └── kitchen.ts             【业务】厨房会话 API 函数
+│       │   ├── auth/                      【V2】前端当前账号与失效会话处理
+│       │   │   ├── session.ts
+│       │   │   └── unauthorized.ts
 │   │       ├── layouts/
 │   │       │   └── AppLayout.vue          【按需】多页面复用布局
 │   │       ├── views/
 │   │       │   ├── system/                【基础】非业务联通检查
 │   │       │   │   └── HomeView.vue
+│       │   │   ├── account/               【V2】登录与开放注册
+│       │   │   │   └── AccountView.vue
 │   │       │   ├── recipes/               【业务】菜谱路由页面
 │   │       │   │   ├── RecipeListView.vue
 │   │       │   │   ├── RecipeCreateView.vue
@@ -101,7 +107,8 @@ sku-cook-ai/
 │   │       │       └── CookingHistoryView.vue
 │   │       ├── components/
 │   │       │   ├── common/                【已实现】跨业务可复用组件
-│   │       │   │   └── PageHeader.vue
+│       │   │   │   ├── PageHeader.vue
+│       │   │   │   └── AccountMenu.vue     【V2】当前账号展示及主动退出/切换
 │   │       │   ├── recipes/               【业务】菜谱专用组件
 │   │       │   │   ├── RecipeForm.vue      新增与编辑共用
 │   │       │   │   ├── RecipeBasicFields.vue
@@ -126,7 +133,7 @@ sku-cook-ai/
 │       ├── tsconfig.json                  【基础】API 编译配置
 │       ├── tsconfig.check.json            【基础】包含测试、Seed 与工具配置的类型检查
 │       ├── vitest.config.ts               【基础】后端测试配置
-│       ├── .env.example                   【基础】数据库、默认用户、监听地址与日志级别；厨房配置在业务实现时添加
+│       ├── .env.example                   【基础】数据库、监听地址、日志及认证/厨房配置示例
 │       ├── prisma.config.ts               【基础*】依所选 Prisma 版本配置
 │       ├── prisma/
 │       │   ├── schema.prisma              【基础】User 等数据库模型
@@ -147,6 +154,11 @@ sku-cook-ai/
 │       │       ├── health/                【基础】用于验证 API 启动
 │       │       │   ├── health.route.ts
 │       │       │   └── health.test.ts
+│       │       ├── auth/                  【V2】账号注册/登录、持久会话与密码哈希
+│       │       │   ├── auth.route.ts
+│       │       │   ├── auth.service.ts
+│       │       │   ├── auth.session.ts
+│       │       │   └── auth.crypto.ts
 │       │       ├── recipes/               【业务】菜谱模块
 │       │       │   ├── recipe.route.ts
 │       │       │   ├── recipe.service.ts

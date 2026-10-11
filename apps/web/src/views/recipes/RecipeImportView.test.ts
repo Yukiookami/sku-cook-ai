@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RecipeImportView from './RecipeImportView.vue';
@@ -50,7 +50,7 @@ function mountView() {
   return router.push('/recipes/import').then(async () => {
     await router.isReady();
     return mount(RecipeImportView, {
-      global: { plugins: [router], stubs: { RouterLink: true } },
+      global: { plugins: [router], stubs: { RouterLink: RouterLinkStub } },
     });
   });
 }
@@ -91,6 +91,13 @@ describe('RecipeImportView', () => {
     wrapper.unmount();
   });
 
+  it('provides a separate entry for fixed-template Excel import', async () => {
+    const wrapper = await mountView();
+
+    expect(wrapper.findComponent(RouterLinkStub).props('to')).toBe('/recipes/import/excel');
+    wrapper.unmount();
+  });
+
   it('downloads the complete import-compatible JSON export and reports its recipe count', async () => {
     vi.mocked(exportRecipes).mockResolvedValueOnce({
       version: 1,
@@ -110,7 +117,7 @@ describe('RecipeImportView', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const wrapper = await mountView();
 
-    await wrapper.get('button.full-width').trigger('click');
+    await wrapper.get('.import-intro button').trigger('click');
     await flushPromises();
 
     expect(exportRecipes).toHaveBeenCalledOnce();
@@ -136,7 +143,7 @@ describe('RecipeImportView', () => {
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const wrapper = await mountView();
 
-    await wrapper.get('button.full-width').trigger('click');
+    await wrapper.get('.import-intro button').trigger('click');
     expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('42');
 
     pending.resolve({ version: 1, recipes: [] });
@@ -190,7 +197,7 @@ describe('RecipeImportView', () => {
     vi.mocked(exportRecipes).mockRejectedValueOnce(new Error('offline'));
     const wrapper = await mountView();
 
-    await wrapper.get('button.full-width').trigger('click');
+    await wrapper.get('.import-intro button').trigger('click');
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toContain('导出失败');

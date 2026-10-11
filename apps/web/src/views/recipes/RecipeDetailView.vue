@@ -14,6 +14,7 @@ import KitchenMenuPanel from '../../components/kitchen/KitchenMenuPanel.vue';
 import { apiErrorMessage } from '../../api/errors';
 import { deleteRecipe, getRecipe } from '../../api/recipes';
 import { recordCookingHistory } from '../../api/cooking-history';
+import { createSingleRecipeExport } from '../../domain/recipe-export';
 
 const route = useRoute();
 const router = useRouter();
@@ -27,6 +28,9 @@ const writeError = ref('');
 const showMore = ref(false);
 const showKitchen = ref(false);
 const kitchenSelection = ref<RecipeSummary[]>([]);
+const exportStatus = ref('');
+const exportError = ref('');
+const exporting = ref(false);
 let sequence = 0;
 
 const ingredientGroups = computed(() => {
@@ -131,6 +135,41 @@ function openKitchen() {
 function historyLink() {
   if (!recipe.value) return;
   void router.push({ name: 'cooking-history' });
+}
+
+function exportRecipe() {
+  const currentRecipe = recipe.value;
+  if (!currentRecipe || exporting.value) return;
+
+  exporting.value = true;
+  exportStatus.value = '';
+  exportError.value = '';
+  try {
+    const data = createSingleRecipeExport(currentRecipe);
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safeTitle = [...currentRecipe.title]
+      .map((character) =>
+        /[<>:"/\\|?*]/.test(character) || character.charCodeAt(0) < 32 ? '_' : character,
+      )
+      .join('')
+      .trim();
+    link.href = url;
+    link.download = `${safeTitle || `recipe-${currentRecipe.id}`}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    exportStatus.value = `已导出「${currentRecipe.title}」，JSON文件包含1道菜谱，可在菜谱导入页导入。`;
+    showMore.value = false;
+  } catch {
+    exportError.value = '导出失败，请稍后重试。';
+  } finally {
+    exporting.value = false;
+  }
 }
 
 async function recordCooked() {
@@ -306,6 +345,8 @@ onBeforeUnmount(() => {
         <p v-else class="long-text">{{ recipe.source }}</p>
       </section>
       <p v-if="writeError" class="inline-note" role="status">{{ writeError }}</p>
+      <p v-if="exportStatus" class="inline-note" role="status">{{ exportStatus }}</p>
+      <p v-if="exportError" class="inline-note" role="alert">{{ exportError }}</p>
       <p v-if="writeError.includes('暂未确认')" class="inline-links">
         <button class="text-button" type="button" @click="historyLink">查看做饭历史</button>
       </p>
@@ -336,6 +377,9 @@ onBeforeUnmount(() => {
           >
             编辑菜谱
           </RouterLink>
+          <button class="menu-action" type="button" :disabled="exporting" @click="exportRecipe">
+            {{ exporting ? '正在导出…' : '导出单道菜谱 JSON' }}
+          </button>
           <button class="menu-action" type="button" :disabled="writing" @click="recordCooked">
             {{ writing ? '提交中…' : '记录做过' }}
           </button>

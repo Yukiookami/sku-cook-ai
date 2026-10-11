@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
 import { recipeTotalMinutes, type RecipeSummary } from '@sku-cook/shared';
 import KitchenMenuPanel from '../../components/kitchen/KitchenMenuPanel.vue';
+import AccountMenu from '../../components/common/AccountMenu.vue';
 import { apiErrorMessage } from '../../api/errors';
 import { getRandomRecipe, getRecipeTags, getRecipes } from '../../api/recipes';
 
@@ -276,6 +277,7 @@ onBeforeUnmount(() => {
         <button class="button button-primary compact-button" type="button" @click="showMore = true">
           更多
         </button>
+        <AccountMenu />
       </div>
     </header>
     <div v-if="loading && !recipes.length" class="list-loading-state" role="status">

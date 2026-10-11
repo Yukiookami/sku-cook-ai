@@ -2,7 +2,7 @@ import { KitchenStateResponseSchema, type KitchenStateResponse } from '@sku-cook
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
 import { ApiError } from '../common/errors.js';
-import { lockDefaultUser, recipeDto } from '../recipes/recipe.service.js';
+import { lockUser, recipeDto } from '../recipes/recipe.service.js';
 
 const kitchenInclude = {
   items: {
@@ -24,9 +24,10 @@ type DbClient = Prisma.TransactionClient | PrismaClient;
 export async function readKitchenState(
   client: DbClient,
   app: FastifyInstance,
+  userId: number,
 ): Promise<KitchenStateResponse> {
   const session = await client.kitchenSession.findUnique({
-    where: { userId: app.defaultUserId },
+    where: { userId },
     include: kitchenInclude,
   });
   if (!session) {
@@ -51,7 +52,7 @@ export async function readKitchenState(
     targetServings: item.targetServings,
   }));
   const recipes = session.items.map((item) => {
-    if (item.recipe.userId !== app.defaultUserId) {
+    if (item.recipe.userId !== userId) {
       throw new Error('Kitchen session contains a recipe outside its owner scope');
     }
     return recipeDto(item.recipe);
@@ -71,11 +72,12 @@ export async function readKitchenState(
 
 export async function withUserLock<T>(
   app: FastifyInstance,
+  userId: number,
   operation: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
   return app.prisma.$transaction(
     async (tx) => {
-      await lockDefaultUser(tx, app.defaultUserId);
+      await lockUser(tx, userId);
       return operation(tx);
     },
     { timeout: 15_000 },

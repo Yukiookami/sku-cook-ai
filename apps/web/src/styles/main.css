@@ -129,6 +129,69 @@ p {
   justify-self: end;
 }
 
+.header-action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-menu {
+  position: relative;
+  z-index: 12;
+  min-width: 44px;
+  color: var(--ink);
+}
+
+.account-menu summary {
+  display: flex;
+  min-height: 44px;
+  max-width: 190px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffaf0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  list-style: none;
+}
+
+.account-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-menu-name {
+  overflow: hidden;
+  max-width: 140px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(270px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.account-menu-user {
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.account-menu-error {
+  font-size: 14px;
+}
+
 .text-button {
   min-height: 44px;
   padding: 6px 10px;
@@ -153,10 +216,132 @@ p {
   padding: 10px 16px 10px 20px;
 }
 
+.list-page .home-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .home-header h1 {
   justify-self: start;
   text-align: left;
   font-size: 28px;
+}
+
+.account-page {
+  max-width: 560px;
+}
+
+.account-header {
+  margin-bottom: 28px;
+}
+
+.account-header-mark {
+  justify-self: end;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.account-card {
+  padding: 24px;
+}
+
+.account-card h2 {
+  margin-bottom: 6px;
+  font-size: 26px;
+}
+
+.account-intro {
+  margin-bottom: 22px;
+}
+
+.account-form {
+  display: grid;
+  gap: 16px;
+}
+
+.account-field {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.account-field input {
+  width: 100%;
+  min-height: 50px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffefa;
+}
+
+.account-submit {
+  margin-top: 4px;
+}
+
+.account-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 18px 0 0;
+  color: var(--muted);
+}
+
+.account-switch .text-button {
+  color: #5b411f;
+  font-weight: 700;
+}
+
+.kitchen-account-menu {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+}
+
+@media (max-width: 420px) {
+  .page-header {
+    grid-template-columns: minmax(44px, auto) minmax(0, 1fr) auto;
+    gap: 4px;
+  }
+
+  .header-action-group {
+    gap: 4px;
+  }
+
+  .header-action-group .account-menu summary {
+    max-width: 100px;
+    padding: 6px 7px;
+  }
+
+  .account-card {
+    padding: 20px 16px;
+  }
+
+  .list-page .home-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .list-page .home-header h1 {
+    font-size: 26px;
+  }
+
+  .list-page .header-buttons {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 360px) {
+  .page-header .header-action-group {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .page-header .header-action-group > :first-child {
+    min-height: 40px;
+  }
 }
 
 .header-buttons,
@@ -1242,7 +1427,7 @@ p {
   top: env(safe-area-inset-top);
   z-index: 3;
   flex: 0 0 auto;
-  padding: 10px;
+  padding: 58px 10px 10px;
   border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--butter);

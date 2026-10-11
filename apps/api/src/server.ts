@@ -5,9 +5,20 @@ import { readConfig } from './config/env.js';
 const config = readConfig(process.env);
 const app = buildApp(
   config.DATABASE_URL,
-  { logger: { level: config.LOG_LEVEL } },
   {
-    defaultUserId: config.DEFAULT_USER_ID,
+    logger: {
+      level: config.LOG_LEVEL,
+      redact: [
+        'req.headers.cookie',
+        'req.headers.authorization',
+        'res.headers.set-cookie',
+        'req.body.password',
+      ],
+    },
+  },
+  {
+    secureCookie: config.NODE_ENV === 'production',
+    allowedOrigin: config.APP_ORIGIN,
     kitchenPollIntervalSeconds: config.KITCHEN_POLL_INTERVAL_SECONDS,
   },
 );

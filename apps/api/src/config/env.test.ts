@@ -14,9 +14,23 @@ describe('server configuration', () => {
     ).toThrow();
   });
 
-  it('applies the default user and listen address', () => {
+  it('applies development defaults and listen address without a default business user', () => {
     const config = readConfig({ DATABASE_URL: 'postgresql://localhost/test' });
-    expect(config.DEFAULT_USER_ID).toBe(1);
+    expect(config.NODE_ENV).toBe('development');
     expect(config.HOST).toBe('127.0.0.1');
+  });
+
+  it('accepts only an exact HTTP(S) browser origin', () => {
+    const base = { DATABASE_URL: 'postgresql://localhost/test' };
+    expect(readConfig({ ...base, APP_ORIGIN: 'http://localhost:5173' }).APP_ORIGIN).toBe(
+      'http://localhost:5173',
+    );
+    for (const APP_ORIGIN of [
+      'http://localhost:5173/',
+      'https://example.com/path',
+      'ftp://example.com',
+    ]) {
+      expect(() => readConfig({ ...base, APP_ORIGIN })).toThrow();
+    }
   });
 });

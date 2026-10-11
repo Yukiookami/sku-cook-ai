@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HealthResponseSchema } from '@sku-cook/shared';
 import { buildApp } from '../../app.js';
 
@@ -21,12 +21,30 @@ describe('API foundation', () => {
   });
 
   it('returns a readable 404', async () => {
-    const response = await request(app.server).get('/api/missing').expect(404);
+    vi.spyOn(app.prisma.authSession, 'findUnique').mockResolvedValue({
+      tokenHash: '0'.repeat(64),
+      userId: 7,
+      createdAt: new Date(),
+      ...{ user: { id: 7, username: 'Alice' } },
+    });
+    const response = await request(app.server)
+      .get('/api/missing')
+      .set('Cookie', `sku_session=${'a'.repeat(64)}`)
+      .expect(404);
     expect(response.body.error.code).toBe('NOT_FOUND');
   });
 
   it('does not expose internal errors', async () => {
-    const response = await request(app.server).get('/api/test-error').expect(500);
+    vi.spyOn(app.prisma.authSession, 'findUnique').mockResolvedValue({
+      tokenHash: '0'.repeat(64),
+      userId: 7,
+      createdAt: new Date(),
+      ...{ user: { id: 7, username: 'Alice' } },
+    });
+    const response = await request(app.server)
+      .get('/api/test-error')
+      .set('Cookie', `sku_session=${'a'.repeat(64)}`)
+      .expect(500);
     expect(response.body.error.code).toBe('INTERNAL_ERROR');
     expect(JSON.stringify(response.body)).not.toContain('private database details');
   });

@@ -7,6 +7,8 @@ import RecipeEditView from '../views/recipes/RecipeEditView.vue';
 import RecipeImportView from '../views/recipes/RecipeImportView.vue';
 import KitchenDisplayView from '../views/kitchen/KitchenDisplayView.vue';
 import CookingHistoryView from '../views/history/CookingHistoryView.vue';
+import AccountView from '../views/account/AccountView.vue';
+import { ensureAccountSession } from '../auth/session';
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -16,14 +18,61 @@ export const router = createRouter({
     return { top: 0 };
   },
   routes: [
+    {
+      path: '/account',
+      name: 'account',
+      component: AccountView,
+      meta: { public: true },
+    },
     { path: '/', redirect: '/recipes' },
-    { path: '/recipes', name: 'recipe-list', component: RecipeListView },
-    { path: '/recipes/new', name: 'recipe-create', component: RecipeCreateView },
-    { path: '/recipes/import', name: 'recipe-import', component: RecipeImportView },
-    { path: '/recipes/:id/edit', name: 'recipe-edit', component: RecipeEditView },
-    { path: '/recipes/:id', name: 'recipe-detail', component: RecipeDetailView },
-    { path: '/kitchen', name: 'kitchen-display', component: KitchenDisplayView },
-    { path: '/cooking-history', name: 'cooking-history', component: CookingHistoryView },
+    {
+      path: '/recipes',
+      name: 'recipe-list',
+      component: RecipeListView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/recipes/new',
+      name: 'recipe-create',
+      component: RecipeCreateView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/recipes/import',
+      name: 'recipe-import',
+      component: RecipeImportView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/recipes/import/excel',
+      name: 'recipe-excel-import',
+      component: () => import('../views/recipes/RecipeExcelImportView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/recipes/:id/edit',
+      name: 'recipe-edit',
+      component: RecipeEditView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/recipes/:id',
+      name: 'recipe-detail',
+      component: RecipeDetailView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/kitchen',
+      name: 'kitchen-display',
+      component: KitchenDisplayView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/cooking-history',
+      name: 'cooking-history',
+      component: CookingHistoryView,
+      meta: { requiresAuth: true },
+    },
     { path: '/health-check', name: 'health-check', component: HomeView },
     {
       path: '/:pathMatch(.*)*',
@@ -34,4 +83,21 @@ export const router = createRouter({
       },
     },
   ],
+});
+
+router.beforeEach(async (to) => {
+  if (to.meta.requiresAuth !== true) return true;
+  try {
+    const user = await ensureAccountSession();
+    if (user) return true;
+    return {
+      name: 'account',
+      query: { redirect: to.fullPath },
+    };
+  } catch {
+    return {
+      name: 'account',
+      query: { redirect: to.fullPath, session: 'unavailable' },
+    };
+  }
 });
