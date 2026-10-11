@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { recipeTotalMinutes, type RecipeSummary } from '@sku-cook/shared';
+import { recipeTotalMinutes, type RecipeSummary, type RecipeLikeResponse } from '@sku-cook/shared';
+import RecipeLikeButton from '../../components/recipes/RecipeLikeButton.vue';
 import KitchenMenuPanel from '../../components/kitchen/KitchenMenuPanel.vue';
 import AccountMenu from '../../components/common/AccountMenu.vue';
 import { apiErrorMessage } from '../../api/errors';
@@ -46,6 +47,16 @@ let observer: IntersectionObserver | undefined;
 function duration(recipe: RecipeSummary): string | null {
   const total = recipeTotalMinutes(recipe.prepMinutes, recipe.cookMinutes);
   return total === null ? null : `${total}分钟`;
+}
+
+function updateLike(result: RecipeLikeResponse) {
+  recipes.value = recipes.value.map((recipe) =>
+    recipe.id === result.id ? { ...recipe, isLiked: result.isLiked } : recipe,
+  );
+  if (recommendation.value?.id === result.id)
+    recommendation.value = { ...recommendation.value, isLiked: result.isLiked };
+  const selected = selectionOrder.value.get(result.id);
+  if (selected) selectionOrder.value.set(result.id, { ...selected, isLiked: result.isLiked });
 }
 
 async function fetchList(reset: boolean) {
@@ -450,6 +461,13 @@ onBeforeUnmount(() => {
           </span>
           <span class="card-chevron" aria-hidden="true">›</span>
         </button>
+        <RecipeLikeButton
+          class="recipe-card-like"
+          :recipe-id="recipe.id"
+          :is-liked="recipe.isLiked"
+          :disabled="selecting"
+          @updated="updateLike"
+        />
       </article>
       <div ref="listEnd" class="list-end">
         <button

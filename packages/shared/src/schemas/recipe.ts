@@ -85,6 +85,7 @@ export type RecipeStep = z.infer<typeof RecipeStepSchema>;
 export const RecipeSummarySchema = z
   .object({
     id: PositiveIdSchema,
+    isLiked: z.boolean().default(false),
     title: z.string().min(1).max(50),
     description: z.string().max(500).nullable(),
     servings: TargetServingsSchema,
@@ -153,6 +154,14 @@ export type RecipeTagsResponse = z.infer<typeof RecipeTagsResponseSchema>;
 export const RecipeTagsQuerySchema = z.object({}).strict();
 
 export const RecipeIdParamsSchema = z.object({ id: z.coerce.number().int().positive() }).strict();
+export const RecipeLikeRequestSchema = z.object({ isLiked: z.boolean() }).strict();
+export const RecipeLikeResponseSchema = z
+  .object({
+    id: PositiveIdSchema,
+    isLiked: z.boolean(),
+  })
+  .strict();
+export type RecipeLikeResponse = z.infer<typeof RecipeLikeResponseSchema>;
 
 export const RecipeRandomQuerySchema = z
   .object({

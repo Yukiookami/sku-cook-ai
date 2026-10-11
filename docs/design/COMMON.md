@@ -98,7 +98,9 @@ StepInput：`order` 必填正整数，`text` 必填且trim后1～5000字；数�
 
 ### 3.2 Recipe / RecipeSummary
 
-Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不含 userId、密码或其他关系内部字段。RecipeSummary 只含 `id`、`title`、`description`、`servings`、`prepMinutes`、`cookMinutes`、`difficulty`、`tags`、`updatedAt`，不传食材、步骤和 tips。
+Recipe 是规范化后的完整输入加 `id`、`isLiked`、`createdAt`、`updatedAt`；不含 userId、密码或其他关系内部字段。RecipeSummary 只含 `id`、`isLiked`、`title`、`description`、`servings`、`prepMinutes`、`cookMinutes`、`difficulty`、`tags`、`updatedAt`，不传食材、步骤和 tips。
+
+V2 已确认个人爱心：[A27](apis/A27_RECIPE_LIKE_PUT.md)，含义为“喜欢吃，也做得好吃”，列表和详情复用同一按钮，支持取消；不增加收藏列表/筛选、评分或随机权重。`isLiked`服务端实际输出布尔值，shared缺失时默认false以读取旧响应。旧菜谱、新增及导入默认false；普通编辑保留，RecipeInput与JSON/Excel导出不携带个人标记，爱心不修改updatedAt或厨房revision。当前设计PNG未包含爱心，不将旧图当作此新增状态的验收依据。
 
 总时长不单独存储：两个时间均非 null 时相加，否则不显示“总时长”。单独的准备 / 烹饪时间可在详情中显示，0 不当作缺失。
 
@@ -110,6 +112,7 @@ Recipe 是规范化后的完整输入加 `id`、`createdAt`、`updatedAt`；不�
 {
   "recipe": {
     "id": 101,
+    "isLiked": false,
     "title": "番茄炒蛋",
     "description": "十分钟家常菜",
     "servings": 2,

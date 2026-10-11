@@ -32,6 +32,7 @@ import {
   importRecipes,
   updateRecipe,
   validateRecipeImport,
+  setRecipeLiked,
 } from './recipes';
 
 const originalAdapter = client.defaults.adapter;
@@ -145,6 +146,16 @@ function requestBody(index: number): unknown {
 }
 
 describe('Web API clients use the shared Contract and Axx routes', () => {
+  it('saves explicit heart targets through A27 and rejects mismatched response ids', async () => {
+    responseBody = { id: 11, isLiked: true };
+    expect(await setRecipeLiked(11, true)).toEqual({ id: 11, isLiked: true });
+    expect(calls[0]?.method).toBe('put');
+    expect(calls[0]?.url).toBe('/recipes/11/like');
+    expect(JSON.parse(calls[0]?.data as string)).toEqual({ isLiked: true });
+    responseBody = { id: 12, isLiked: true };
+    await expect(setRecipeLiked(11, true)).rejects.toThrow('编号不符合约定');
+    await expect(setRecipeLiked(0, true)).rejects.toThrow();
+  });
   it('calls recipe endpoints with documented methods, params, bodies and response envelopes', async () => {
     responseBody = recipeList;
     await getRecipes({ page: 1, pageSize: 20, q: '番茄', tag: '家常菜' });

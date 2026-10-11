@@ -19,6 +19,7 @@ export function recipeDto(record: RecipeRecord) {
   try {
     return RecipeResponseSchema.shape.recipe.parse({
       id: record.id,
+      isLiked: record.isLiked,
       title: record.title,
       description: record.description,
       servings: record.servings,
@@ -74,6 +75,7 @@ export function recipeExportDto(record: RecipeRecord) {
 
 export function summaryDto(record: {
   id: number;
+  isLiked: boolean;
   title: string;
   description: string | null;
   servings: number;
@@ -86,6 +88,7 @@ export function summaryDto(record: {
   try {
     return RecipeSummarySchema.parse({
       id: record.id,
+      isLiked: record.isLiked,
       title: record.title,
       description: record.description,
       servings: record.servings,

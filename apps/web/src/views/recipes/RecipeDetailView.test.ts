@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
 import { KitchenStateResponseSchema, RecipeSchema } from '@sku-cook/shared';
 import { getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
-import { deleteRecipe, getRecipe } from '../../api/recipes';
+import { deleteRecipe, getRecipe, setRecipeLiked } from '../../api/recipes';
 import { recordCookingHistory } from '../../api/cooking-history';
 import RecipeDetailView from './RecipeDetailView.vue';
 import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
@@ -11,6 +11,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
 vi.mock('../../api/recipes', () => ({
   deleteRecipe: vi.fn(),
   getRecipe: vi.fn(),
+  setRecipeLiked: vi.fn(),
 }));
 vi.mock('../../api/kitchen', () => ({
   clearKitchenMenu: vi.fn(),
@@ -116,6 +117,16 @@ describe('RecipeDetailView', () => {
     vi.restoreAllMocks();
   });
 
+  it('shows the personal heart meaning and updates the detail marker from a saved response', async () => {
+    vi.mocked(setRecipeLiked).mockResolvedValue({ id: 11, isLiked: true });
+    const { wrapper } = await mountDetailView();
+    expect(wrapper.text()).toContain('喜欢吃，也做得好吃');
+    await wrapper.get('.recipe-like-button').trigger('click');
+    await flushPromises();
+    expect(wrapper.get('.recipe-like-button').attributes('aria-pressed')).toBe('true');
+    expect(setRecipeLiked).toHaveBeenCalledExactlyOnceWith(11, true);
+    wrapper.unmount();
+  });
   it('downloads only the current recipe as an importable JSON file', async () => {
     const createObjectURL = vi.fn((blob: Blob) => {
       expect(blob).toBeInstanceOf(Blob);

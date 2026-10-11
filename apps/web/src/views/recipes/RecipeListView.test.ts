@@ -2,12 +2,13 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RecipeListView from './RecipeListView.vue';
-import { getRecipeTags, getRecipes } from '../../api/recipes';
+import { getRecipeTags, getRecipes, setRecipeLiked } from '../../api/recipes';
 
 vi.mock('../../api/recipes', () => ({
   getRecipes: vi.fn(),
   getRecipeTags: vi.fn(),
   getRandomRecipe: vi.fn(),
+  setRecipeLiked: vi.fn(),
 }));
 vi.mock('../../components/kitchen/KitchenMenuPanel.vue', () => ({
   default: {
@@ -52,6 +53,7 @@ class TestIntersectionObserver implements IntersectionObserver {
 function summary(id: number) {
   return {
     id,
+    isLiked: false,
     title: `菜谱${id}`,
     description: null,
     servings: 2,
@@ -79,6 +81,27 @@ describe('RecipeListView selection behavior', () => {
     vi.unstubAllGlobals();
     observerCallback = undefined;
     observerInstance = undefined;
+  });
+
+  it('marks a heart without opening the recipe and disables it while selecting dishes', async () => {
+    vi.mocked(setRecipeLiked).mockResolvedValue({ id: 1, isLiked: true });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/recipes', component: RecipeListView }],
+    });
+    await router.push('/recipes');
+    const wrapper = mount(RecipeListView, { global: { plugins: [router] } });
+    await flushPromises();
+    const heart = wrapper.get('.recipe-card .recipe-like-button');
+    await heart.trigger('click');
+    await flushPromises();
+    expect(heart.attributes('aria-pressed')).toBe('true');
+    expect(setRecipeLiked).toHaveBeenCalledExactlyOnceWith(1, true);
+    expect(router.currentRoute.value.path).toBe('/recipes');
+    const select = wrapper.findAll('button').find((button) => button.text() === '选菜')!;
+    await select.trigger('click');
+    expect(heart.attributes('disabled')).toBeDefined();
+    wrapper.unmount();
   });
 
   it('keeps account actions inside More without a nested dropdown', async () => {

@@ -41,6 +41,7 @@ model Recipe {
   title        String                 @db.VarChar(50)
   description  String?                @db.VarChar(500)
   servings     Int                    @default(1)
+  isLiked      Boolean                @default(false) @map("is_liked")
   prepMinutes  Int?                   @map("prep_minutes")
   cookMinutes  Int?                   @map("cook_minutes")
   difficulty   String?                @db.VarChar(10)

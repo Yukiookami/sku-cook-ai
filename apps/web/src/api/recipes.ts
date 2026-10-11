@@ -1,6 +1,8 @@
 import type { AxiosProgressEvent } from 'axios';
 import {
   RecipeIdParamsSchema,
+  RecipeLikeRequestSchema,
+  RecipeLikeResponseSchema,
   RecipeExportResponseSchema,
   type RecipeExportResponse,
   RecipeImportInputSchema,
@@ -49,6 +51,15 @@ export async function getRecipe(id: number): Promise<Recipe> {
   const params = RecipeIdParamsSchema.parse({ id });
   const { data } = await client.get<unknown>(`/recipes/${params.id}`);
   return RecipeResponseSchema.parse(data).recipe;
+}
+
+export async function setRecipeLiked(id: number, isLiked: boolean) {
+  const params = RecipeIdParamsSchema.parse({ id });
+  const body = RecipeLikeRequestSchema.parse({ isLiked });
+  const { data } = await client.put<unknown>(`/recipes/${params.id}/like`, body);
+  const result = RecipeLikeResponseSchema.parse(data);
+  if (result.id !== params.id) throw new Error('爱心响应中的菜谱编号不符合约定。');
+  return result;
 }
 
 export async function createRecipe(input: RecipeInput): Promise<Recipe> {

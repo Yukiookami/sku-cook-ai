@@ -14,6 +14,7 @@ describe('randomCandidateIndex', () => {
     it('exports import-compatible fields without database ids or nullable values', () => {
       const exported = recipeExportDto({
         id: 101,
+        isLiked: true,
         userId: 1,
         title: '番茄炒蛋',
         description: null,

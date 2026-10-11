@@ -8,8 +8,10 @@ import {
   scaleIngredientAmount,
   type Recipe,
   type RecipeSummary,
+  type RecipeLikeResponse,
 } from '@sku-cook/shared';
 import PageHeader from '../../components/common/PageHeader.vue';
+import RecipeLikeButton from '../../components/recipes/RecipeLikeButton.vue';
 import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
 import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import KitchenMenuPanel from '../../components/kitchen/KitchenMenuPanel.vue';
@@ -117,6 +119,7 @@ function adjustServings(direction: number) {
 function summaryFromRecipe(value: Recipe): RecipeSummary {
   return {
     id: value.id,
+    isLiked: value.isLiked,
     title: value.title,
     description: value.description,
     servings: value.servings,
@@ -126,6 +129,10 @@ function summaryFromRecipe(value: Recipe): RecipeSummary {
     tags: value.tags,
     updatedAt: value.updatedAt,
   };
+}
+
+function updateLike(result: RecipeLikeResponse) {
+  if (recipe.value?.id === result.id) recipe.value = { ...recipe.value, isLiked: result.isLiked };
 }
 
 function openKitchen() {
@@ -266,6 +273,13 @@ onBeforeUnmount(() => {
     <template v-else-if="recipe">
       <section class="paper-card recipe-summary">
         <h2 class="detail-title">{{ recipe.title }}</h2>
+        <RecipeLikeButton
+          :recipe-id="recipe.id"
+          :is-liked="recipe.isLiked"
+          :disabled="writing"
+          @updated="updateLike"
+        />
+        <p class="muted recipe-like-description">爱心表示：喜欢吃，也做得好吃。</p>
         <p v-if="recipe.description" class="detail-description">{{ recipe.description }}</p>
         <p class="recipe-meta">
           原菜谱 {{ recipe.servings }} 人份

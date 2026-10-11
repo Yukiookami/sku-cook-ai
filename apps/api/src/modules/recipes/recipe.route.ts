@@ -1,5 +1,7 @@
 import {
   RecipeIdParamsSchema,
+  RecipeLikeRequestSchema,
+  RecipeLikeResponseSchema,
   RecipeImportInputSchema,
   RecipeImportValidationRequestSchema,
   RecipeExportResponseSchema,
@@ -117,6 +119,18 @@ function parseRecipeEntry(value: unknown): {
 }
 
 export async function recipeRoutes(app: FastifyInstance) {
+  app.put('/recipes/:id/like', { bodyLimit: 4096 }, async (request) => {
+    const userId = authenticatedUser(request).id;
+    const { id } = RecipeIdParamsSchema.parse(request.params);
+    RecipeTagsQuerySchema.parse(request.query);
+    const { isLiked } = RecipeLikeRequestSchema.parse(request.body);
+    // 偏好不改变菜谱内容更新时间，避免触底分页期间排序漂移。
+    const count = await app.prisma.$executeRaw`
+      UPDATE recipes SET is_liked = ${isLiked} WHERE id = ${id} AND user_id = ${userId}
+    `;
+    if (count !== 1) throw new ApiError(404, 'RECIPE_NOT_FOUND', '菜谱不存在');
+    return RecipeLikeResponseSchema.parse({ id, isLiked });
+  });
   // Static endpoints are declared before /recipes/:id for clarity; Fastify also gives static paths priority.
   app.get('/recipes/tags', async (request) => {
     const userId = authenticatedUser(request).id;

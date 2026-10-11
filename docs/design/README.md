@@ -60,6 +60,7 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 | A24  | [PATCH /api/auth/username](apis/A24_AUTH_USERNAME_PATCH.md)             | S11 修改用户名       | 源码已实现，待数据库验收   |
 | A25  | [PUT /api/auth/password](apis/A25_AUTH_PASSWORD_PUT.md)                 | S11 修改密码         | 源码已实现，待数据库验收   |
 | A26  | [GET /api/admin/users](apis/A26_ADMIN_USERS_GET.md)                     | S12 注册用户分页     | 已实现，权限与分页测试覆盖 |
+| A27 | [PUT /api/recipes/:id/like](apis/A27_RECIPE_LIKE_PUT.md) | S01、S02 个人爱心 | 已实现，mock与专用数据库验证覆盖 |
 
 菜谱静态API路径 `tags` / `random` 与 `:id` 正整数路由明确区分，不能因新增随机入口破坏详情访问。随机区复用S01，不新增独立路由页面。
 

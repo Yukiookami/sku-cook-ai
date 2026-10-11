@@ -173,6 +173,8 @@ sku-cook-ai/
 | `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发、初次加载错误与发送后回到菜谱一览。                  |
 | `apps/web/src/views/recipes/RecipeImportView.test.ts` | 验证A08/A09导入流程、A19下载状态及文件选择/模式切换竞态。                  |
 | `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情、份数参考换算、单菜JSON导出、编辑/删除/手动历史入口及单菜发送。    |
+| `apps/web/src/components/recipes/RecipeLikeButton.vue` | 列表/详情共用个人爱心按钮，等待防重、显式失败及旧响应隔离。 |
+| `apps/web/src/components/recipes/RecipeLikeButton.test.ts` | 验证点亮/取消、失败保留、防重复、禁用及换菜谱/卸载隔离。 |
 | `apps/web/src/views/recipes/RecipeDetailView.test.ts` | 验证单菜JSON导出及发送到厨房成功后的留页/返回行为。 |
 | `apps/web/src/views/recipes/RecipeCreateView.vue` | S03新增页，使用共用表单并保留失败草稿。                                      |
 | `apps/web/src/views/recipes/RecipeCreateView.test.ts` | 验证保存成功不误提醒，以及新增/编辑离开确认、取消保留与单次确认导航。       |
@@ -200,6 +202,8 @@ sku-cook-ai/
 | `apps/api/prisma/migrations/20261011070000_add_account_auth_sessions/migration.sql` | 保留并映射既有用户为Sku001/Legacy账号，新增账号字段与持久会话表；本机已应用。 |
 | `apps/api/prisma/migrations/20261011090000_add_super_admin_email_login/migration.sql` | 升级原id=1为唯一超级管理员，邮箱小写/唯一约束，本机备份验收后应用。 |
 | `apps/api/prisma/migrations/migration_lock.toml` | 固定Prisma迁移provider为PostgreSQL。                |
+| `apps/api/prisma/migrations/20261011110000_add_recipe_like/migration.sql` | 菜谱新增默认false的个人爱心列，本机备份并验证后应用。 |
+| `apps/api/src/modules/recipes/recipe.like.test.ts` | Mock HTTP验证爱心认证、严格输入、用户限定、幂等与错误形状。 |
 | `apps/api/prisma/schema.prisma`               | PostgreSQL用户邮箱/管理员权限、AuthSession及菜谱/厨房/历史关系；本机迁移已应用。 |
 | `apps/api/prisma/seed.ts`                     | 通过本机配置幂等初始化Sku001的空密码哈希，不覆盖已设密码。                       |
 | `apps/api/src/app.ts`                         | 构造Fastify实例，装配统一错误处理、Prisma、认证钩子、health与业务路由。           |
@@ -211,7 +215,7 @@ sku-cook-ai/
 | `apps/api/src/modules/common/errors.ts`       | 统一业务错误、Zod issue格式化及可识别数据库/唯一键错误分类。 |
 | `apps/api/src/modules/health/health.route.ts` | 无数据库查询的GET /api/health存活接口。                |
 | `apps/api/src/modules/health/health.test.ts`  | Supertest验证health Contract、404与500不泄漏内部信息。 |
-| `apps/api/src/modules/recipes/recipe.route.ts` | A02–A09/A14/A19路由、认证用户范围、菜谱导入事务、完整导出与响应Contract。 |
+| `apps/api/src/modules/recipes/recipe.route.ts` | A02–A09/A14/A19/A27路由、用户范围、个人爱心、导入事务、完整导出与响应Contract。 |
 | `apps/api/src/modules/recipes/recipe.service.ts` | 菜谱DTO/导出输入转换、summary、归一化输入、用户事务锁与菜谱写入公共业务。 |
 | `apps/api/src/modules/recipes/recipe.route.test.ts` | 不连接数据库的路由参数/未知字段/错误envelope边界测试。 |
 | `apps/api/src/modules/recipes/recipe.service.test.ts` | 测试随机候选索引边界与菜谱导出DTO，不模拟数据库业务集成。 |
@@ -242,7 +246,8 @@ sku-cook-ai/
 | `packages/shared/src/schemas/auth.test.ts`    | 验证账号格式、密码边界、严格请求与公开响应字段。 |
 | `packages/shared/src/schemas/health.ts`      | health运行时Zod响应Contract及HealthResponse类型。 |
 | `packages/shared/src/schemas/health.test.ts` | 验证合法health解析与非法状态拒绝。                |
-| `packages/shared/src/schemas/recipe.ts`      | 菜谱输入/响应、摘要、查询、随机、JSON导入/导出Schema与限制常量。 |
+| `packages/shared/src/schemas/recipe.ts`      | 菜谱输入/响应、个人爱心、摘要、查询、随机、JSON导入/导出Schema与限制常量。 |
+| `packages/shared/src/schemas/recipe.like.test.ts` | 验证爱心严格布尔Contract、旧响应兼容及与输入/导入数据分离。 |
 | `packages/shared/src/schemas/recipe.test.ts` | 验证菜谱字段默认/边界、严格未知字段、分页、厨房及迁移导入/导出约束。 |
 | `packages/shared/src/schemas/kitchen.ts`     | 厨房会话/菜单/切换/版本请求Contract与DTO类型。 |
 | `packages/shared/src/schemas/history.ts`     | 做饭历史及分页/手动写入/参数Contract与DTO类型。 |
@@ -333,6 +338,7 @@ sku-cook-ai/
 | `docs/design/apis/A24_AUTH_USERNAME_PATCH.md`    | 已认证用户名更新Contract、大小写不敏感唯一冲突与数据归属保留设计。             |
 | `docs/design/apis/A25_AUTH_PASSWORD_PUT.md`      | 当前密码校验、新散列原子比较更新及保留会话Contract设计。                       |
 | `docs/design/apis/A26_ADMIN_USERS_GET.md`        | 服务端管理员权限校验与安全用户字段、固定20项分页Contract。 |
+| `docs/design/apis/A27_RECIPE_LIKE_PUT.md` | 个人爱心目标状态写入、归属/幂等、导入导出与界面边界设计。 |
 
 ## 3. 不展开的目录与运行文件
 
