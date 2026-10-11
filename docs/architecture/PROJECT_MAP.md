@@ -88,6 +88,10 @@ sku-cook-ai/
 | 文件                                                             | 职责                                                                                                     |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `.github/skills/git-publish/SKILL.md`                            | 显式提交/上传时的范围检查、精确暂存、中文commit与非强制push流程。                                        |
+| `.github/skills/tdd/SKILL.md` | Matt Pocock中文适配：已有测试栈上的逐切片Red/Green与回归测试方法，不替代实施流程。 |
+| `.github/skills/diagnosing-bugs/SKILL.md` | Matt Pocock中文适配：原症状复现、证据假设、根因修复及回归，保护共享服务与数据。 |
+| `.github/skills/grill-me/SKILL.md` | Matt Pocock中文适配：显式需求访谈，单问题收敛，不自动改代码或创建规格文档。 |
+| `.github/skills/mattpocock-LICENSE.txt` | 三个Matt Pocock适配Skill的上游MIT许可与版权声明。 |
 | `.github/skills/implement-screen/SKILL.md`                       | 按Sxx设计及独立提示词实现画面/API/状态，要求低成本设计图还原、截图对照修正与差异交付，高成本精修先确认。 |
 | `.github/skills/implement-api/SKILL.md`                          | 按Axx设计书实现shared/API/事务与跨包测试。                                                               |
 | `.github/skills/database-migration/SKILL.md`                     | 数据库模型、版本化迁移、Seed、安全目标确认与真实验收。                                                   |

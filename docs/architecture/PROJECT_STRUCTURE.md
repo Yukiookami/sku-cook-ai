@@ -37,12 +37,16 @@ sku-cook-ai/
 │   │   ├── frontend.agent.md
 │   │   ├── backend.agent.md
 │   │   └── reviewer.agent.md
-│   ├── skills/                            已创建：6 个按需工作流
+│   ├── skills/                            已创建：9 个按需工作流
 │   │   ├── git-publish/SKILL.md            明确请求后提交/推送
 │   │   ├── implement-screen/SKILL.md       按画面设计书实施前端
 │   │   ├── implement-api/SKILL.md          按接口设计书实施后端
 │   │   ├── database-migration/SKILL.md     模型、迁移与 Seed 安全流程
 │   │   ├── review-changes/SKILL.md         只读 RV 评审
+│   │   ├── tdd/SKILL.md                   Matt Pocock适配：逐切片测试先行
+│   │   ├── diagnosing-bugs/SKILL.md       Matt Pocock适配：证据诊断与回归
+│   │   ├── grill-me/SKILL.md              Matt Pocock适配：显式需求讨论
+│   │   ├── mattpocock-LICENSE.txt         上游 MIT 版权与许可
 │   │   └── maintain-project-map/
 │   │       ├── SKILL.md                   实际项目地图维护
 │   │       └── scripts/

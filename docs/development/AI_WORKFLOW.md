@@ -27,10 +27,25 @@
 | [database-migration](../../.github/skills/database-migration/SKILL.md)     | Prisma模型、迁移、约束或Seed变更            |
 | [review-changes](../../.github/skills/review-changes/SKILL.md)             | RV、只读评审变更与验收证据                  |
 | [maintain-project-map](../../.github/skills/maintain-project-map/SKILL.md) | 文件增删改名、职责变化与地图维护            |
+| [tdd](../../.github/skills/tdd/SKILL.md) | 测试先行或缺陷回归，逐个业务切片 Red → Green |
+| [diagnosing-bugs](../../.github/skills/diagnosing-bugs/SKILL.md) | 服务、网络、UI及性能故障的证据诊断与原场景回归 |
+| [grill-me](../../.github/skills/grill-me/SKILL.md) | 显式需求/方案讨论，单问题澄清，讨论阶段不改代码 |
 
 可在支持Skills的工具中用对应斜杠入口，或直接说“用implement-screen实现S03”。Skill不是项目依赖，也不代表已经执行。git-publish配置为仅显式使用，避免普通编码任务顺便提交。
 
 数据库单列一个Skill是因为迁移涉及持久数据、环境确认与不可逆风险；不另做“自动生成所有数据库”流程，也不让写API顺便reset数据库。
+
+### 3.1 Matt Pocock Skills 项目适配
+
+仅在本仓库引入上述三个中文适配版，不安装全局插件或运行上游 setup，不改变依赖、业务代码、数据库或现有全局规则。来源为 [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336)，固定基线 `49dd158d1076134a641b33efb035946536778336`；完整 [MIT 许可](../../.github/skills/mattpocock-LICENSE.txt)随附，每个 Skill 标明来源及偏离。它们不是上游原版，不自动更新；以后升级需人工比较上游与本地适配，保留项目约束，不覆盖更新。
+
+- **tdd**：补充现有实施 Skill 的测试质量与失败/通过循环，允许专用数据库验证不变量，不逐个测试入口重复访谈。
+- **diagnosing-bugs**：适合“页面一直报错”“手机访问不到”“关闭按钮错位”等反馈；建立针对原症状的复现信号，不随机修代码或擅自重启服务，不在日常数据上压力/重放。
+- **grill-me**：保留显式调用配置，合并上游 grilling 方法，改为提问工具一次一个问题。适合“先讨论，不修改”；不会自动生成另一套规格文档或立即实施。
+
+未引入上游 implement / implement-spec / code-review / pr / setup 等：它们与本项目 Sxx/Axx、review-changes、git-publish 和既有入口重复，部分带额外文件、代理或自动发布流程。codebase-design 的简化接口思想可参考，但当前已有解耦规则，不另叠加词汇体系或架构重构流程；写作、迁移到其他框架及 in-progress 技能不在本次范围。
+
+使用例子：`/tdd 先写回归测试再修复重复点击`、`用 diagnosing-bugs 排查手机访问不到`、`/grill-me 先讨论爱心筛选方案，不要改代码`。是否能发现新入口取决于当前编辑器/运行时；本次会话的技能列表可能是启动时快照，可新开会话检查，未发现时显式附加对应 SKILL.md。文件和格式检查通过不等于已验证每个编辑器自动加载或实际执行效果。
 
 ## 4. 建议的一次任务
 
