@@ -94,7 +94,11 @@ describe('RecipeImportView', () => {
   it('provides a separate entry for fixed-template Excel import', async () => {
     const wrapper = await mountView();
 
-    expect(wrapper.findComponent(RouterLinkStub).props('to')).toBe('/recipes/import/excel');
+    expect(
+      wrapper
+        .findAllComponents(RouterLinkStub)
+        .some((link) => link.props('to') === '/recipes/import/excel'),
+    ).toBe(true);
     wrapper.unmount();
   });
 

@@ -4,9 +4,27 @@ import {
   AuthResponseSchema,
   PasswordSchema,
   UsernameSchema,
+  UpdateUsernameRequestSchema,
+  UpdatePasswordRequestSchema,
 } from './auth.js';
 
 describe('auth contract', () => {
+  it('defines separate strict username and password updates', () => {
+    expect(UpdateUsernameRequestSchema.parse({ username: 'Alice' })).toEqual({ username: 'Alice' });
+    expect(UpdateUsernameRequestSchema.safeParse({ username: 'ab' }).success).toBe(false);
+    expect(UpdateUsernameRequestSchema.safeParse({ username: 'Alice', userId: 9 }).success).toBe(
+      false,
+    );
+    const input = { currentPassword: ' old-pass ', newPassword: ' new-pass ' };
+    expect(UpdatePasswordRequestSchema.parse(input)).toEqual(input);
+    expect(UpdatePasswordRequestSchema.safeParse({ ...input, userId: 9 }).success).toBe(false);
+    expect(UpdatePasswordRequestSchema.safeParse({ ...input, newPassword: 'short' }).success).toBe(
+      false,
+    );
+    expect(UpdatePasswordRequestSchema.safeParse({ ...input, currentPassword: '' }).success).toBe(
+      false,
+    );
+  });
   it('preserves username casing and password whitespace', () => {
     const password = ` ${'x'.repeat(8)} `;
     expect(AuthCredentialsSchema.parse({ username: 'Sku001', password })).toEqual({

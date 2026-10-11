@@ -81,6 +81,38 @@ describe('RecipeListView selection behavior', () => {
     observerInstance = undefined;
   });
 
+  it('keeps account actions inside More without a nested dropdown', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/recipes', component: RecipeListView },
+        { path: '/account/profile', component: { template: '<p>用户中心</p>' } },
+      ],
+    });
+    await router.push('/recipes');
+    const wrapper = mount(RecipeListView, {
+      global: { plugins: [router], stubs: { Teleport: true } },
+    });
+    await flushPromises();
+    expect(wrapper.find('.home-header .account-menu').exists()).toBe(false);
+    const more = wrapper
+      .findAll('.header-buttons button')
+      .find((button) => button.text() === '更多');
+    expect(more).toBeDefined();
+    await more!.trigger('click');
+    const menu = wrapper.get('.more-menu');
+    expect(menu.find('details').exists()).toBe(false);
+    expect(menu.text()).toContain('退出并切换账号');
+    await menu.get('.more-menu-heading button[aria-label="关闭"]').trigger('click');
+    expect(wrapper.find('.more-menu').exists()).toBe(false);
+    await more!.trigger('click');
+    await wrapper.get('.more-menu a[href="/account/profile"]').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe('/account/profile');
+    expect(wrapper.find('.more-menu').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it('allows up to ten recipes and explains the eleventh selection', async () => {
     const router = createRouter({
       history: createMemoryHistory(),

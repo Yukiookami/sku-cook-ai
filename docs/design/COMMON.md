@@ -4,13 +4,15 @@
 
 ## 1. 实现边界
 
+V2用户中心已实现shared/API/Web源码（[S11](screens/S11_USER_CENTER.md)、[A24用户名](apis/A24_AUTH_USERNAME_PATCH.md)、[A25密码](apis/A25_AUTH_PASSWORD_PUT.md)），mock测试覆盖，真实数据库及真机尚未验收。复用现有用户表、usernameKey大小写不敏感唯一约束与auth.crypto，无新增Schema/迁移。服务端身份来自authenticatedUser；修改保留ID、数据归属及全部现有会话，不引入过期或撤销所有设备策略。密码需当前密码+新密码，前端提交前确认且取消不写入；当前密码错误为400，不触发全局401清理。
+
 Vue 3 + Vant 4 + CSS，页面使用 Composition API；Axios 请求集中于 api 目录。后端 Fastify route → service → Prisma，只有确有需要才拆 controller / repository。PostgreSQL 保存数据；JSON导出由浏览器下载，导入读取文本后提交 application/json，不在服务端上传或保存文件。
 
 V2 所有业务归属由服务端持久会话确定，客户端不提供 userId。每次查改删、导入预校验/正式导入、标签、随机和导出均带认证用户过滤；不再使用 `DEFAULT_USER_ID`。业务 API 返回 `Cache-Control: no-store`，Service Worker 不缓存 API。旧版默认用户的历史迁移验收不代表 V2 认证已通过数据库验收。
 
 ### 1.1 V2 账号、会话与隔离
 
-状态：shared / API 已实现；新增版本化迁移由 Prisma 离线差异工具生成并补充回填。当前 Docker engine 不可用，**认证迁移未应用、Seed 未执行、真实数据库集成未验收**。Web 登录页、路由守卫、账号切换清理与调用方适配不属于本次后端交付。
+状态：shared / API / Web 登录、注册、守卫、退出与用户中心源码已实现；既有认证版本化迁移由 Prisma 离线差异工具生成并补充回填。既有记录为 Docker engine 不可用，**认证迁移未应用、Seed 未执行、真实数据库集成未验收**；本次用户中心未新增迁移，未连接日常数据库。
 
 - 一次方法+路径一份设计：[A20 注册](apis/A20_AUTH_REGISTER_POST.md)、[A21 登录](apis/A21_AUTH_LOGIN_POST.md)、[A22 当前会话](apis/A22_AUTH_SESSION_GET.md)、[A23 退出](apis/A23_AUTH_SESSION_DELETE.md)。开放注册，不收邮箱，无密码找回、无 AI/认证框架。
 - `AuthCredentialsSchema` 为严格 `{username,password}`。username 3–32 个 ASCII 字符，以英文字母开头，后续仅字母/数字/下划线；不 trim，保留大小写显示。唯一键为小写 usernameKey，数据库唯一索引及 `username_key = lower(username)` CHECK 兜底。password 8–128 字符，不能全为空白；不 trim，不要求任意字符类别，不输出密码到日志。

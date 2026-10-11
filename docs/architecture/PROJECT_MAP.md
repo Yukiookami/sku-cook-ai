@@ -124,7 +124,7 @@ sku-cook-ai/
 | `apps/web/src/App.vue`                | 路由出口与PWA新版本刷新提示。                                |
 | `apps/web/src/vite-env.d.ts`          | Vite和PWA虚拟模块的类型声明。                                |
 | `apps/web/src/api/client.ts`                    | Axios统一baseURL/超时配置及业务API 401响应拦截。                              |
-| `apps/web/src/api/auth.ts`                       | A20–A23认证API客户端与shared Contract校验。                                  |
+| `apps/web/src/api/auth.ts`                       | A20–A25认证及用户名/密码更新客户端与shared Contract校验。                    |
 | `apps/web/src/api/auth-errors.ts`                | 将账号操作的网络与服务端错误转换为可读提示。                                |
 | `apps/web/src/api/health.ts`                    | 请求health并用shared Schema校验响应。                                        |
 | `apps/web/src/api/recipes.ts`                   | A02–A09、A14、A19菜谱接口 typed client；请求与响应由shared Schema校验。        |
@@ -133,10 +133,11 @@ sku-cook-ai/
 | `apps/web/src/api/errors.ts`                    | 将网络与HTTP状态转换为可读提示，并从shared错误Contract提取导入问题。          |
 | `apps/web/src/api/clients.test.ts`              | 使用Contract合法响应和测试HTTP Adapter验证业务API路径/请求体/响应层级/204。 |
 | `apps/web/src/components/common/PageHeader.vue` | 业务子页统一返回、标题、右侧操作和账号菜单。                                  |
-| `apps/web/src/components/common/AccountMenu.vue` | 展示当前用户名并提供退出/切换账号入口。                                       |
+| `apps/web/src/components/common/AccountMenu.vue` | 展示当前用户名并提供用户中心与退出/切换账号入口。                             |
 | `apps/web/src/auth/session.ts`                   | 保存当前前端用户状态并协调账号切换后的页面会话。                             |
 | `apps/web/src/auth/unauthorized.ts`               | 处理业务 API 401，清理用户状态并导航到登录页。                               |
 | `apps/web/src/auth/auth.test.ts`                  | 验证会话守卫、账号登录注册/退出及业务401清理导航。                           |
+| `apps/web/src/auth/user-center.test.ts`           | 用户中心导航/鉴权、校验、取消确认、更新成功失败与重复提交行为测试。           |
 | `apps/web/src/components/recipes/RecipeForm.vue` | 新增/编辑表单协调：草稿、shared校验、标签读取、提交与子组件组合。             |
 | `apps/web/src/components/recipes/AutocompleteInput.vue` | 菜谱表单联想输入、焦点/键盘选择和显式边界内的弹层布局。                  |
 | `apps/web/src/components/recipes/AutocompleteInput.test.ts` | 验证输入/选择事件、IME、关闭、弹层边界与键盘滚动。                          |
@@ -156,12 +157,13 @@ sku-cook-ai/
 | `apps/web/src/domain/recipe-excel-import.test.ts` | 验证示例行跳过、模板结构、菜谱字段/多行转换及工作簿格式边界。                    |
 | `apps/web/src/domain/recipe-export.ts` | 将菜谱详情转换为符合共享导入Contract的单菜JSON导出数据。 |
 | `apps/web/src/domain/recipe-export.test.ts` | 验证单菜导出字段、可导入格式及数据库元数据排除。 |
-| `apps/web/src/router/index.ts`                   | `/`正式重定向菜谱，注册S00–S10、认证守卫及未知路径。                          |
+| `apps/web/src/router/index.ts`                   | `/`正式重定向菜谱，注册S00–S11、认证守卫及未知路径。                          |
 | `apps/web/src/styles/main.css`                   | 奶油黄Memo主题、响应式页面、厨房横竖屏、发送成功弹窗和安全区布局。            |
 | `apps/web/src/styles/vant-theme.css`              | 奶油黄Memo色彩与Vant文字/背景/边框变量。                                      |
 | `apps/web/src/views/system/HomeView.vue` | S00技术联通检查页；不验证数据库，不是正式业务首页。                            |
 | `apps/web/src/views/system/HomeView.test.ts` | 验证health初始、成功、失败提示与重试。                                         |
 | `apps/web/src/views/account/AccountView.vue` | S10登录/开放注册表单、认证错误提示及登录后站内跳转。                          |
+| `apps/web/src/views/account/UserCenterView.vue` | S11受保护用户中心、用户名更新与当前密码/新密码确认更新流程。                 |
 | `apps/web/src/views/recipes/RecipeListView.vue` | S01列表、搜索/tag过滤、分页、随机推荐、多选与导航。                          |
 | `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发、初次加载错误与发送后回到菜谱一览。                  |
 | `apps/web/src/views/recipes/RecipeImportView.test.ts` | 验证A08/A09导入流程、A19下载状态及文件选择/模式切换竞态。                  |
@@ -211,9 +213,10 @@ sku-cook-ai/
 | `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及按认证用户事务锁。 |
 | `apps/api/src/modules/history/history.route.ts` | A16–A18认证用户历史分页、手动记录与整次删除。 |
 | `apps/api/src/modules/history/history.service.ts` | 历史DTO与持久化不变量校验。 |
-| `apps/api/src/modules/auth/auth.route.ts` | A20–A23注册、登录、恢复会话与退出HTTP Contract。 |
+| `apps/api/src/modules/auth/auth.route.ts` | A20–A25注册、登录、会话、退出与独立更新用户名/密码HTTP Contract。 |
 | `apps/api/src/modules/auth/auth.route.test.ts` | Mock数据库Supertest覆盖认证边界、Cookie、异常及未登录拦截。 |
-| `apps/api/src/modules/auth/auth.service.ts` | 用户注册/登录事务、密码验证和单浏览器会话轮换。 |
+| `apps/api/src/modules/auth/auth.profile.test.ts` | Mock数据库Supertest覆盖用户中心校验、身份范围、用户名冲突、密码校验与原子比较更新。 |
+| `apps/api/src/modules/auth/auth.service.ts` | 用户注册/登录事务、用户名唯一更新、密码校验/原子比较更新与会话轮换。 |
 | `apps/api/src/modules/auth/auth.session.ts` | Origin保护、认证用户提取、持久Cookie与请求认证钩子。 |
 | `apps/api/src/modules/auth/auth.crypto.ts` | scrypt密码哈希、随机会话令牌及SHA-256令牌哈希。 |
 | `apps/api/src/modules/auth/auth.crypto.test.ts` | 验证密码哈希、时序安全认证及会话令牌哈希。 |
@@ -228,7 +231,7 @@ sku-cook-ai/
 | `packages/shared/package.json`               | Zod共享包依赖、编译/测试脚本与显式dist导出。      |
 | `packages/shared/tsconfig.json`              | 共享源码编译、声明输出与测试文件编译排除。        |
 | `packages/shared/src/index.ts`               | Health、账号、菜谱、厨房、历史Contract和份数函数公开出口。 |
-| `packages/shared/src/schemas/auth.ts`         | 用户名、8–128位密码及认证请求/用户/响应Zod Contract。 |
+| `packages/shared/src/schemas/auth.ts`         | 用户名、8–128位密码、认证及独立用户名/密码更新请求响应Zod Contract。 |
 | `packages/shared/src/schemas/auth.test.ts`    | 验证账号格式、密码边界、严格请求与公开响应字段。 |
 | `packages/shared/src/schemas/health.ts`      | health运行时Zod响应Contract及HealthResponse类型。 |
 | `packages/shared/src/schemas/health.test.ts` | 验证合法health解析与非法状态拒绝。                |
@@ -264,6 +267,7 @@ sku-cook-ai/
 | `docs/design/screens/S05_RECIPE_IMPORT.md`   | 菜谱JSON导入/导出、预校验、错误报告、验收与独立提示词链接。                   |
 | `docs/design/screens/S09_RECIPE_EXCEL_IMPORT.md` | 固定单工作表模板、字段映射、本地解析、A08/A09流程与错误验收。             |
 | `docs/design/screens/S10_ACCOUNT.md`             | V2账号登录/注册、会话恢复/守卫、退出切换与错误状态设计。                  |
+| `docs/design/screens/S11_USER_CENTER.md`         | V2用户中心入口、独立用户名/密码表单、确认取消、状态及移动可读性设计，无独立图。 |
 | `docs/design/screens/S06_KITCHEN_DISPLAY.md` | 厨房多状态/整菜滚动/切换/轮询/常亮/断网设计、验收与独立提示词链接。            |
 | `docs/design/screens/S07_KITCHEN_PANEL.md`   | 手机发送/查看/替换/清空厨房菜单弹层设计、验收与独立提示词链接。               |
 | `docs/design/screens/S08_COOKING_HISTORY.md` | 历史分组/触底分页、最新做法与目标份数、已删菜保留及整次误记删除设计；Web已实现，数据库验收待做。 |
@@ -318,6 +322,8 @@ sku-cook-ai/
 | `docs/design/apis/A21_AUTH_LOGIN_POST.md`       | 大小写不敏感登录、密码验证、会话轮换及统一失败响应设计。                         |
 | `docs/design/apis/A22_AUTH_SESSION_GET.md`      | 持久会话恢复、Cookie滚动续期、401与认证用户范围设计。                           |
 | `docs/design/apis/A23_AUTH_SESSION_DELETE.md`   | 幂等撤销当前会话、清理Cookie并保留其他设备及业务数据设计。                      |
+| `docs/design/apis/A24_AUTH_USERNAME_PATCH.md`    | 已认证用户名更新Contract、大小写不敏感唯一冲突与数据归属保留设计。             |
+| `docs/design/apis/A25_AUTH_PASSWORD_PUT.md`      | 当前密码校验、新散列原子比较更新及保留会话Contract设计。                       |
 
 ## 3. 不展开的目录与运行文件
 
@@ -330,7 +336,7 @@ sku-cook-ai/
 
 ## 4. 当前边界与维护
 
-已实现基础首页、health、A02–A23源码/shared Contract、账号画面和认证用户业务隔离、Prisma Schema及Sku001 Seed源码。认证迁移尚未应用且Seed未运行；Docker不可用，仍需按设计书完成真实数据库、跨账号隔离、Cookie与HTTPS/PWA/Wake Lock验收，不凭源码/Schema存在断言运行时已成功。
+已实现基础首页、health、A02–A25源码/shared Contract、账号及用户中心画面和认证用户业务隔离、Prisma Schema及Sku001 Seed源码。用户中心复用现有Schema，无新迁移；mock测试覆盖，真实数据库及浏览器/真机未验收。本次未连接或写入日常数据库。认证迁移尚未应用且Seed未运行；Docker不可用，仍需按设计书完成真实数据库、跨账号隔离、Cookie与HTTPS/PWA/Wake Lock验收，不凭源码/Schema存在断言运行时已成功。
 
 本次新增Instructions、6个Skills、3个Agents和只读地图检查工具。没有AGENTS.md，避免双份全局规则漂移；角色工具权限与操作流程见 [AI_WORKFLOW.md](../development/AI_WORKFLOW.md)。
 

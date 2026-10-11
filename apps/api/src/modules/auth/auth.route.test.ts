@@ -40,6 +40,8 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
     ['post', '/api/cooking-history'],
     ['delete', '/api/cooking-history/1'],
     ['get', '/api/auth/session'],
+    ['patch', '/api/auth/username'],
+    ['put', '/api/auth/password'],
     ['get', '/api/health-extra'],
   ] as const)('requires authentication for %s %s before any DB operation', async (method, path) => {
     const lookup = vi.spyOn(app.prisma.authSession, 'findUnique');

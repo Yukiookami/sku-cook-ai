@@ -282,7 +282,6 @@ onBeforeUnmount(() => {
         <button class="button button-primary compact-button" type="button" @click="showMore = true">
           更多
         </button>
-        <AccountMenu />
       </div>
     </header>
     <div v-if="loading && !recipes.length" class="list-loading-state" role="status">
@@ -481,14 +480,18 @@ onBeforeUnmount(() => {
     <Teleport to="body">
       <div v-if="showMore" class="menu-scrim" @click.self="showMore = false">
         <nav class="more-menu paper-card" aria-label="更多功能">
-          <button
-            class="icon-button close-more"
-            type="button"
-            aria-label="关闭"
-            @click="showMore = false"
-          >
-            ×
-          </button>
+          <div class="more-menu-heading">
+            <span>更多功能</span>
+            <button
+              class="icon-button close-more"
+              type="button"
+              aria-label="关闭"
+              @click="showMore = false"
+            >
+              ×
+            </button>
+          </div>
+          <AccountMenu embedded @navigate="showMore = false" />
           <button class="menu-action" type="button" @click="openImport">菜谱导入 / 导出</button>
           <button class="menu-action" type="button" @click="openKitchen('view')">
             查看厨房菜单

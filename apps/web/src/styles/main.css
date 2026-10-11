@@ -144,33 +144,40 @@ p {
 
 .account-menu summary {
   display: flex;
+  width: 44px;
   min-height: 44px;
-  max-width: 190px;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fffaf0;
+  padding: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   cursor: pointer;
   font-size: 14px;
   font-weight: 700;
   list-style: none;
 }
 
+.account-menu-avatar {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--honey);
+  color: #5b411f;
+  font-size: 14px;
+  line-height: 1;
+}
+
 .account-menu summary::-webkit-details-marker {
   display: none;
 }
 
-.account-menu-name {
-  overflow: hidden;
-  max-width: 140px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .account-menu-panel {
+  display: grid;
+  gap: 12px;
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -183,13 +190,38 @@ p {
 }
 
 .account-menu-user {
-  margin: 0 0 10px;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--line);
   overflow-wrap: anywhere;
   font-weight: 700;
 }
 
 .account-menu-error {
+  margin: 0;
   font-size: 14px;
+}
+
+.account-menu-embedded {
+  z-index: auto;
+  margin: 12px 0;
+}
+
+.account-menu-embedded .account-menu-panel {
+  position: static;
+  width: 100%;
+  padding: 0 0 16px;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.account-menu-embedded .account-menu-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
 }
 
 .text-button {
@@ -228,6 +260,27 @@ p {
 
 .account-page {
   max-width: 560px;
+  min-height: 100svh;
+}
+
+.user-center-page .account-card {
+  margin-bottom: 20px;
+}
+
+.user-center-page h2 {
+  font-size: 20px;
+}
+
+.account-current-user {
+  overflow-wrap: anywhere;
+}
+
+html:has(.account-page) {
+  scroll-behavior: auto;
+}
+
+body:has(.account-page) {
+  min-height: 100svh;
 }
 
 .account-header {
@@ -265,13 +318,15 @@ p {
   font-weight: 700;
 }
 
-.account-field input {
+.account-field input,
+.user-center-page .account-form input {
   width: 100%;
   min-height: 50px;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fffefa;
+  font-size: 16px;
 }
 
 .account-submit {
@@ -307,11 +362,6 @@ p {
 
   .header-action-group {
     gap: 4px;
-  }
-
-  .header-action-group .account-menu summary {
-    max-width: 100px;
-    padding: 6px 7px;
   }
 
   .account-card {
@@ -727,7 +777,22 @@ p {
   position: relative;
   width: min(88vw, 420px);
   margin: auto 20px 20px auto;
-  padding: 54px 18px 18px;
+  max-height: calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 18px 18px;
+}
+
+.more-menu-heading {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 60px;
+  background: var(--paper);
+  font-weight: 700;
 }
 
 .menu-scrim,
@@ -757,9 +822,7 @@ p {
 }
 
 .close-more {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  flex-shrink: 0;
 }
 
 .icon-button {

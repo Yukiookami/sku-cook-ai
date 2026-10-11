@@ -1,6 +1,6 @@
 # 吃什么饭 · V1 设计书索引
 
-状态：2026-10-11。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；S09为V2固定Excel模板导入；S10为V2账号注册、登录与切换。A02–A19 API源码及Prisma Schema已实现；A20–A23为账号接口。账号改造的迁移与端到端验收以对应设计书实施状态为准。
+状态：2026-10-11。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；S09为V2固定Excel模板导入；S10为V2账号注册、登录与切换；S11为受保护用户中心，无独立设计图。A02–A19 API源码及Prisma Schema已实现；A20–A25为账号及独立用户名/密码更新接口。账号改造的迁移与端到端验收以对应设计书实施状态为准。
 
 依据：[需求文档](../requirements/REQUIREMENTS_V1.md)、[技术栈](../architecture/TECH_STACK.md)、[目录规划](../architecture/PROJECT_STRUCTURE.md)。需求定义范围，设计书细化交互与接口，实施时在 shared 中建立相应 Zod Contract。除已确认的 V2 账号功能外，不新增图片、AI Runtime、通知、离线写入或 TodoList。
 
@@ -10,19 +10,20 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 
 每个路由页面独立一份；共用厨房弹层另外单列，避免在列表和详情里重复定义。
 
-| 编号 | 画面                                                    | 路由 / 形态                                  | 状态                    |
-| ---- | ------------------------------------------------------- | -------------------------------------------- | ----------------------- |
-| S00  | [基础首页](screens/S00_HOME.md)                         | `/health-check`；`/` 导向正式入口 `/recipes` | 前端已有技术验证页      |
-| S01  | [菜谱一览](screens/S01_RECIPE_LIST.md)                  | `/recipes`                                   | 前端已实现，待联调      |
-| S02  | [菜谱详情](screens/S02_RECIPE_DETAIL.md)                | `/recipes/:id`                               | 前端已实现，待联调      |
-| S03  | [新增菜谱](screens/S03_RECIPE_CREATE.md)                | `/recipes/new`                               | 前端已实现，待联调      |
-| S04  | [编辑菜谱](screens/S04_RECIPE_EDIT.md)                  | `/recipes/:id/edit`                          | 前端已实现，待联调      |
-| S05  | [菜谱导入 / 导出](screens/S05_RECIPE_IMPORT.md)         | `/recipes/import`                            | 前端已实现，待联调      |
-| S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                   | 前端已实现，待联调      |
-| S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                   | 前端已实现，待联调      |
-| S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                           | 前端已实现，待联调      |
-| S09  | [Excel 菜谱导入](screens/S09_RECIPE_EXCEL_IMPORT.md)    | `/recipes/import/excel`                      | 前端已实现，复用A08/A09 |
-| S10  | [账号登录、注册与切换](screens/S10_ACCOUNT.md)          | `/account`                                   | Web已实现，待端到端验收 |
+| 编号 | 画面                                                    | 路由 / 形态                                  | 状态                                    |
+| ---- | ------------------------------------------------------- | -------------------------------------------- | --------------------------------------- |
+| S00  | [基础首页](screens/S00_HOME.md)                         | `/health-check`；`/` 导向正式入口 `/recipes` | 前端已有技术验证页                      |
+| S01  | [菜谱一览](screens/S01_RECIPE_LIST.md)                  | `/recipes`                                   | 前端已实现，待联调                      |
+| S02  | [菜谱详情](screens/S02_RECIPE_DETAIL.md)                | `/recipes/:id`                               | 前端已实现，待联调                      |
+| S03  | [新增菜谱](screens/S03_RECIPE_CREATE.md)                | `/recipes/new`                               | 前端已实现，待联调                      |
+| S04  | [编辑菜谱](screens/S04_RECIPE_EDIT.md)                  | `/recipes/:id/edit`                          | 前端已实现，待联调                      |
+| S05  | [菜谱导入 / 导出](screens/S05_RECIPE_IMPORT.md)         | `/recipes/import`                            | 前端已实现，待联调                      |
+| S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                   | 前端已实现，待联调                      |
+| S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                   | 前端已实现，待联调                      |
+| S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                           | 前端已实现，待联调                      |
+| S09  | [Excel 菜谱导入](screens/S09_RECIPE_EXCEL_IMPORT.md)    | `/recipes/import/excel`                      | 前端已实现，复用A08/A09                 |
+| S10  | [账号登录、注册与切换](screens/S10_ACCOUNT.md)          | `/account`                                   | Web已实现，待端到端验收                 |
+| S11  | [用户中心](screens/S11_USER_CENTER.md)                  | `/account/profile`                           | Web/API已实现，mock测试覆盖，待真实验收 |
 
 静态路径 `new`、`import` 与 id 路由明确区分；详情 id 只能是正整数。不存在的前端路由显示简洁的“页面不存在 / 返回菜谱”状态，不另外设计业务页面。
 
@@ -55,6 +56,8 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 | A21  | [POST /api/auth/login](apis/A21_AUTH_LOGIN_POST.md)                     | S10 登录             | 源码已实现，待数据库验收 |
 | A22  | [GET /api/auth/session](apis/A22_AUTH_SESSION_GET.md)                   | S10 恢复会话         | 源码已实现，待数据库验收 |
 | A23  | [DELETE /api/auth/session](apis/A23_AUTH_SESSION_DELETE.md)             | S10 主动退出         | 源码已实现，待数据库验收 |
+| A24  | [PATCH /api/auth/username](apis/A24_AUTH_USERNAME_PATCH.md)             | S11 修改用户名       | 源码已实现，待数据库验收 |
+| A25  | [PUT /api/auth/password](apis/A25_AUTH_PASSWORD_PUT.md)                 | S11 修改密码         | 源码已实现，待数据库验收 |
 
 菜谱静态API路径 `tags` / `random` 与 `:id` 正整数路由明确区分，不能因新增随机入口破坏详情访问。随机区复用S01，不新增独立路由页面。
 

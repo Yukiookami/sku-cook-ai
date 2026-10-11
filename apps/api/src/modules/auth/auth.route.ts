@@ -1,13 +1,36 @@
-import { AuthCredentialsSchema, AuthResponseSchema } from '@sku-cook/shared';
+import {
+  AuthCredentialsSchema,
+  AuthResponseSchema,
+  UpdateUsernameRequestSchema,
+  UpdateUsernameResponseSchema,
+  UpdatePasswordRequestSchema,
+  UpdatePasswordResponseSchema,
+} from '@sku-cook/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { hashSessionToken } from './auth.crypto.js';
-import { login, register } from './auth.service.js';
+import { login, register, updateUsername, updatePassword } from './auth.service.js';
 import { authenticatedUser, sessionToken, setSessionCookie } from './auth.session.js';
 
 const EmptyQuerySchema = z.object({}).strict();
 
 export async function authRoutes(app: FastifyInstance, settings: { secureCookie: boolean }) {
+  app.patch('/auth/username', { bodyLimit: 4096 }, async (request) => {
+    const user = authenticatedUser(request);
+    EmptyQuerySchema.parse(request.query);
+    const input = UpdateUsernameRequestSchema.parse(request.body);
+    return UpdateUsernameResponseSchema.parse({
+      user: await updateUsername(app.prisma, user.id, input),
+    });
+  });
+  app.put('/auth/password', { bodyLimit: 4096 }, async (request) => {
+    const user = authenticatedUser(request);
+    EmptyQuerySchema.parse(request.query);
+    const input = UpdatePasswordRequestSchema.parse(request.body);
+    return UpdatePasswordResponseSchema.parse({
+      user: await updatePassword(app.prisma, user.id, input),
+    });
+  });
   app.post('/auth/register', { bodyLimit: 4096 }, async (request, reply) => {
     EmptyQuerySchema.parse(request.query);
     const input = AuthCredentialsSchema.parse(request.body);

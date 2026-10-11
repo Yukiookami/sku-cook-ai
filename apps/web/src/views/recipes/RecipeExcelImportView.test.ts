@@ -39,6 +39,7 @@ async function mountView() {
       { path: '/recipes/import/excel', component: RecipeExcelImportView },
       { path: '/recipes/import', component: { template: '<main>JSON导入</main>' } },
       { path: '/recipes', component: { template: '<main>菜谱列表</main>' } },
+      { path: '/account/profile', component: { template: '<main>用户中心</main>' } },
     ],
   });
   await router.push('/recipes/import/excel');

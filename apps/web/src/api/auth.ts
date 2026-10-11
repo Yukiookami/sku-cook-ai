@@ -1,7 +1,32 @@
-import { AuthCredentialsSchema, AuthResponseSchema, type AuthUser } from '@sku-cook/shared';
+import {
+  AuthCredentialsSchema,
+  AuthResponseSchema,
+  UpdateUsernameRequestSchema,
+  UpdateUsernameResponseSchema,
+  UpdatePasswordRequestSchema,
+  UpdatePasswordResponseSchema,
+  type AuthUser,
+  type UpdatePasswordRequest,
+} from '@sku-cook/shared';
 import { client } from './client';
 
 export type AccountUser = AuthUser;
+
+export async function updateAccountUsername(username: string): Promise<AccountUser> {
+  const { data } = await client.patch<unknown>(
+    '/auth/username',
+    UpdateUsernameRequestSchema.parse({ username }),
+  );
+  return UpdateUsernameResponseSchema.parse(data).user;
+}
+
+export async function updateAccountPassword(input: UpdatePasswordRequest): Promise<AccountUser> {
+  const { data } = await client.put<unknown>(
+    '/auth/password',
+    UpdatePasswordRequestSchema.parse(input),
+  );
+  return UpdatePasswordResponseSchema.parse(data).user;
+}
 
 export function validateAccountCredentials(username: string, password: string): string | null {
   const result = AuthCredentialsSchema.safeParse({ username, password });
