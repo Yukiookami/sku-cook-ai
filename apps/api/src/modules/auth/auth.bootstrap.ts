@@ -20,6 +20,7 @@ export async function bootstrapUser(prisma: PrismaClient, password: string | und
         name: 'default-user',
         username: 'Sku001',
         usernameKey: 'sku001',
+        isSuperAdmin: true,
         passwordHash,
       },
     });

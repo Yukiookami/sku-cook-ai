@@ -4,6 +4,8 @@ import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
 import axios from 'axios';
 import { RecipeIdParamsSchema, type Recipe, type RecipeInput } from '@sku-cook/shared';
 import PageHeader from '../../components/common/PageHeader.vue';
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import RecipeForm from '../../components/recipes/RecipeForm.vue';
 import { apiErrorMessage } from '../../api/errors';
 import { getRecipe, updateRecipe } from '../../api/recipes';
@@ -16,6 +18,7 @@ const loadError = ref('');
 const notFound = ref(false);
 const dirty = ref(false);
 const saving = ref(false);
+const { dialog, confirm, settle } = useConfirmDialog();
 const titleError = ref('');
 const serverError = ref('');
 let loadSequence = 0;
@@ -79,15 +82,18 @@ function beforeUnload(event: BeforeUnloadEvent) {
   event.returnValue = '';
 }
 function back() {
-  if (!dirty.value || window.confirm('未保存内容将丢失，仍要离开吗？')) {
-    if (window.history.length > 1) router.back();
-    else void router.push(`/recipes/${String(route.params.id)}`);
-  }
+  if (window.history.length > 1) router.back();
+  else void router.push(`/recipes/${String(route.params.id)}`);
 }
 onBeforeRouteLeave(() => {
-  if (dirty.value && !saving.value && !window.confirm('未保存内容将丢失，仍要离开吗？')) {
-    return false;
-  }
+  if (dirty.value && !saving.value)
+    return confirm({
+      title: '放弃未保存内容？',
+      message: '未保存内容将丢失，仍要离开吗？',
+      confirmText: '放弃并离开',
+      cancelText: '继续编辑',
+      danger: true,
+    });
 });
 watch(() => route.params.id, load);
 onMounted(() => {
@@ -102,6 +108,7 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="page form-page">
+    <ConfirmDialog :options="dialog" @close="settle" />
     <PageHeader title="编辑菜谱" @back="back" />
     <p v-if="loading" class="state-note" role="status">正在读取菜谱…</p>
     <section v-else-if="notFound" class="paper-card empty-state" role="alert">

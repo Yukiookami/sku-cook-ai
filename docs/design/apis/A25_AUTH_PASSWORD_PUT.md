@@ -12,7 +12,7 @@ S11本地校验后确认再调用；取消确认不会请求API。服务端不�
 
 ## 2. 成功 200
 
-`UpdatePasswordResponseSchema`：`{"user":{"id":42,"username":"Alice"}}`，仅公开当前用户。
+`UpdatePasswordResponseSchema`：`{"user":{"id":42,"username":"Alice","email":null,"isSuperAdmin":false}}`，仅公开当前用户，不返回密码，邮箱和权限保持原值。
 
 按认证ID读取当前散列，复用auth.crypto.verifyPassword校验；复用hashPassword生成独立盐scrypt新散列。校验/散列在事务外，随后事务内updateMany按ID和旧passwordHash原子比较更新；若旧散列已变更，409而不覆盖。事务内读取公开用户响应；读取失败回滚更新。只修改passwordHash及自动updatedAt，不改用户名、ID或业务归属。
 

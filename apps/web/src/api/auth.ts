@@ -1,5 +1,8 @@
 import {
-  AuthCredentialsSchema,
+  LoginRequestSchema,
+  RegisterRequestSchema,
+  AdminUsersQuerySchema,
+  AdminUsersResponseSchema,
   AuthResponseSchema,
   UpdateUsernameRequestSchema,
   UpdateUsernameResponseSchema,
@@ -28,21 +31,38 @@ export async function updateAccountPassword(input: UpdatePasswordRequest): Promi
   return UpdatePasswordResponseSchema.parse(data).user;
 }
 
-export function validateAccountCredentials(username: string, password: string): string | null {
-  const result = AuthCredentialsSchema.safeParse({ username, password });
+export function validateAccountCredentials(
+  username: string,
+  password: string,
+  email?: string,
+): string | null {
+  const result =
+    email === undefined
+      ? LoginRequestSchema.safeParse({ username, password })
+      : RegisterRequestSchema.safeParse({ username, password, email });
   return result.success ? null : (result.error.issues[0]?.message ?? '请检查账号信息。');
 }
 
 export async function loginAccount(username: string, password: string): Promise<AccountUser> {
-  const body = AuthCredentialsSchema.parse({ username, password });
+  const body = LoginRequestSchema.parse({ username, password });
   const { data } = await client.post<unknown>('/auth/login', body);
   return AuthResponseSchema.parse(data).user;
 }
 
-export async function registerAccount(username: string, password: string): Promise<AccountUser> {
-  const body = AuthCredentialsSchema.parse({ username, password });
+export async function registerAccount(
+  username: string,
+  password: string,
+  email: string,
+): Promise<AccountUser> {
+  const body = RegisterRequestSchema.parse({ username, password, email });
   const { data } = await client.post<unknown>('/auth/register', body);
   return AuthResponseSchema.parse(data).user;
+}
+
+export async function getAdminUsers(page: number) {
+  const params = AdminUsersQuerySchema.parse({ page });
+  const { data } = await client.get<unknown>('/admin/users', { params });
+  return AdminUsersResponseSchema.parse(data);
 }
 
 export async function getAccountSession(): Promise<AccountUser> {

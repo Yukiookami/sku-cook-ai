@@ -124,7 +124,7 @@ sku-cook-ai/
 | `apps/web/src/App.vue`                | 路由出口与PWA新版本刷新提示。                                |
 | `apps/web/src/vite-env.d.ts`          | Vite和PWA虚拟模块的类型声明。                                |
 | `apps/web/src/api/client.ts`                    | Axios统一baseURL/超时配置及业务API 401响应拦截。                              |
-| `apps/web/src/api/auth.ts`                       | A20–A25认证及用户名/密码更新客户端与shared Contract校验。                    |
+| `apps/web/src/api/auth.ts`                       | A20–A26邮箱/用户名认证、用户中心更新和管理员用户分页客户端校验。              |
 | `apps/web/src/api/auth-errors.ts`                | 将账号操作的网络与服务端错误转换为可读提示。                                |
 | `apps/web/src/api/health.ts`                    | 请求health并用shared Schema校验响应。                                        |
 | `apps/web/src/api/recipes.ts`                   | A02–A09、A14、A19菜谱接口 typed client；请求与响应由shared Schema校验。        |
@@ -132,12 +132,16 @@ sku-cook-ai/
 | `apps/web/src/api/cooking-history.ts`           | A16–A18做饭历史接口 typed client。                                            |
 | `apps/web/src/api/errors.ts`                    | 将网络与HTTP状态转换为可读提示，并从shared错误Contract提取导入问题。          |
 | `apps/web/src/api/clients.test.ts`              | 使用Contract合法响应和测试HTTP Adapter验证业务API路径/请求体/响应层级/204。 |
-| `apps/web/src/components/common/PageHeader.vue` | 业务子页统一返回、标题、右侧操作和账号菜单。                                  |
-| `apps/web/src/components/common/AccountMenu.vue` | 展示当前用户名并提供用户中心与退出/切换账号入口。                             |
+| `apps/web/src/components/common/PageHeader.vue` | 业务子页统一返回、标题和右侧页面操作，不放账号入口。                           |
+| `apps/web/src/components/common/AccountMenu.vue` | 仅首页更多显示用户中心/退出，并按当前权限显示管理员入口。                     |
+| `apps/web/src/components/common/ConfirmDialog.vue` | 业务共用Memo确认弹窗，统一危险/普通按钮、取消默认焦点与键盘交互。            |
+| `apps/web/src/components/common/ConfirmDialog.test.ts` | 验证确认/取消、危险样式、纯文本、重复请求及卸载取消。                    |
 | `apps/web/src/auth/session.ts`                   | 保存当前前端用户状态并协调账号切换后的页面会话。                             |
 | `apps/web/src/auth/unauthorized.ts`               | 处理业务 API 401，清理用户状态并导航到登录页。                               |
 | `apps/web/src/auth/auth.test.ts`                  | 验证会话守卫、账号登录注册/退出及业务401清理导航。                           |
 | `apps/web/src/auth/user-center.test.ts`           | 用户中心导航/鉴权、校验、取消确认、更新成功失败与重复提交行为测试。           |
+| `apps/web/src/views/account/AdminUsersView.vue` | S12只读注册用户列表，普通用户拒绝、分页/重试和卸载忽略迟到响应。               |
+| `apps/web/src/views/account/AdminUsersView.test.ts` | 验证管理员列表权限、入口、分页去重与失败重试。                            |
 | `apps/web/src/components/recipes/RecipeForm.vue` | 新增/编辑表单协调：草稿、shared校验、标签读取、提交与子组件组合。             |
 | `apps/web/src/components/recipes/AutocompleteInput.vue` | 菜谱表单联想输入、焦点/键盘选择和显式边界内的弹层布局。                  |
 | `apps/web/src/components/recipes/AutocompleteInput.test.ts` | 验证输入/选择事件、IME、关闭、弹层边界与键盘滚动。                          |
@@ -150,6 +154,7 @@ sku-cook-ai/
 | `apps/web/src/components/kitchen/KitchenMenuPanel.test.ts` | 验证开弹层读取、独立份数调整、A11成功确认操作及冲突不误报成功。           |
 | `apps/web/src/views/kitchen/KitchenDisplayView.test.ts` | 验证A15完成、整菜连续滚动、返回滚动恢复及常亮提醒收起状态。                 |
 | `apps/web/src/composables/useWakeLock.ts`        | 厨房页可见状态下申请/释放Screen Wake Lock及安全降级。                         |
+| `apps/web/src/composables/useConfirmDialog.ts`   | 按页面协调异步确认状态，去重等待、结算确认/取消并在卸载时取消。               |
 | `apps/web/src/composables/useWakeLock.test.ts`  | 验证迟到的Wake Lock sentinel在菜单清空或组件卸载后释放。                     |
 | `apps/web/src/domain/recipe-form.ts` | 菜谱草稿类型、回填、数量单位解析、shared校验映射与错误字段定位的纯函数。      |
 | `apps/web/src/domain/recipe-form.test.ts` | 验证编辑回填保留原数量/单位边界、可选数字与自定义/范围用量解析。              |
@@ -170,7 +175,7 @@ sku-cook-ai/
 | `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情、份数参考换算、单菜JSON导出、编辑/删除/手动历史入口及单菜发送。    |
 | `apps/web/src/views/recipes/RecipeDetailView.test.ts` | 验证单菜JSON导出及发送到厨房成功后的留页/返回行为。 |
 | `apps/web/src/views/recipes/RecipeCreateView.vue` | S03新增页，使用共用表单并保留失败草稿。                                      |
-| `apps/web/src/views/recipes/RecipeCreateView.test.ts` | 验证新增保存成功后跳转不会误触发未保存提醒。                               |
+| `apps/web/src/views/recipes/RecipeCreateView.test.ts` | 验证保存成功不误提醒，以及新增/编辑离开确认、取消保留与单次确认导航。       |
 | `apps/web/src/views/recipes/RecipeEditView.vue` | S04读取、回填并完整替换菜谱，复用新增表单。                                 |
 | `apps/web/src/views/recipes/RecipeEditView.test.ts` | 验证菜谱ID切换后逆序返回的旧GET不会覆盖当前编辑数据。                      |
 | `apps/web/src/views/recipes/RecipeImportView.vue` | S05 菜谱JSON导入/导出、文件/粘贴、预校验与完整菜库备份。                |
@@ -192,9 +197,10 @@ sku-cook-ai/
 | `apps/api/vitest.config.ts`                   | Node测试环境及API源码/集成测试匹配。                   |
 | `apps/api/prisma.config.ts`                   | Prisma6的schema、迁移目录和Seed命令配置。              |
 | `apps/api/prisma/migrations/20261008132653_initial_recipe_schema/migration.sql` | 首次创建用户、菜谱、厨房会话与做饭历史数据表、外键和索引；已应用于本地开发数据库。 |
-| `apps/api/prisma/migrations/20261011070000_add_account_auth_sessions/migration.sql` | 保留并映射既有用户为Sku001/Legacy账号，新增账号字段与持久会话表；尚未应用，Docker未运行。 |
+| `apps/api/prisma/migrations/20261011070000_add_account_auth_sessions/migration.sql` | 保留并映射既有用户为Sku001/Legacy账号，新增账号字段与持久会话表；本机已应用。 |
+| `apps/api/prisma/migrations/20261011090000_add_super_admin_email_login/migration.sql` | 升级原id=1为唯一超级管理员，邮箱小写/唯一约束，本机备份验收后应用。 |
 | `apps/api/prisma/migrations/migration_lock.toml` | 固定Prisma迁移provider为PostgreSQL。                |
-| `apps/api/prisma/schema.prisma`               | PostgreSQL User认证资料/AuthSession、菜谱/厨房/历史模型及外键索引；新增模型迁移尚未应用。 |
+| `apps/api/prisma/schema.prisma`               | PostgreSQL用户邮箱/管理员权限、AuthSession及菜谱/厨房/历史关系；本机迁移已应用。 |
 | `apps/api/prisma/seed.ts`                     | 通过本机配置幂等初始化Sku001的空密码哈希，不覆盖已设密码。                       |
 | `apps/api/src/app.ts`                         | 构造Fastify实例，装配统一错误处理、Prisma、认证钩子、health与业务路由。           |
 | `apps/api/src/server.ts`                      | 读取服务/认证配置、启动监听、失败处理与退出。                                   |
@@ -213,10 +219,11 @@ sku-cook-ai/
 | `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及按认证用户事务锁。 |
 | `apps/api/src/modules/history/history.route.ts` | A16–A18认证用户历史分页、手动记录与整次删除。 |
 | `apps/api/src/modules/history/history.service.ts` | 历史DTO与持久化不变量校验。 |
-| `apps/api/src/modules/auth/auth.route.ts` | A20–A25注册、登录、会话、退出与独立更新用户名/密码HTTP Contract。 |
+| `apps/api/src/modules/auth/auth.route.ts` | A20–A26认证、用户中心更新及服务端权限限定的只读用户分页Contract。 |
+| `apps/api/src/modules/auth/auth.admin.test.ts` | 验证邮箱登录、注册邮箱/权限注入校验及管理员权限、安全分页响应。 |
 | `apps/api/src/modules/auth/auth.route.test.ts` | Mock数据库Supertest覆盖认证边界、Cookie、异常及未登录拦截。 |
 | `apps/api/src/modules/auth/auth.profile.test.ts` | Mock数据库Supertest覆盖用户中心校验、身份范围、用户名冲突、密码校验与原子比较更新。 |
-| `apps/api/src/modules/auth/auth.service.ts` | 用户注册/登录事务、用户名唯一更新、密码校验/原子比较更新与会话轮换。 |
+| `apps/api/src/modules/auth/auth.service.ts` | 邮箱/用户名登录、注册唯一冲突、公开用户映射、原子改密和会话轮换。 |
 | `apps/api/src/modules/auth/auth.session.ts` | Origin保护、认证用户提取、持久Cookie与请求认证钩子。 |
 | `apps/api/src/modules/auth/auth.crypto.ts` | scrypt密码哈希、随机会话令牌及SHA-256令牌哈希。 |
 | `apps/api/src/modules/auth/auth.crypto.test.ts` | 验证密码哈希、时序安全认证及会话令牌哈希。 |
@@ -268,6 +275,7 @@ sku-cook-ai/
 | `docs/design/screens/S09_RECIPE_EXCEL_IMPORT.md` | 固定单工作表模板、字段映射、本地解析、A08/A09流程与错误验收。             |
 | `docs/design/screens/S10_ACCOUNT.md`             | V2账号登录/注册、会话恢复/守卫、退出切换与错误状态设计。                  |
 | `docs/design/screens/S11_USER_CENTER.md`         | V2用户中心入口、独立用户名/密码表单、确认取消、状态及移动可读性设计，无独立图。 |
+| `docs/design/screens/S12_ADMIN_USERS.md`         | 只读管理员用户列表、首页权限入口、分页与失败恢复设计，无独立图。 |
 | `docs/design/screens/S06_KITCHEN_DISPLAY.md` | 厨房多状态/整菜滚动/切换/轮询/常亮/断网设计、验收与独立提示词链接。            |
 | `docs/design/screens/S07_KITCHEN_PANEL.md`   | 手机发送/查看/替换/清空厨房菜单弹层设计、验收与独立提示词链接。               |
 | `docs/design/screens/S08_COOKING_HISTORY.md` | 历史分组/触底分页、最新做法与目标份数、已删菜保留及整次误记删除设计；Web已实现，数据库验收待做。 |
@@ -324,6 +332,7 @@ sku-cook-ai/
 | `docs/design/apis/A23_AUTH_SESSION_DELETE.md`   | 幂等撤销当前会话、清理Cookie并保留其他设备及业务数据设计。                      |
 | `docs/design/apis/A24_AUTH_USERNAME_PATCH.md`    | 已认证用户名更新Contract、大小写不敏感唯一冲突与数据归属保留设计。             |
 | `docs/design/apis/A25_AUTH_PASSWORD_PUT.md`      | 当前密码校验、新散列原子比较更新及保留会话Contract设计。                       |
+| `docs/design/apis/A26_ADMIN_USERS_GET.md`        | 服务端管理员权限校验与安全用户字段、固定20项分页Contract。 |
 
 ## 3. 不展开的目录与运行文件
 
@@ -336,7 +345,7 @@ sku-cook-ai/
 
 ## 4. 当前边界与维护
 
-已实现基础首页、health、A02–A25源码/shared Contract、账号及用户中心画面和认证用户业务隔离、Prisma Schema及Sku001 Seed源码。用户中心复用现有Schema，无新迁移；mock测试覆盖，真实数据库及浏览器/真机未验收。本次未连接或写入日常数据库。认证迁移尚未应用且Seed未运行；Docker不可用，仍需按设计书完成真实数据库、跨账号隔离、Cookie与HTTPS/PWA/Wake Lock验收，不凭源码/Schema存在断言运行时已成功。
+已实现A02–A26源码/shared Contract、邮箱/用户名登录、用户中心、只读管理员列表及用户业务隔离；业务确认使用共用Memo组件，账号入口仅首页更多。认证及管理员迁移已在本机应用，备份成功恢复到专用无网络数据库，8张业务表摘要保持一致，邮箱/单管理员约束验证通过。其他机器需部署迁移并在私有环境绑定管理员邮箱；真机、多设备、完整业务写入事务及HTTPS/PWA/Wake Lock仍按设计书验收，不能用源码或health代替。
 
 本次新增Instructions、6个Skills、3个Agents和只读地图检查工具。没有AGENTS.md，避免双份全局规则漂移；角色工具权限与操作流程见 [AI_WORKFLOW.md](../development/AI_WORKFLOW.md)。
 

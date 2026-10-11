@@ -78,6 +78,7 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
       username: 'Alice',
       usernameKey: 'alice',
       email: null,
+      isSuperAdmin: false,
       passwordHash: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -90,9 +91,11 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
     await app.ready();
     const response = await request(app.server)
       .post('/api/auth/register')
-      .send({ username: 'Alice', password })
+      .send({ username: 'Alice', password, email: 'alice@example.com' })
       .expect(201);
-    expect(response.body).toEqual({ user: { id: 9, username: 'Alice' } });
+    expect(response.body).toEqual({
+      user: { id: 9, username: 'Alice', email: null, isSuperAdmin: false },
+    });
     const cookie = String(response.headers['set-cookie'][0]);
     const token = cookie.split(';')[0].split('=')[1];
     expect(cookie).toContain('HttpOnly');
@@ -114,12 +117,12 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
     await app.ready();
     const conflict = await request(app.server)
       .post('/api/auth/register')
-      .send({ username: 'aLiCe', password })
+      .send({ username: 'aLiCe', password, email: 'alice@example.com' })
       .expect(409);
     expect(conflict.body.error.code).toBe('USERNAME_TAKEN');
     await request(app.server)
       .post('/api/auth/register')
-      .send({ username: 'Alice', password })
+      .send({ username: 'Alice', password, email: 'alice@example.com' })
       .expect(500);
   });
 
@@ -131,6 +134,7 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
       username: 'Alice',
       usernameKey: 'alice',
       email: null,
+      isSuperAdmin: false,
       passwordHash: await hashPassword(password),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -148,7 +152,9 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
       .set('Cookie', `sku_session=${previous}`)
       .send({ username: 'aLiCe', password })
       .expect(200);
-    expect(response.body).toEqual({ user: { id: 9, username: 'Alice' } });
+    expect(response.body).toEqual({
+      user: { id: 9, username: 'Alice', email: null, isSuperAdmin: false },
+    });
     expect(lookup).toHaveBeenCalledWith({ where: { usernameKey: 'alice' } });
     expect(revoke).toHaveBeenCalledWith({ where: { tokenHash: hashSessionToken(previous) } });
   });
@@ -163,6 +169,7 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
         username: 'Sku001',
         usernameKey: 'sku001',
         email: null,
+        isSuperAdmin: false,
         passwordHash: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -173,6 +180,7 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
         username: 'Sku001',
         usernameKey: 'sku001',
         email: null,
+        isSuperAdmin: false,
         passwordHash: await hashPassword(randomBytes(24).toString('hex')),
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -195,7 +203,7 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
       userId: 9,
       tokenHash: hashSessionToken(token),
       createdAt: new Date('2020-01-01'),
-      ...{ user: { id: 9, username: 'Alice' } },
+      ...{ user: { id: 9, username: 'Alice', email: null, isSuperAdmin: false } },
     });
     const revoke = vi.spyOn(app.prisma.authSession, 'deleteMany').mockResolvedValue({ count: 1 });
     await app.ready();
@@ -203,7 +211,9 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
       .get('/api/auth/session')
       .set('Cookie', `sku_session=${token}`)
       .expect(200);
-    expect(current.body).toEqual({ user: { id: 9, username: 'Alice' } });
+    expect(current.body).toEqual({
+      user: { id: 9, username: 'Alice', email: null, isSuperAdmin: false },
+    });
     expect(current.headers['set-cookie'][0]).toContain('Max-Age=315360000');
     const logout = await request(app.server)
       .delete('/api/auth/session')
@@ -253,6 +263,7 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
       username: 'Alice',
       usernameKey: 'alice',
       email: null,
+      isSuperAdmin: false,
       passwordHash: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -263,7 +274,7 @@ describe('auth HTTP contract (mock database, not integration acceptance)', () =>
     await app.ready();
     const response = await request(app.server)
       .post('/api/auth/register')
-      .send({ username: 'Alice', password })
+      .send({ username: 'Alice', password, email: 'alice@example.com' })
       .expect(500);
     expect(response.headers['set-cookie']).toBeUndefined();
     expect(transaction).toHaveBeenCalledOnce();

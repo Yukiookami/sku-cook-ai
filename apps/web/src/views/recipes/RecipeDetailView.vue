@@ -10,6 +10,8 @@ import {
   type RecipeSummary,
 } from '@sku-cook/shared';
 import PageHeader from '../../components/common/PageHeader.vue';
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import KitchenMenuPanel from '../../components/kitchen/KitchenMenuPanel.vue';
 import { apiErrorMessage } from '../../api/errors';
 import { deleteRecipe, getRecipe } from '../../api/recipes';
@@ -24,6 +26,7 @@ const loadError = ref('');
 const notFound = ref(false);
 const targetServings = ref(1);
 const writing = ref(false);
+const { dialog, confirm, settle } = useConfirmDialog();
 const writeError = ref('');
 const showMore = ref(false);
 const showKitchen = ref(false);
@@ -179,15 +182,20 @@ function exportRecipe() {
 
 async function recordCooked() {
   if (!recipe.value || writing.value) return;
-  const confirmed = window.confirm(
-    `记录刚做过「${recipe.value.title}」${targetServings.value}人份？时间按现在保存。`,
-  );
-  if (!confirmed) return;
   const recipeId = recipe.value.id;
   const servings = targetServings.value;
+  const title = recipe.value.title;
   writing.value = true;
   writeError.value = '';
   try {
+    if (
+      !(await confirm({
+        title: '记录做过',
+        message: `记录刚做过「${title}」${servings}人份？时间按现在保存。`,
+        confirmText: '确认记录',
+      }))
+    )
+      return;
     await recordCookingHistory({ recipeId, targetServings: servings });
     writeError.value = '已记录做饭历史。';
   } catch {
@@ -200,13 +208,18 @@ async function recordCooked() {
 async function removeRecipe() {
   if (!recipe.value || writing.value) return;
   const currentRecipe = recipe.value;
-  const confirmed = window.confirm(
-    `删除「${currentRecipe.title}」？食材和步骤也会删除；若在厨房菜单中，也会移除。已有做饭历史会保留名字和份数，但不能再打开此菜谱。`,
-  );
-  if (!confirmed) return;
   writing.value = true;
   writeError.value = '';
   try {
+    if (
+      !(await confirm({
+        title: '删除菜谱',
+        message: `删除「${currentRecipe.title}」？食材和步骤也会删除；若在厨房菜单中，也会移除。已有做饭历史会保留名字和份数，但不能再打开此菜谱。`,
+        confirmText: '确认删除',
+        danger: true,
+      }))
+    )
+      return;
     await deleteRecipe(currentRecipe.id);
     void router.replace('/recipes');
   } catch (cause) {
@@ -230,6 +243,7 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="page detail-page">
+    <ConfirmDialog :options="dialog" @close="settle" />
     <PageHeader title="菜谱详情" @back="goBack">
       <template #right>
         <button class="button button-primary compact-button" type="button" @click="showMore = true">
@@ -367,14 +381,17 @@ onBeforeUnmount(() => {
     <Teleport to="body">
       <div v-if="showMore" class="menu-scrim" @click.self="showMore = false">
         <nav class="more-menu paper-card" aria-label="菜谱操作">
-          <button
-            class="icon-button close-more"
-            type="button"
-            aria-label="关闭"
-            @click="showMore = false"
-          >
-            ×
-          </button>
+          <div class="more-menu-heading">
+            <span>菜谱操作</span>
+            <button
+              class="icon-button close-more"
+              type="button"
+              aria-label="关闭"
+              @click="showMore = false"
+            >
+              ×
+            </button>
+          </div>
           <RouterLink
             class="menu-action"
             :to="`/recipes/${recipe?.id}/edit`"

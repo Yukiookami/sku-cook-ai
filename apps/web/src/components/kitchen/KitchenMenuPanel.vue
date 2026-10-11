@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue';
 import type { RecipeSummary } from '@sku-cook/shared';
 import { apiErrorMessage } from '../../api/errors';
 import { clearKitchenMenu, getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
+import ConfirmDialog from '../common/ConfirmDialog.vue';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 
 type Selection = { recipe: RecipeSummary; targetServings: number };
 type DisplayMode = 'send' | 'view';
@@ -17,6 +19,7 @@ const emit = defineEmits<{ close: []; sent: []; 'return-to-recipes': [] }>();
 
 const loading = ref(false);
 const saving = ref(false);
+const { dialog, confirm, settle } = useConfirmDialog();
 const sendSucceeded = ref(false);
 const stateFresh = ref(false);
 const error = ref('');
@@ -137,15 +140,21 @@ function returnToRecipes() {
 
 async function emptyKitchen() {
   if (!session.value || !stateFresh.value || !hasCurrentMenu.value || saving.value) return;
-  const confirmed = window.confirm(
-    '清空后厨房屏将回到待机，不会记录做过；菜谱和已有历史不会删除。',
-  );
-  if (!confirmed) return;
+  const revision = session.value.revision;
   saving.value = true;
   error.value = '';
   try {
+    if (
+      !(await confirm({
+        title: '清空厨房菜单',
+        message: '清空后厨房屏将回到待机，不会记录做过；菜谱和已有历史不会删除。',
+        confirmText: '确认清空',
+        danger: true,
+      }))
+    )
+      return;
     sessionResult.value = await clearKitchenMenu({
-      expectedRevision: session.value.revision,
+      expectedRevision: revision,
     });
   } catch (cause) {
     const operationError = apiErrorMessage(cause, '清空结果暂未确认，请重新读取厨房菜单。');
@@ -158,6 +167,7 @@ async function emptyKitchen() {
 </script>
 
 <template>
+  <ConfirmDialog :options="dialog" @close="settle" />
   <Teleport to="body">
     <div v-if="show" class="panel-scrim" @click.self="closePanel">
       <section class="kitchen-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">

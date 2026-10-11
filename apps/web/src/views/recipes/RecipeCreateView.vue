@@ -3,6 +3,8 @@ import { onBeforeUnmount, ref } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import type { RecipeInput } from '@sku-cook/shared';
 import PageHeader from '../../components/common/PageHeader.vue';
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import RecipeForm from '../../components/recipes/RecipeForm.vue';
 import { apiErrorMessage } from '../../api/errors';
 import { createRecipe } from '../../api/recipes';
@@ -11,6 +13,7 @@ import axios from 'axios';
 const router = useRouter();
 const dirty = ref(false);
 const saving = ref(false);
+const { dialog, confirm, settle } = useConfirmDialog();
 const titleError = ref('');
 const serverError = ref('');
 
@@ -41,15 +44,18 @@ function beforeUnload(event: BeforeUnloadEvent) {
   event.returnValue = '';
 }
 function back() {
-  if (!dirty.value || window.confirm('未保存内容将丢失，仍要离开吗？')) {
-    if (window.history.length > 1) router.back();
-    else void router.push('/recipes');
-  }
+  if (window.history.length > 1) router.back();
+  else void router.push('/recipes');
 }
 onBeforeRouteLeave(() => {
-  if (dirty.value && !saving.value && !window.confirm('未保存内容将丢失，仍要离开吗？')) {
-    return false;
-  }
+  if (dirty.value && !saving.value)
+    return confirm({
+      title: '放弃未保存内容？',
+      message: '未保存内容将丢失，仍要离开吗？',
+      confirmText: '放弃并离开',
+      cancelText: '继续编辑',
+      danger: true,
+    });
 });
 window.addEventListener('beforeunload', beforeUnload);
 onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
@@ -57,6 +63,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
 
 <template>
   <main class="page form-page">
+    <ConfirmDialog :options="dialog" @close="settle" />
     <PageHeader title="新增菜谱" @back="back" />
     <RecipeForm
       submit-label="保存菜谱"

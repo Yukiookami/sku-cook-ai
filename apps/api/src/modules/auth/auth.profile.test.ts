@@ -6,7 +6,7 @@ import { hashPassword, verifyPassword } from './auth.crypto.js';
 describe('user center HTTP contract (mock database only)', () => {
   let app: ReturnType<typeof buildApp>;
   const cookie = `sku_session=${'a'.repeat(64)}`;
-  const user = { id: 42, username: 'Alice' };
+  const user = { id: 42, username: 'Alice', email: null, isSuperAdmin: false };
   beforeEach(async () => {
     app = buildApp('postgresql://localhost/test', { logger: false });
     const session = {
@@ -52,6 +52,7 @@ describe('user center HTTP contract (mock database only)', () => {
       usernameKey: 'alice',
       passwordHash: null,
       email: null,
+      isSuperAdmin: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -61,11 +62,11 @@ describe('user center HTTP contract (mock database only)', () => {
       .set('Cookie', cookie)
       .send({ username: 'ALICE' })
       .expect(200);
-    expect(response.body).toEqual({ user: { id: 42, username: 'ALICE' } });
+    expect(response.body).toEqual({ user: { ...user, username: 'ALICE' } });
     expect(update).toHaveBeenCalledWith({
       where: { id: 42 },
       data: { username: 'ALICE', name: 'ALICE', usernameKey: 'alice' },
-      select: { id: true, username: true },
+      select: { id: true, username: true, email: true, isSuperAdmin: true },
     });
     expect(sessionDelete).not.toHaveBeenCalled();
   });
@@ -95,6 +96,7 @@ describe('user center HTTP contract (mock database only)', () => {
       name: 'Alice',
       usernameKey: 'alice',
       email: null,
+      isSuperAdmin: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -123,6 +125,7 @@ describe('user center HTTP contract (mock database only)', () => {
       name: 'Alice',
       usernameKey: 'alice',
       email: null,
+      isSuperAdmin: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

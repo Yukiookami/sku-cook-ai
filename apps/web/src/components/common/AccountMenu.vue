@@ -7,15 +7,9 @@ import { currentAccount, clearCurrentAccount } from '../../auth/session';
 import { accountErrorMessage } from '../../api/auth-errors';
 
 const router = useRouter();
-defineProps<{ embedded?: boolean }>();
 const emit = defineEmits<{ navigate: [] }>();
-const open = ref(false);
 const pending = ref(false);
 const error = ref('');
-
-function syncOpen(event: Event) {
-  open.value = (event.currentTarget as HTMLDetailsElement).open;
-}
 
 async function logout() {
   if (pending.value) return;
@@ -39,20 +33,10 @@ async function logout() {
 </script>
 
 <template>
-  <component
-    :is="embedded ? 'section' : 'details'"
-    class="account-menu"
-    :class="{ 'account-menu-embedded': embedded }"
-    @toggle="syncOpen"
-  >
-    <summary v-if="!embedded" :aria-expanded="open" aria-label="账号菜单">
-      <span class="account-menu-avatar" aria-hidden="true">
-        {{ currentAccount?.username.slice(0, 1).toUpperCase() ?? 'U' }}
-      </span>
-    </summary>
+  <section class="account-menu" aria-label="账号操作">
     <div class="account-menu-panel">
       <p class="account-menu-user">
-        <span v-if="embedded" class="account-menu-avatar" aria-hidden="true">
+        <span class="account-menu-avatar" aria-hidden="true">
           {{ currentAccount?.username.slice(0, 1).toUpperCase() ?? 'U' }}
         </span>
         <span>当前账号：{{ currentAccount?.username }}</span>
@@ -64,6 +48,14 @@ async function logout() {
       >
         用户中心
       </RouterLink>
+      <RouterLink
+        v-if="currentAccount?.isSuperAdmin === true"
+        class="button button-secondary compact-button full-width"
+        to="/admin/users"
+        @click="emit('navigate')"
+      >
+        管理员页面
+      </RouterLink>
       <p v-if="error" class="inline-error account-menu-error" role="alert">{{ error }}</p>
       <button
         class="button button-secondary compact-button full-width"
@@ -74,5 +66,5 @@ async function logout() {
         {{ pending ? '正在退出…' : '退出并切换账号' }}
       </button>
     </div>
-  </component>
+  </section>
 </template>

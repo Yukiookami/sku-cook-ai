@@ -26,6 +26,7 @@ describe('bootstrap seed (mock DB; real seed idempotency not accepted)', () => {
       username: 'Sku001',
       usernameKey: 'sku001',
       email: null,
+      isSuperAdmin: false,
       passwordHash: null,
       createdAt: new Date(),
       updatedAt: new Date(),

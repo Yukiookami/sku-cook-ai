@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router';
 import axios from 'axios';
 import type { CookingHistory } from '@sku-cook/shared';
 import PageHeader from '../../components/common/PageHeader.vue';
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import { apiErrorMessage } from '../../api/errors';
 import { deleteCookingHistory, getCookingHistory } from '../../api/cooking-history';
 
@@ -16,6 +18,7 @@ const hasMore = ref(false);
 const page = ref(1);
 const error = ref('');
 const deletingId = ref<number | null>(null);
+const { dialog, confirm, settle } = useConfirmDialog();
 let requestSequence = 0;
 let deleteSequence = 0;
 
@@ -72,14 +75,19 @@ function openLatest(item: CookingHistory['items'][number]) {
 
 async function removeHistory(history: CookingHistory) {
   if (deletingId.value !== null) return;
-  const confirmed = window.confirm(
-    `删除这次做饭记录？本次${history.items.length}道菜的记录会移除，菜谱和厨房菜单不会改变。`,
-  );
-  if (!confirmed) return;
   const sequence = ++deleteSequence;
   deletingId.value = history.id;
   error.value = '';
   try {
+    if (
+      !(await confirm({
+        title: '删除做饭记录',
+        message: `删除这次做饭记录？本次${history.items.length}道菜的记录会移除，菜谱和厨房菜单不会改变。`,
+        confirmText: '确认删除',
+        danger: true,
+      }))
+    )
+      return;
     await deleteCookingHistory(history.id);
     if (sequence === deleteSequence) await load(true);
   } catch (cause) {
@@ -119,6 +127,7 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="page history-page">
+    <ConfirmDialog :options="dialog" @close="settle" />
     <PageHeader title="做饭历史" @back="back" />
     <p class="history-intro">找到最近做过的菜，点菜名查看最新做法。</p>
     <p v-if="error" class="inline-error" role="alert">

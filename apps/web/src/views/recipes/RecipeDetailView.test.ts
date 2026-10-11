@@ -3,8 +3,10 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
 import { KitchenStateResponseSchema, RecipeSchema } from '@sku-cook/shared';
 import { getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
-import { getRecipe } from '../../api/recipes';
+import { deleteRecipe, getRecipe } from '../../api/recipes';
+import { recordCookingHistory } from '../../api/cooking-history';
 import RecipeDetailView from './RecipeDetailView.vue';
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
 
 vi.mock('../../api/recipes', () => ({
   deleteRecipe: vi.fn(),
@@ -86,6 +88,7 @@ async function mountDetailView() {
       stubs: {
         PageHeader: { template: '<header><slot name="right" /></header>' },
         Teleport: true,
+        ConfirmDialog: true,
       },
     },
   });
@@ -138,6 +141,57 @@ describe('RecipeDetailView', () => {
     expect(downloadedFiles).toEqual(['番茄炒蛋.json']);
     expect(wrapper.text()).toContain('JSON文件包含1道菜谱');
     expect(clickAnchor).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
+  it('uses the shared deletion dialog, cancels safely, and prevents duplicate deletes', async () => {
+    const { wrapper, router } = await mountDetailView();
+    await wrapper.get('.compact-button').trigger('click');
+    expect(wrapper.get('.more-menu-heading').text()).toContain('菜谱操作');
+    expect(wrapper.get('.more-menu-heading button[aria-label="关闭"]').text()).toBe('×');
+    await wrapper.get('.menu-action.danger-text').trigger('click');
+    const dialog = wrapper.getComponent(ConfirmDialog);
+    expect(dialog.props('options')?.message).toContain('已有做饭历史会保留');
+    expect(deleteRecipe).not.toHaveBeenCalled();
+    dialog.vm.$emit('close', false);
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe('/recipes/11');
+    expect(deleteRecipe).not.toHaveBeenCalled();
+    await wrapper.get('.menu-action.danger-text').trigger('click');
+    await wrapper.get('.menu-action.danger-text').trigger('click');
+    expect(
+      wrapper
+        .findAllComponents(ConfirmDialog)
+        .filter((component) => component.props('options') !== null),
+    ).toHaveLength(1);
+    dialog.vm.$emit('close', true);
+    await flushPromises();
+    expect(deleteRecipe).toHaveBeenCalledExactlyOnceWith(11);
+    expect(router.currentRoute.value.path).toBe('/recipes');
+    wrapper.unmount();
+  });
+
+  it('freezes target servings during confirmation and sends the confirmed value', async () => {
+    const { wrapper } = await mountDetailView();
+    await wrapper.get('.compact-button').trigger('click');
+    const recordButton = wrapper
+      .findAll('.menu-action')
+      .find((button) => button.text() === '记录做过')!;
+    await recordButton.trigger('click');
+    expect(recordCookingHistory).not.toHaveBeenCalled();
+    const dialog = wrapper.getComponent(ConfirmDialog);
+    expect(dialog.props('options')?.message).toContain('2人份');
+    expect(
+      wrapper
+        .findAll('.servings-control button')
+        .every((button) => button.attributes('disabled') !== undefined),
+    ).toBe(true);
+    dialog.vm.$emit('close', true);
+    await flushPromises();
+    expect(recordCookingHistory).toHaveBeenCalledExactlyOnceWith({
+      recipeId: 11,
+      targetServings: 2,
+    });
     wrapper.unmount();
   });
 

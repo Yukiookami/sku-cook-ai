@@ -68,7 +68,7 @@ afterEach(() => {
 
 describe('account API and session guard', () => {
   it('uses shared schemas, cookie credentials, and the agreed auth routes', async () => {
-    await registerAccount(user.username, validPassword);
+    await registerAccount(user.username, validPassword, 'alice@example.com');
     await loginAccount(user.username, validPassword);
     await getAccountSession();
     respond = () => ({ status: 204, data: undefined });
@@ -81,7 +81,7 @@ describe('account API and session guard', () => {
       ['delete', '/auth/session'],
     ]);
     expect(calls.slice(0, 2).map(({ data }) => data)).toEqual([
-      { username: user.username, password: validPassword },
+      { username: user.username, password: validPassword, email: 'alice@example.com' },
       { username: user.username, password: validPassword },
     ]);
     expect(calls.every(({ withCredentials }) => withCredentials)).toBe(true);
@@ -124,6 +124,7 @@ describe('account API and session guard', () => {
     const wrapper = mount(AccountView, { global: { plugins: [router] } });
     await wrapper.get('input[name="username"]').setValue(user.username);
     await wrapper.get('input[name="password"]').setValue(validPassword);
+    await wrapper.get('input[name="email"]').setValue('alice@example.com');
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 
@@ -235,6 +236,7 @@ describe('account form and menu interactions', () => {
     const wrapper = mount(AccountView, { global: { plugins: [router] } });
     await wrapper.get('input[name="username"]').setValue(user.username);
     await wrapper.get('input[name="password"]').setValue(validPassword);
+    await wrapper.get('input[name="email"]').setValue('alice@example.com');
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 

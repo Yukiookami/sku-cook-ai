@@ -96,7 +96,7 @@ function multiRecipeState(activeRecipeId: number, revision: number) {
 }
 
 function mountKitchenView() {
-  return mount(KitchenDisplayView, { global: { stubs: { AccountMenu: true } } });
+  return mount(KitchenDisplayView);
 }
 
 describe('KitchenDisplayView A15 completion', () => {
@@ -113,6 +113,8 @@ describe('KitchenDisplayView A15 completion', () => {
     const wrapper = mountKitchenView();
     await flushPromises();
 
+    expect(wrapper.find('.account-menu').exists()).toBe(false);
+    expect(wrapper.find('[aria-label="账号菜单"]').exists()).toBe(false);
     await wrapper.get('.kitchen-primary').trigger('click');
     await flushPromises();
 

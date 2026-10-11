@@ -1,6 +1,6 @@
 # A22 GET /api/auth/session
 
-状态：shared / API / Web 已实现，mock HTTP 测试覆盖；认证迁移未应用，真实数据库验收待执行。调用方：S10 启动会话检查和登录状态恢复。
+状态：shared / API / Web 已实现，mock HTTP测试覆盖；本机迁移已应用，真实数据库HTTP确认当前用户/权限响应通过，长期Cookie及多设备仍待验收。调用方：S10 启动会话检查和登录状态恢复。
 
 ## 1. 请求
 
@@ -10,7 +10,7 @@
 
 ## 2. 成功 200
 
-`AuthResponseSchema`：`{ "user": { "id": 1, "username": "Sku001" } }`。
+`AuthResponseSchema`：`{ "user": { "id": 1, "username": "Sku001", "email": null, "isSuperAdmin": true } }`。每次会话读取用户当前邮箱及权限，不信任客户端权限；权限不缓存于token中。
 
 响应 no-store，cookie 按 10 年 Max-Age 滚动续期，token 值不轮换。所有已认证业务请求也续期 cookie。
 服务端不设 expiresAt、idle timeout；createdAt 不参与失效判定，不依赖内存 session。cookie/数据库持久性及浏览器自身生命周期边界见 [COMMON 1.1](../COMMON.md#11-v2-账号会话与隔离)。

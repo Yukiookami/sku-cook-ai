@@ -9,6 +9,7 @@ const route = useRoute();
 const router = useRouter();
 const username = ref('');
 const password = ref('');
+const email = ref('');
 const submitting = ref(false);
 const error = ref('');
 const isRegister = computed(() => route.query.mode === 'register');
@@ -36,7 +37,11 @@ function redirectPath(): string {
 
 async function submit() {
   if (submitting.value || !username.value || !password.value) return;
-  const inputError = validateAccountCredentials(username.value, password.value);
+  const inputError = validateAccountCredentials(
+    username.value,
+    password.value,
+    isRegister.value ? email.value : undefined,
+  );
   if (inputError) {
     error.value = inputError;
     return;
@@ -45,7 +50,7 @@ async function submit() {
   error.value = '';
   try {
     const user = isRegister.value
-      ? await registerAccount(username.value, password.value)
+      ? await registerAccount(username.value, password.value, email.value)
       : await loginAccount(username.value, password.value);
     setCurrentAccount(user);
     password.value = '';
@@ -79,15 +84,33 @@ async function submit() {
       </p>
       <form class="account-form" @submit.prevent="submit">
         <label class="account-field">
-          <span>用户名</span>
+          <span>{{ isRegister ? '用户名' : '用户名或邮箱' }}</span>
           <input
             v-model="username"
             name="username"
             type="text"
             autocomplete="username"
+            autocapitalize="none"
+            :spellcheck="false"
+            :maxlength="isRegister ? 32 : 254"
             required
             :disabled="submitting"
           />
+        </label>
+        <label v-if="isRegister" class="account-field">
+          <span>邮箱</span>
+          <input
+            v-model="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            autocapitalize="none"
+            :spellcheck="false"
+            maxlength="254"
+            required
+            :disabled="submitting"
+          />
+          <span class="muted">邮箱可用于登录，不发送验证邮件。</span>
         </label>
         <label class="account-field">
           <span>密码</span>

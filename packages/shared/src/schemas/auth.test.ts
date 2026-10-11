@@ -6,9 +6,56 @@ import {
   UsernameSchema,
   UpdateUsernameRequestSchema,
   UpdatePasswordRequestSchema,
+  EmailSchema,
+  LoginRequestSchema,
+  RegisterRequestSchema,
+  AdminUsersQuerySchema,
+  AdminUsersResponseSchema,
 } from './auth.js';
 
 describe('auth contract', () => {
+  it('normalizes emails, supports both login identifiers and requires email only for new registration', () => {
+    expect(EmailSchema.parse('ALICE@EXAMPLE.COM')).toBe('alice@example.com');
+    expect(EmailSchema.safeParse(' alice@example.com').success).toBe(false);
+    expect(
+      LoginRequestSchema.parse({ username: 'ALICE@EXAMPLE.COM', password: 'password-123' })
+        .username,
+    ).toBe('alice@example.com');
+    expect(
+      LoginRequestSchema.safeParse({ username: 'Alice', password: 'password-123' }).success,
+    ).toBe(true);
+    expect(
+      RegisterRequestSchema.safeParse({ username: 'Alice', password: 'password-123' }).success,
+    ).toBe(false);
+    expect(
+      RegisterRequestSchema.safeParse({
+        username: 'Alice',
+        password: 'password-123',
+        email: 'a@example.com',
+        isSuperAdmin: true,
+      }).success,
+    ).toBe(false);
+  });
+  it('bounds admin pagination and never accepts internal user fields', () => {
+    expect(AdminUsersQuerySchema.parse({})).toEqual({ page: 1 });
+    expect(AdminUsersQuerySchema.safeParse({ page: 0 }).success).toBe(false);
+    expect(AdminUsersQuerySchema.safeParse({ page: 1, userId: 1 }).success).toBe(false);
+    expect(
+      AdminUsersResponseSchema.safeParse({
+        items: [
+          {
+            id: 1,
+            username: 'sku',
+            email: null,
+            createdAt: '2026-10-11T00:00:00Z',
+            passwordHash: 'secret',
+          },
+        ],
+        page: 1,
+        hasMore: false,
+      }).success,
+    ).toBe(false);
+  });
   it('defines separate strict username and password updates', () => {
     expect(UpdateUsernameRequestSchema.parse({ username: 'Alice' })).toEqual({ username: 'Alice' });
     expect(UpdateUsernameRequestSchema.safeParse({ username: 'ab' }).success).toBe(false);

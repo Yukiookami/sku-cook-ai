@@ -63,7 +63,7 @@ export function registerAuthentication(
     if (!token) throw new ApiError(401, 'UNAUTHENTICATED', '请先登录');
     const session = await app.prisma.authSession.findUnique({
       where: { tokenHash: hashSessionToken(token) },
-      select: { user: { select: { id: true, username: true } } },
+      select: { user: { select: { id: true, username: true, email: true, isSuperAdmin: true } } },
     });
     if (!session) {
       setSessionCookie(reply, null, secure);

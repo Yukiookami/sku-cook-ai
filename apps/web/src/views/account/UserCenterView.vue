@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { showConfirmDialog } from 'vant';
-import 'vant/lib/dialog/style';
 import { UpdateUsernameRequestSchema, UpdatePasswordRequestSchema } from '@sku-cook/shared';
 import PageHeader from '../../components/common/PageHeader.vue';
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import { updateAccountUsername, updateAccountPassword } from '../../api/auth';
 import { accountErrorMessage } from '../../api/auth-errors';
 import { currentAccount, setCurrentAccount } from '../../auth/session';
@@ -14,6 +14,7 @@ const username = ref(currentAccount.value?.username ?? '');
 const currentPassword = ref('');
 const newPassword = ref('');
 const pending = ref(false);
+const { dialog, confirm, settle } = useConfirmDialog();
 const usernameError = ref('');
 const passwordError = ref('');
 const usernameSuccess = ref('');
@@ -55,17 +56,14 @@ async function savePassword() {
   }
   pending.value = true;
   try {
-    // 取消确认属于正常流程，不发送任何写请求，也不清空输入。
-    try {
-      await showConfirmDialog({
+    if (
+      !(await confirm({
         title: '确认修改密码',
         message: '确定使用新密码吗？现有登录会话将保持不变。',
-        confirmButtonText: '确认修改',
-        cancelButtonText: '取消',
-      });
-    } catch {
+        confirmText: '确认修改',
+      }))
+    )
       return;
-    }
     const user = await updateAccountPassword(parsed.data);
     setCurrentAccount(user);
     currentPassword.value = '';
@@ -81,8 +79,12 @@ async function savePassword() {
 
 <template>
   <main class="page account-page user-center-page">
+    <ConfirmDialog :options="dialog" @close="settle" />
     <PageHeader title="用户中心" @back="router.push({ name: 'recipe-list' })" />
     <p class="account-current-user">当前用户名：{{ currentAccount?.username }}</p>
+    <p class="account-current-user">
+      邮箱：{{ currentAccount?.email ?? '未设置（仍可用用户名登录）' }}
+    </p>
     <section class="paper-card account-card">
       <h2>修改用户名</h2>
       <form class="account-form" @submit.prevent="saveUsername">

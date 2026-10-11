@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import KitchenMenuPanel from './KitchenMenuPanel.vue';
+import ConfirmDialog from '../common/ConfirmDialog.vue';
 import { clearKitchenMenu, getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
 import { KitchenStateResponseSchema, RecipeSummarySchema } from '@sku-cook/shared';
 
@@ -219,22 +220,40 @@ describe('KitchenMenuPanel', () => {
   });
 
   it('clears the kitchen with its observed revision only after confirmation', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.mocked(getKitchenState).mockResolvedValueOnce(menuKitchen);
     vi.mocked(clearKitchenMenu).mockResolvedValueOnce(currentKitchen);
     const wrapper = mount(KitchenMenuPanel, {
       props: { show: false, mode: 'view', selections: [] },
-      global: { stubs: { Teleport: true } },
+      global: { stubs: { Teleport: true, ConfirmDialog: true } },
     });
     await wrapper.setProps({ show: true });
     await flushPromises();
     await wrapper.get('button.button-danger').trigger('click');
+    expect(clearKitchenMenu).not.toHaveBeenCalled();
+    wrapper.getComponent(ConfirmDialog).vm.$emit('close', true);
     await flushPromises();
 
-    expect(confirm).toHaveBeenCalledOnce();
     expect(clearKitchenMenu).toHaveBeenCalledWith({ expectedRevision: 7 });
     expect(wrapper.text()).toContain('厨房当前没有菜单');
-    confirm.mockRestore();
+    wrapper.unmount();
+  });
+
+  it('keeps the current kitchen menu when clearing is canceled', async () => {
+    vi.mocked(getKitchenState).mockResolvedValueOnce(menuKitchen);
+    const wrapper = mount(KitchenMenuPanel, {
+      props: { show: false, mode: 'view', selections: [] },
+      global: { stubs: { Teleport: true, ConfirmDialog: true } },
+    });
+    await wrapper.setProps({ show: true });
+    await flushPromises();
+    await wrapper.get('button.button-danger').trigger('click');
+    expect(wrapper.getComponent(ConfirmDialog).props('options')?.title).toBe('清空厨房菜单');
+    expect(wrapper.get('button[aria-label="关闭"]').attributes('disabled')).toBeDefined();
+    wrapper.getComponent(ConfirmDialog).vm.$emit('close', false);
+    await flushPromises();
+    expect(clearKitchenMenu).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('冬瓜汤');
+    expect(wrapper.get('button[aria-label="关闭"]').attributes('disabled')).toBeUndefined();
     wrapper.unmount();
   });
 });

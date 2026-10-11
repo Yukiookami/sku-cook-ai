@@ -109,6 +109,12 @@ pnpm db:seed
 
 ## 常见问题
 
+### 邮箱登录与管理员升级
+
+新增管理员迁移保留所有用户ID、密码、会话和业务数据，仅原id=1账号升级为唯一超级管理员；用户名已修改时仍按ID升级。新注册必须邮箱，旧账号无邮箱仍可用用户名登录，不发送验证邮件。管理员只读用户列表从首页“更多”进入。
+
+已有数据库先备份再运行 `pnpm --filter @sku-cook/api db:deploy`，然后 `pnpm db:generate`，停止并重新执行 `pnpm dev` 以加载新版Prisma Client。管理员真实邮箱不写进源码或迁移，在确认环境后私下按id=1更新数据库；不要复制他人的真实邮箱配置。邮箱须小写、合法且未被其他用户占用。重复Seed不改已有管理员邮箱或密码。
+
 - PostgreSQL 尚未 `healthy`：等待片刻后再运行 `docker compose ps`；也可查看 `docker compose logs postgres`。
 - `pnpm` 提示 `/usr/local/bin/pnpm: No such file or directory`：在 Mac 新终端执行 `exec zsh -l`，并确认 `node --version` 与 `pnpm --version` 符合项目要求。
 - 在 macOS 终端执行 `Test-Path` 或 `Copy-Item` 报语法错误：这些是 PowerShell 命令；macOS 请使用首次初始化第 2 步中的 `cp` 命令。

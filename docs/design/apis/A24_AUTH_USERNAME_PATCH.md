@@ -10,11 +10,11 @@
 
 ## 2. 成功 200
 
-`UpdateUsernameResponseSchema`：`{"user":{"id":42,"username":"Alice"}}`。
+`UpdateUsernameResponseSchema`：`{"user":{"id":42,"username":"Alice","email":null,"isSuperAdmin":false}}`。
 
 单条原子update按认证ID更新name/username及小写usernameKey，数据库既有唯一索引和CHECK约束兜底；不改变ID、业务外键或密码。相同名字及仅改大小写均允许，其他账号占用不允许。并发用户名更新按数据库实际写入顺序，最后成功写入生效，无新增版本字段。
 
-响应no-store，只公开id/username；token不轮换，会话不撤销，cookie沿用认证钩子的滚动续期。前端使用返回用户更新currentAccount，其他设备下次请求重新读取用户名。
+响应no-store，公开id/username/email/isSuperAdmin，不返回密码；邮箱和权限保持原值，token不轮换，会话不撤销，cookie沿用认证钩子的滚动续期。前端使用返回用户更新currentAccount，其他设备下次请求重新读取用户名。
 
 ## 3. 错误
 

@@ -14,9 +14,48 @@ export const PasswordSchema = z
 export const AuthCredentialsSchema = z
   .object({ username: UsernameSchema, password: PasswordSchema })
   .strict();
-export const AuthUserSchema = z
-  .object({ id: z.number().int().positive(), username: UsernameSchema })
+export const EmailSchema = z
+  .email()
+  .max(254)
+  .transform((value) => value.toLowerCase());
+export const LoginRequestSchema = z
+  .object({
+    username: z.union([UsernameSchema, EmailSchema]),
+    password: PasswordSchema,
+  })
   .strict();
+export const RegisterRequestSchema = AuthCredentialsSchema.extend({ email: EmailSchema });
+export const AuthUserSchema = z
+  .object({
+    id: z.number().int().positive(),
+    username: UsernameSchema,
+    email: EmailSchema.nullable().optional(),
+    isSuperAdmin: z.boolean().optional(),
+  })
+  .strict();
+export const AdminUsersQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).max(100000).default(1),
+  })
+  .strict();
+export const AdminUserSchema = z
+  .object({
+    id: z.number().int().positive(),
+    username: UsernameSchema,
+    email: EmailSchema.nullable(),
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+export const AdminUsersResponseSchema = z
+  .object({
+    items: z.array(AdminUserSchema).max(20),
+    page: z.number().int().positive(),
+    hasMore: z.boolean(),
+  })
+  .strict();
+export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
+export type LoginRequest = z.infer<typeof LoginRequestSchema>;
+export type AdminUsersResponse = z.infer<typeof AdminUsersResponseSchema>;
 export const AuthResponseSchema = z.object({ user: AuthUserSchema }).strict();
 export const UpdateUsernameRequestSchema = z.object({ username: UsernameSchema }).strict();
 export const UpdateUsernameResponseSchema = AuthResponseSchema;

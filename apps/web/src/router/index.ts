@@ -9,6 +9,7 @@ import KitchenDisplayView from '../views/kitchen/KitchenDisplayView.vue';
 import CookingHistoryView from '../views/history/CookingHistoryView.vue';
 import AccountView from '../views/account/AccountView.vue';
 import UserCenterView from '../views/account/UserCenterView.vue';
+import AdminUsersView from '../views/account/AdminUsersView.vue';
 import { ensureAccountSession } from '../auth/session';
 
 export const router = createRouter({
@@ -19,6 +20,12 @@ export const router = createRouter({
     return { top: 0 };
   },
   routes: [
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: AdminUsersView,
+      meta: { requiresAuth: true },
+    },
     {
       path: '/account/profile',
       name: 'user-center',

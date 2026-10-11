@@ -1,14 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { AxiosError, type AxiosAdapter } from 'axios';
-import { showConfirmDialog } from 'vant';
 import UserCenterView from '../views/account/UserCenterView.vue';
 import AccountMenu from '../components/common/AccountMenu.vue';
+import PageHeader from '../components/common/PageHeader.vue';
 import { client } from '../api/client';
 import { currentAccount, resetAccountSessionForTests, setCurrentAccount } from './session';
 import { router } from '../router';
 
-vi.mock('vant', () => ({ showConfirmDialog: vi.fn() }));
 const originalAdapter = client.defaults.adapter;
 let calls: { method: string; url: string; body: unknown }[];
 let respond: () => Promise<{ status: number; data: unknown }>;
@@ -23,7 +22,6 @@ const mountPage = () => mount(UserCenterView, { global: { plugins: [router] } })
 
 beforeEach(async () => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-  vi.mocked(showConfirmDialog).mockReset().mockResolvedValue(undefined);
   resetAccountSessionForTests();
   setCurrentAccount({ id: 42, username: 'Alice' });
   calls = [];
@@ -37,6 +35,20 @@ afterEach(() => {
 });
 
 describe('user center', () => {
+  it('keeps shared page headers free of account controls and preserves page actions', async () => {
+    const header = mount(PageHeader, {
+      props: { title: '菜谱详情' },
+      slots: { right: '<button>编辑</button>' },
+    });
+    expect(header.get('h1').text()).toBe('菜谱详情');
+    expect(header.text()).toContain('编辑');
+    expect(header.findComponent(AccountMenu).exists()).toBe(false);
+    expect(header.find('[aria-label="账号菜单"]').exists()).toBe(false);
+    await header.get('.header-back').trigger('click');
+    expect(header.emitted('back')).toHaveLength(1);
+    header.unmount();
+  });
+
   it('provides account menu navigation and requires a session for direct access', async () => {
     await router.replace('/recipes');
     const menu = mount(AccountMenu, { global: { plugins: [router] } });
@@ -68,7 +80,7 @@ describe('user center', () => {
     await page.findAll('form')[1]!.trigger('submit');
     expect(page.findAll('[role="alert"]')).toHaveLength(2);
     expect(calls).toHaveLength(0);
-    expect(showConfirmDialog).not.toHaveBeenCalled();
+    expect(document.querySelector('.memo-confirm-dialog')).toBeNull();
     page.unmount();
   });
 
@@ -129,12 +141,13 @@ describe('user center', () => {
   }
 
   it('canceling confirmation writes nothing and keeps password inputs', async () => {
-    vi.mocked(showConfirmDialog).mockRejectedValue('cancel');
     const page = mountPage();
     await fillPasswords(page);
     await page.findAll('form')[1]!.trigger('submit');
     await flushPromises();
-    expect(showConfirmDialog).toHaveBeenCalledOnce();
+    expect(document.querySelectorAll('.memo-confirm-dialog')).toHaveLength(1);
+    (document.querySelector('.van-dialog__cancel') as HTMLButtonElement).click();
+    await flushPromises();
     expect(calls).toHaveLength(0);
     expect((page.get('#profile-new-password').element as HTMLInputElement).value).toBe(
       'new-password',
@@ -144,13 +157,6 @@ describe('user center', () => {
   });
 
   it('blocks duplicate submissions during confirmation and request, then clears passwords on success', async () => {
-    let confirm: () => void = () => {};
-    vi.mocked(showConfirmDialog).mockImplementation(
-      () =>
-        new Promise<undefined>((resolve) => {
-          confirm = () => resolve(undefined);
-        }),
-    );
     let complete: (result: { status: number; data: unknown }) => void = () => {};
     respond = () =>
       new Promise((resolve) => {
@@ -160,9 +166,9 @@ describe('user center', () => {
     await fillPasswords(page);
     await page.findAll('form')[1]!.trigger('submit');
     await page.findAll('form')[1]!.trigger('submit');
-    expect(showConfirmDialog).toHaveBeenCalledOnce();
+    expect(document.querySelectorAll('.memo-confirm-dialog')).toHaveLength(1);
     expect(calls).toHaveLength(0);
-    confirm();
+    (document.querySelector('.van-dialog__confirm') as HTMLButtonElement).click();
     await flushPromises();
     await page.findAll('form')[1]!.trigger('submit');
     await page.findAll('form')[0]!.trigger('submit');
@@ -189,6 +195,7 @@ describe('user center', () => {
     const page = mountPage();
     await fillPasswords(page);
     await page.findAll('form')[1]!.trigger('submit');
+    (document.querySelector('.van-dialog__confirm') as HTMLButtonElement).click();
     await flushPromises();
     expect(page.get('[role="alert"]').text()).toContain('当前密码不正确');
     expect((page.get('#profile-current-password').element as HTMLInputElement).value).toBe(

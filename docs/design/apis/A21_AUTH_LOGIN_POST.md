@@ -1,16 +1,16 @@
 # A21 POST /api/auth/login
 
-状态：shared / API / Web 已实现，mock HTTP 与加密测试覆盖；认证迁移未应用，真实数据库验收待执行。调用方：S10 登录入口。
+状态：shared / API / Web 已实现，用户名及邮箱登录mock测试通过；本机迁移已应用，真实邮箱/密码登录及多设备验收待执行。调用方：S10 登录入口。
 
 ## 1. 请求
 
 公开入口，`Content-Type: application/json`，Body 上限 4096 字节，无 Query。
-严格 `{username,password}`，共享 `AuthCredentialsSchema`，字段约束与 [A20](A20_AUTH_REGISTER_POST.md) 相同。按小写 usernameKey 查询，密码原样验证，不 trim。
-无邮箱、验证码、找回密码或默认用户回退。
+严格 `{username,password}`，共享 `LoginRequestSchema`；username字段可填用户名或邮箱。含@时转小写按email查询，否则按小写usernameKey查询；密码原样验证、不trim。既有空邮箱用户仍可用用户名登录。
+无邮箱验证、验证码、找回密码或默认用户回退。
 
 ## 2. 成功 200
 
-`AuthResponseSchema`：`{ "user": { "id": 1, "username": "Sku001" } }`。
+`AuthResponseSchema`：`{ "user": { "id": 1, "username": "Sku001", "email": null, "isSuperAdmin": true } }`。实际用户名/邮箱/权限取数据库当前值，修改用户名不改变主键或权限。
 
 设置持久 `sku_session` cookie（HttpOnly / SameSite=Lax / 生产 Secure），响应 no-store。
 响应 username 来自数据库，保留原始大小写；不返回哈希/token。随机 token 只存 SHA-256 哈希。

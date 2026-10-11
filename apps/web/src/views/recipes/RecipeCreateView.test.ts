@@ -3,16 +3,19 @@ import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RecipeSchema } from '@sku-cook/shared';
 import RecipeCreateView from './RecipeCreateView.vue';
-import { createRecipe } from '../../api/recipes';
+import RecipeEditView from './RecipeEditView.vue';
+import { createRecipe, getRecipe } from '../../api/recipes';
 
 vi.mock('../../api/recipes', () => ({
   createRecipe: vi.fn(),
+  getRecipe: vi.fn(async () => recipe()),
+  updateRecipe: vi.fn(),
 }));
 vi.mock('../../components/recipes/RecipeForm.vue', () => ({
   default: {
     emits: ['submit', 'dirtyChange'],
     template:
-      '<button data-test="save" @click="$emit(\'dirtyChange\', true); $emit(\'submit\', {})">保存</button>',
+      '<div><button data-test="dirty" @click="$emit(\'dirtyChange\', true)">改动</button><button data-test="save" @click="$emit(\'dirtyChange\', true); $emit(\'submit\', {})">保存</button></div>',
   },
 }));
 
@@ -45,11 +48,13 @@ function recipe() {
 }
 
 describe('RecipeCreateView', () => {
-  beforeEach(() => vi.resetAllMocks());
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(getRecipe).mockResolvedValue(recipe());
+  });
 
   it('does not show the unsaved-changes prompt after a successful save', async () => {
     vi.mocked(createRecipe).mockResolvedValue(recipe());
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -68,8 +73,40 @@ describe('RecipeCreateView', () => {
 
     expect(createRecipe).toHaveBeenCalledOnce();
     expect(router.currentRoute.value.fullPath).toBe('/recipes/42');
-    expect(confirm).not.toHaveBeenCalled();
+    expect(document.querySelector('.memo-confirm-dialog')).toBeNull();
     wrapper.unmount();
-    confirm.mockRestore();
   });
+
+  it.each([
+    ['/recipes/new', RecipeCreateView],
+    ['/recipes/42/edit', RecipeEditView],
+  ] as const)(
+    'confirms navigation only once from %s and keeps edits after cancellation',
+    async (path, component) => {
+      const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+          { path: component === RecipeEditView ? '/recipes/:id/edit' : path, component },
+          { path: '/recipes', component: { template: '<p>菜谱一览</p>' } },
+        ],
+      });
+      await router.push(path);
+      const wrapper = mount(RouterView, { global: { plugins: [router] } });
+      await flushPromises();
+      await wrapper.get('[data-test="dirty"]').trigger('click');
+      const canceledNavigation = router.push('/recipes');
+      await flushPromises();
+      expect(document.querySelectorAll('.memo-confirm-dialog')).toHaveLength(1);
+      (document.querySelector('.van-dialog__cancel') as HTMLButtonElement).click();
+      await canceledNavigation;
+      expect(router.currentRoute.value.path).toBe(path);
+      expect(wrapper.find('[data-test="dirty"]').exists()).toBe(true);
+      const confirmedNavigation = router.push('/recipes');
+      await flushPromises();
+      (document.querySelector('.van-dialog__confirm') as HTMLButtonElement).click();
+      await confirmedNavigation;
+      expect(router.currentRoute.value.path).toBe('/recipes');
+      wrapper.unmount();
+    },
+  );
 });

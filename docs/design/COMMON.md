@@ -12,11 +12,14 @@ V2 所有业务归属由服务端持久会话确定，客户端不提供 userId�
 
 ### 1.1 V2 账号、会话与隔离
 
-状态：shared / API / Web 登录、注册、守卫、退出与用户中心源码已实现；既有认证版本化迁移由 Prisma 离线差异工具生成并补充回填。既有记录为 Docker engine 不可用，**认证迁移未应用、Seed 未执行、真实数据库集成未验收**；本次用户中心未新增迁移，未连接日常数据库。
+账号展示和操作仅在首页“更多”中提供，复用 AccountMenu 展示完整用户名、用户中心和退出/切换账号。PageHeader 仅负责返回、标题与页面操作；厨房显示页同样不放账号入口。认证守卫和会话检查不受入口收纳影响。
 
-- 一次方法+路径一份设计：[A20 注册](apis/A20_AUTH_REGISTER_POST.md)、[A21 登录](apis/A21_AUTH_LOGIN_POST.md)、[A22 当前会话](apis/A22_AUTH_SESSION_GET.md)、[A23 退出](apis/A23_AUTH_SESSION_DELETE.md)。开放注册，不收邮箱，无密码找回、无 AI/认证框架。
-- `AuthCredentialsSchema` 为严格 `{username,password}`。username 3–32 个 ASCII 字符，以英文字母开头，后续仅字母/数字/下划线；不 trim，保留大小写显示。唯一键为小写 usernameKey，数据库唯一索引及 `username_key = lower(username)` CHECK 兜底。password 8–128 字符，不能全为空白；不 trim，不要求任意字符类别，不输出密码到日志。
-- 注册 201 / 登录 200 / 当前会话 200 均为严格 `{user:{id,username}}`（`AuthResponseSchema`），不返回 name、email、哈希、token 或业务 userId。退出 204 空响应。
+状态：shared / API / Web 登录、注册、守卫、退出、用户中心与只读管理员页已实现。本机认证及管理员增量迁移已应用；管理员迁移先在无网络专用数据库恢复备份后验证，8张业务表摘要保持一致，邮箱唯一/小写和单超级管理员约束已验收。其他机器需执行版本化迁移；完整真机及多设备验收仍待执行。
+
+- 一次方法+路径一份设计：[A20 注册](apis/A20_AUTH_REGISTER_POST.md)、[A21 登录](apis/A21_AUTH_LOGIN_POST.md)、[A22 当前会话](apis/A22_AUTH_SESSION_GET.md)、[A23 退出](apis/A23_AUTH_SESSION_DELETE.md)、[A26 用户列表](apis/A26_ADMIN_USERS_GET.md)。开放注册需邮箱，不发送验证邮件；无密码找回、无 AI/认证框架。
+- 注册使用严格 `RegisterRequestSchema` 的 `{username,email,password}`；登录使用 `LoginRequestSchema` 的 `{username,password}`，协议字段username可为用户名或邮箱。username仍为3–32个ASCII字符，以英文字母开头，后续仅字母/数字/下划线；不trim，保留大小写显示，usernameKey忽略大小写唯一。邮箱格式校验、最多254字符、转小写，唯一索引及小写CHECK兜底；既有空邮箱账号仍可用用户名登录，不虚构回填邮箱。password 8–128字符、非全空白，不trim、不记录日志。
+- 服务端注册201 / 登录200 / 当前会话200 / 用户中心更新均返回 `{user:{id,username,email,isSuperAdmin}}`；shared允许后两个字段缺失以读取旧服务响应，缺失权限不放行。email可为null。仅本人响应包含邮箱与权限；不返回name、哈希或token，退出204空响应。用户ID始终为稳定主键，修改用户名不改变归属。
+- `isSuperAdmin`默认false，注册不接收该字段。版本化迁移仅将原id=1账号升级，单超级管理员部分唯一索引兜底；Seed新建id=1时设置管理员，重复Seed不覆盖已有资料/密码。管理员邮箱由部署者私下绑定，不在迁移或源码写真实邮箱。只读管理员列表每页20人，按createdAt/id倒序；每次请求读取数据库当前权限，普通用户403，未登录401。无账号删除、改他人密码或权限操作，管理员权限不开放读取他人菜谱。
 - 公开白名单仅 `GET /api/health`、注册/登录 POST 与退出 DELETE。当前会话 GET 和现有 A02–A19 全部需登录；缺失/无效 token 为 401 `UNAUTHENTICATED`，认证先于业务输入校验。外部用户的资源 id 视为 404，不披露归属；数据库不可用保持 503，不伪装成未登录或空业务数据。
 - Node crypto scrypt（版本化 `scrypt-v1`、随机盐、N=32768/r=8/p=1、64 字节派生值）保存密码哈希，验证使用 timingSafeEqual。登录不存在/无密码账号也运行 KDF，统一 401 `INVALID_CREDENTIALS`。
 - 32 字节随机不透明 token 仅通过 `sku_session` cookie 发送；数据库 `auth_sessions` 只保存 SHA-256 token 哈希、userId 与 createdAt，不设到期、空闲计时或自动清理。Cookie 为 HttpOnly、SameSite=Lax、Path=/，生产 Secure，Max-Age=10 年；认证请求滚动续期。服务端无自动失效；浏览器自身清除 cookie、设备数据删除或浏览器持久存储限制不由服务端保证。
@@ -45,6 +48,8 @@ V2 所有业务归属由服务端持久会话确定，客户端不提供 userId�
 与用户参考图只共享风格特征，不复制其品牌/画面资产或“100克选择/勺子”等功能。纯文字业务不限制CSS几何装饰；提示词必须使用当前Memo规范，而不是历史V1/V2图中的陶土橙/厨房黑白。常规正文及必要辅助文字对背景至少4.5:1，浅黄按钮用深棕字，不能白字低对比。Web 已将业务画面、技术验证页与PWA主题变量统一到当前Memo奶油黄色系。
 
 错误提示就地显示，必要时 Vant Toast 辅助，但不只用短暂 Toast 呈现字段错误。读接口失败提供重试；提交中禁用重复点击，保留输入。使用明确 loading 状态；厨房不用闪烁骨架或旋转动画。PWA 更新提示属于全局壳，不在每份设计图重复添加。
+
+业务确认统一复用 `ConfirmDialog.vue`，基于现有 Vant Dialog 提供模态遮罩及滚动锁定，`useConfirmDialog` 协调异步确认、取消与组件卸载。覆盖删除菜谱、删除历史、清空厨房、记录做过、修改密码及站内离开未保存表单。使用奶油底、20px圆角、深棕标题/16px正文、14px圆角且至少48px高的按钮，按钮间距12px；普通确认用蜂蜜黄，危险确认用浅红底与深红文字并明确操作名称。默认聚焦取消，Escape取消、Tab保持在操作按钮中，关闭恢复原焦点；长文及小视口可滚动，用户内容只按文本显示。确认和请求期间防重复，取消不写入或清空输入。刷新/关闭标签页的 beforeunload 提示由浏览器控制，无法套用主题，保留系统安全提醒。无独立确认框设计图，不更新PNG。
 
 ### 2.1 页面延伸与设备空间
 
