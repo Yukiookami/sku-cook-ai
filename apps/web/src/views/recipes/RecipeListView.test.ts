@@ -10,7 +10,12 @@ vi.mock('../../api/recipes', () => ({
   getRandomRecipe: vi.fn(),
 }));
 vi.mock('../../components/kitchen/KitchenMenuPanel.vue', () => ({
-  default: { template: '<div />' },
+  default: {
+    props: ['show'],
+    emits: ['close', 'sent', 'return-to-recipes'],
+    template:
+      '<div v-if="show" class="test-kitchen-panel"><button type="button" @click="$emit(\'sent\'); $emit(\'return-to-recipes\')">返回菜谱一览</button></div>',
+  },
 }));
 
 let observerCallback: IntersectionObserverCallback | undefined;
@@ -99,6 +104,32 @@ describe('RecipeListView selection behavior', () => {
     await rows[10]?.trigger('click');
     expect(wrapper.text()).toContain('一次最多选择10道菜');
     expect(wrapper.text()).toContain('已选 10 道');
+  });
+
+  it('returns from a successful kitchen send to the recipe list and closes the panel', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/recipes', component: RecipeListView }],
+    });
+    await router.push('/recipes');
+    await router.isReady();
+    const wrapper = mount(RecipeListView, {
+      global: { plugins: [router], stubs: { RouterLink: true } },
+    });
+    await flushPromises();
+
+    await wrapper.get('.select-button').trigger('click');
+    await wrapper.get('.recipe-card-main').trigger('click');
+    await wrapper.get('.selection-bar .button-primary').trigger('click');
+    expect(wrapper.find('.test-kitchen-panel').exists()).toBe(true);
+
+    await wrapper.get('.test-kitchen-panel button').trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/recipes');
+    expect(wrapper.find('.test-kitchen-panel').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('已选 1 道');
+    wrapper.unmount();
   });
 
   it('ignores repeated observer callbacks without orphaning the in-flight page request', async () => {

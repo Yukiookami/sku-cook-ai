@@ -1,6 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { showToast } from 'vant';
 import KitchenMenuPanel from './KitchenMenuPanel.vue';
 import { clearKitchenMenu, getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
 import { KitchenStateResponseSchema, RecipeSummarySchema } from '@sku-cook/shared';
@@ -10,11 +9,6 @@ vi.mock('../../api/kitchen', () => ({
   replaceKitchenMenu: vi.fn(),
   clearKitchenMenu: vi.fn(),
 }));
-
-vi.mock('vant', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('vant')>();
-  return { ...actual, showToast: vi.fn() };
-});
 
 const recipe = RecipeSummarySchema.parse({
   id: 11,
@@ -110,10 +104,16 @@ describe('KitchenMenuPanel', () => {
       expectedRevision: 7,
     });
     expect(wrapper.emitted('sent')).toHaveLength(1);
-    expect(showToast).toHaveBeenCalledWith({
-      message: '已发送，厨房屏将在几秒内更新',
-      type: 'success',
-    });
+    expect(wrapper.get('.panel-success').text()).toContain('添加成功');
+    expect(wrapper.get('.panel-success').text()).toContain('厨房屏将在下次读取时更新');
+    expect(wrapper.findAll('.panel-actions button').map((button) => button.text())).toEqual([
+      '完成',
+      '返回菜谱一览',
+    ]);
+    expect(wrapper.emitted('close')).toBeUndefined();
+    await wrapper.get('.panel-actions button').trigger('click');
+    expect(wrapper.emitted('close')).toHaveLength(1);
+    expect(wrapper.emitted('return-to-recipes')).toBeUndefined();
   });
 
   it('shows a pending state, blocks closing and duplicate sends, then confirms success', async () => {
@@ -141,12 +141,12 @@ describe('KitchenMenuPanel', () => {
     expect(pendingButton.attributes('aria-busy')).toBe('true');
     expect(pendingButton.attributes('disabled')).toBeDefined();
     expect(wrapper.get('[aria-label="关闭"]').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('.panel-success').exists()).toBe(false);
 
     await pendingButton.trigger('click');
     await wrapper.get('.panel-scrim').trigger('click');
     expect(wrapper.emitted('close')).toBeUndefined();
     expect(replaceKitchenMenu).toHaveBeenCalledTimes(1);
-    expect(showToast).not.toHaveBeenCalled();
 
     resolveSend?.({
       ...currentKitchen,
@@ -154,12 +154,11 @@ describe('KitchenMenuPanel', () => {
     });
     await flushPromises();
 
-    expect(showToast).toHaveBeenCalledWith({
-      message: '已发送，厨房屏将在几秒内更新',
-      type: 'success',
-    });
+    expect(wrapper.get('.panel-success').text()).toContain('添加成功');
     expect(wrapper.emitted('sent')).toHaveLength(1);
-    expect(wrapper.emitted('close')).toHaveLength(1);
+    await wrapper.get('.panel-actions button:last-child').trigger('click');
+    expect(wrapper.emitted('return-to-recipes')).toHaveLength(1);
+    expect(wrapper.emitted('close')).toBeUndefined();
   });
 
   it('retains the recipe serving target and does not read while closed', async () => {
@@ -215,6 +214,8 @@ describe('KitchenMenuPanel', () => {
     expect(wrapper.text()).toContain('厨房菜单已变更，请重新读取后确认');
     expect(wrapper.text()).toContain('目标 3 人份');
     expect(wrapper.text()).toContain('冬瓜汤');
+    expect(wrapper.find('.panel-success').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('添加成功');
   });
 
   it('clears the kitchen with its observed revision only after confirmation', async () => {

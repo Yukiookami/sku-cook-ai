@@ -132,6 +132,11 @@ function openKitchen() {
   showMore.value = false;
 }
 
+function returnToRecipeList() {
+  showKitchen.value = false;
+  void router.push('/recipes');
+}
+
 function historyLink() {
   if (!recipe.value) return;
   void router.push({ name: 'cooking-history' });
@@ -400,6 +405,7 @@ onBeforeUnmount(() => {
       :selections="kitchenSelection"
       :initial-targets="recipe ? { [recipe.id]: targetServings } : {}"
       @close="showKitchen = false"
+      @return-to-recipes="returnToRecipeList"
     />
   </main>
 </template>
