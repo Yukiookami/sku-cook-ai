@@ -1496,7 +1496,7 @@ body:has(.account-page) {
   gap: 12px;
   margin: 0 auto;
   overflow: visible;
-  padding: calc(20px + env(safe-area-inset-top)) 24px calc(16px + env(safe-area-inset-bottom));
+  padding: calc(20px + env(safe-area-inset-top)) 24px 0;
   background: var(--cream);
   touch-action: manipulation;
 }
@@ -1517,7 +1517,7 @@ body:has(.account-page) {
   top: env(safe-area-inset-top);
   z-index: 3;
   flex: 0 0 auto;
-  padding: 58px 10px 10px;
+  padding: 10px;
   border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--butter);
@@ -1704,6 +1704,7 @@ body:has(.account-page) {
   flex: 0 0 auto;
   gap: 16px;
   min-height: 66px;
+  margin-top: auto;
   padding: 12px 0 calc(10px + env(safe-area-inset-bottom));
   background: var(--cream);
   box-shadow: 0 -8px 18px rgba(70, 50, 20, 0.04);
@@ -1872,7 +1873,7 @@ body:has(.account-page) {
   }
 
   .kitchen-screen {
-    padding: 24px 32px;
+    padding: 24px 32px 0;
   }
 }
 
@@ -1942,7 +1943,7 @@ body:has(.account-page) {
   }
 
   .kitchen-screen {
-    padding: calc(12px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));
+    padding: calc(12px + env(safe-area-inset-top)) 14px 0;
     gap: 8px;
   }
 
