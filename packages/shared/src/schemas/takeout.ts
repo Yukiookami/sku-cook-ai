@@ -8,10 +8,9 @@ export const TAKEOUT_IMPORT_MAX_BYTES = 10 * 1024 * 1024;
 const TakeoutUrlSchema = z
   .string()
   .trim()
-  .min(1)
   .max(2048)
-  .url()
   .refine((value) => {
+    if (value === '') return true;
     try {
       const parsed = new URL(value);
       return (
@@ -23,7 +22,8 @@ const TakeoutUrlSchema = z
     } catch {
       return false;
     }
-  }, '请输入有效的 HTTP 或 HTTPS 分享链接');
+  }, '请输入有效的 HTTP 或 HTTPS 分享链接')
+  .default('');
 
 export const TakeoutCandidateInputSchema = z
   .object({

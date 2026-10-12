@@ -15,6 +15,8 @@ import { apiErrorMessage } from '../../api/errors';
 import { getRandomRecipe, getRecipeTags, getRecipes } from '../../api/recipes';
 import { getRandomTakeoutCandidate } from '../../api/takeout';
 
+let pendingRecipeListScrollRestore: number | null = null;
+
 const route = useRoute();
 const router = useRouter();
 const recipes = ref<RecipeSummary[]>([]);
@@ -39,7 +41,6 @@ const randomLoading = ref(false);
 const randomError = ref('');
 const noAlternative = ref(false);
 const randomAttemptExclude = ref<number | undefined>();
-const recommendationMode = ref<'cook' | 'takeout'>('cook');
 const recommendationModes = [
   { label: '自己做', value: 'cook' },
   { label: '点外卖', value: 'takeout' },
@@ -49,6 +50,9 @@ const takeoutLoading = ref(false);
 const takeoutError = ref('');
 const takeoutNoAlternative = ref(false);
 const takeoutAttemptExclude = ref<number | undefined>();
+const recommendationMode = ref<'cook' | 'takeout'>(
+  localStorage.getItem('sku-cook-ai:recommendation-mode') === 'takeout' ? 'takeout' : 'cook',
+);
 const listEnd = ref<HTMLElement | null>(null);
 const displayTags = computed(() => tags.value);
 const selectedRecipes = computed(() => [...selectionOrder.value.values()]);
@@ -277,7 +281,7 @@ function goToRecipe(id: number, fromRecommendation = false) {
     if (found) toggleSelection(found);
     return;
   }
-  sessionStorage.setItem('recipe-list-scroll', String(window.scrollY));
+  pendingRecipeListScrollRestore = window.scrollY;
   void router.push(`/recipes/${id}`);
 }
 
@@ -297,6 +301,10 @@ function handleListScroll() {
   if (rect.top < window.innerHeight + 200) void fetchList(false);
 }
 
+watch(recommendationMode, (mode) => localStorage.setItem('sku-cook-ai:recommendation-mode', mode), {
+  immediate: true,
+});
+
 watch(
   () => [route.query.q, route.query.tag],
   () => {
@@ -308,8 +316,10 @@ watch(
 
 onMounted(async () => {
   await Promise.all([fetchList(true), fetchTags()]);
-  const saved = Number(sessionStorage.getItem('recipe-list-scroll'));
-  if (Number.isFinite(saved) && saved > 0) {
+  const saved = pendingRecipeListScrollRestore;
+  pendingRecipeListScrollRestore = null;
+  sessionStorage.removeItem('recipe-list-scroll');
+  if (saved !== null && Number.isFinite(saved) && saved > 0) {
     await nextTick();
     window.scrollTo(0, saved);
     sessionStorage.removeItem('recipe-list-scroll');
@@ -347,11 +357,6 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </header>
-    <div v-if="loading && !recipes.length" class="list-loading-state" role="status">
-      <span class="list-loading-spinner" aria-hidden="true" />
-      <span>正在加载菜谱…</span>
-    </div>
-
     <section class="paper-card recommendation-card" aria-labelledby="recommend-title">
       <h2 id="recommend-title" class="section-chip">
         {{ recommendationMode === 'cook' ? '今天吃什么？' : '今天点什么？' }}
@@ -425,6 +430,7 @@ onBeforeUnmount(() => {
         <p class="muted">从自己保存的外卖候选中随机挑选</p>
         <template v-if="takeoutRecommendation">
           <h3 class="recommend-title">{{ takeoutRecommendation.name }}</h3>
+          <p v-if="!takeoutRecommendation.url" class="muted">此候选没有可打开的平台链接。</p>
           <p v-if="takeoutNoAlternative" class="inline-note" role="status">
             没有其他外卖候选，添加更多后再换一个。
           </p>
@@ -433,7 +439,7 @@ onBeforeUnmount(() => {
         <p v-else class="muted">按下按钮，为今天挑一家店或一道想吃的菜。</p>
         <div class="recommend-actions">
           <a
-            v-if="takeoutRecommendation"
+            v-if="takeoutRecommendation?.url"
             class="button button-primary"
             :href="takeoutRecommendation.url"
             target="_blank"
@@ -528,6 +534,10 @@ onBeforeUnmount(() => {
       {{ tagsError }} <button class="text-button" type="button" @click="fetchTags">重试标签</button>
     </p>
 
+    <div v-if="loading && !recipes.length" class="list-loading-state" role="status">
+      <span class="list-loading-spinner" aria-hidden="true" />
+      <span>正在加载菜谱…</span>
+    </div>
     <div v-if="listError" class="inline-error list-error" role="alert">
       {{ listError }}
       <button class="text-button" type="button" @click="retryListLoad">重试</button>

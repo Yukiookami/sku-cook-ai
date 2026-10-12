@@ -25,14 +25,14 @@ function urlHash(url: string): string {
 export function takeoutCandidateDto(record: {
   id: number;
   name: string;
-  url: string;
+  url: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
   return TakeoutCandidateSchema.parse({
     id: record.id,
     name: record.name,
-    url: record.url,
+    url: record.url ?? '',
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   });
@@ -51,18 +51,20 @@ export async function createTakeoutCandidate(
   userId: number,
   input: TakeoutCandidateInput,
 ) {
-  const hash = urlHash(input.url);
+  const hash = input.url ? urlHash(input.url) : null;
   try {
     const record = await client.$transaction(
       async (tx) => {
         await lockUser(tx, userId);
-        const existing = await tx.takeoutCandidate.findFirst({
-          where: { userId, urlHash: hash },
-          select: { id: true },
-        });
-        if (existing) throw uniqueUrlConflict();
+        if (hash) {
+          const existing = await tx.takeoutCandidate.findFirst({
+            where: { userId, urlHash: hash },
+            select: { id: true },
+          });
+          if (existing) throw uniqueUrlConflict();
+        }
         return tx.takeoutCandidate.create({
-          data: { userId, name: input.name, url: input.url, urlHash: hash },
+          data: { userId, name: input.name, url: input.url || null, urlHash: hash },
         });
       },
       { timeout: 15_000 },
@@ -80,7 +82,7 @@ export async function updateTakeoutCandidate(
   id: number,
   input: TakeoutCandidateInput,
 ) {
-  const hash = urlHash(input.url);
+  const hash = input.url ? urlHash(input.url) : null;
   try {
     const record = await client.$transaction(
       async (tx) => {
@@ -90,14 +92,16 @@ export async function updateTakeoutCandidate(
           select: { id: true },
         });
         if (!existing) throw new ApiError(404, 'TAKEOUT_CANDIDATE_NOT_FOUND', '候选不存在');
-        const duplicate = await tx.takeoutCandidate.findFirst({
-          where: { userId, urlHash: hash, id: { not: id } },
-          select: { id: true },
-        });
-        if (duplicate) throw uniqueUrlConflict();
+        if (hash) {
+          const duplicate = await tx.takeoutCandidate.findFirst({
+            where: { userId, urlHash: hash, id: { not: id } },
+            select: { id: true },
+          });
+          if (duplicate) throw uniqueUrlConflict();
+        }
         return tx.takeoutCandidate.update({
           where: { id },
-          data: { name: input.name, url: input.url, urlHash: hash },
+          data: { name: input.name, url: input.url || null, urlHash: hash },
         });
       },
       { timeout: 15_000 },
@@ -135,10 +139,12 @@ export async function importTakeoutCandidates(
     return await client.$transaction(
       async (tx) => {
         await lockUser(tx, userId);
-        const hashes = input.candidates.map(({ url }) => urlHash(url));
+        const hashes = input.candidates.flatMap(({ url }) => (url ? [urlHash(url)] : []));
         const indexesByHash = new Map<string, number>();
         const issues: ApiErrorIssue[] = [];
-        hashes.forEach((hash, index) => {
+        input.candidates.forEach(({ url }, index) => {
+          if (!url) return;
+          const hash = urlHash(url);
           const previousIndex = indexesByHash.get(hash);
           if (previousIndex !== undefined) {
             issues.push({
@@ -151,11 +157,14 @@ export async function importTakeoutCandidates(
         });
         if (issues.length) throw importValidationFailed(issues);
 
-        const existing = await tx.takeoutCandidate.findMany({
-          where: { userId, urlHash: { in: hashes } },
-          select: { urlHash: true },
-        });
+        const existing = hashes.length
+          ? await tx.takeoutCandidate.findMany({
+              where: { userId, urlHash: { in: hashes } },
+              select: { urlHash: true },
+            })
+          : [];
         for (const record of existing) {
+          if (record.urlHash === null) continue;
           const index = indexesByHash.get(record.urlHash);
           if (index !== undefined) {
             issues.push({
@@ -171,8 +180,8 @@ export async function importTakeoutCandidates(
           data: input.candidates.map((candidate) => ({
             userId,
             name: candidate.name,
-            url: candidate.url,
-            urlHash: urlHash(candidate.url),
+            url: candidate.url || null,
+            urlHash: candidate.url ? urlHash(candidate.url) : null,
             updatedAt: now,
           })),
         });

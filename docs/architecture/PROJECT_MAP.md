@@ -4,7 +4,7 @@
 
 [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)是目标规划，不是这份实际清单。地图只记录源码、配置、测试、文档与可提交资源；不展开.git、node_modules、dist、coverage、真实.env、运行数据和空目录。依赖、构建与真实配置用途见第3节。
 
-产品名称为“吃什么饭”；仓库和包名保持原工程标识。设计图生成/修改的唯一提示词入口是[提示词文件](../design/screens/images/PROMPTS.md)，按S00–S08查找当前Memo规范、主提示词及补充状态；画面设计书负责交互、字段与验收，不存提示词副本。后续视觉提示更新集中在该文件，业务变更仍同步相关设计；生成新图同时维护图集索引、实际生成记录与本地图，详见[AI工作流](../development/AI_WORKFLOW.md#7-设计图提示词与版本维护)。S00技术验证页保留在`/health-check`（非正式产品首页），`/`现导向菜谱一览。S01–S08 Web界面已实现并按V3 Memo图稿还原；S09为复用JSON导入链路的固定Excel模板页面，使用项目样式且没有独立设计图；S13为共用首页推荐卡的外卖候选管理与随机推荐，本机迁移、隔离数据库/HTTP及浏览器手机视口验收已通过，真机验收未做。API client按shared Contract接入，A02–A33源码已实现；A28–A33通过隔离数据库真实HTTP业务验收。初始、账号/管理员、菜谱爱心和外卖迁移均已应用于本地Docker开发数据库。已有9张Memo主图及2张补充图，旧V1/V2 PNG已按用户要求删除，历史输入记录保留。
+产品名称为“吃什么饭”；仓库和包名保持原工程标识。设计图生成/修改的唯一提示词入口是[提示词文件](../design/screens/images/PROMPTS.md)，按S00–S08查找当前Memo规范、主提示词及补充状态；画面设计书负责交互、字段与验收，不存提示词副本。后续视觉提示更新集中在该文件，业务变更仍同步相关设计；生成新图同时维护图集索引、实际生成记录与本地图，详见[AI工作流](../development/AI_WORKFLOW.md#7-设计图提示词与版本维护)。S00技术验证页保留在`/health-check`（非正式产品首页），`/`现导向菜谱一览。S01–S08 Web界面已实现并按V3 Memo图稿还原；S09为复用JSON导入链路的固定Excel模板页面，使用项目样式且没有独立设计图；S13为共用首页推荐卡的外卖候选管理与随机推荐，可选链接实现及迁移已应用于本机Docker开发数据库；新行为的HTTP数据库集成验收尚未执行，真机验收未做。API client按shared Contract接入，A02–A33源码已实现；此前A28–A33通过隔离数据库真实HTTP业务验收，空链接行为已通过mock回归测试和本机数据库约束核验。初始、账号/管理员、菜谱爱心和外卖迁移均已应用于本地Docker开发数据库。已有9张Memo主图及2张补充图，旧V1/V2 PNG已按用户要求删除，历史输入记录保留。
 
 ## 1. 目录总览
 
@@ -218,8 +218,9 @@ sku-cook-ai/
 | `apps/api/prisma/migrations/migration_lock.toml` | 固定Prisma迁移provider为PostgreSQL。                |
 | `apps/api/prisma/migrations/20261011110000_add_recipe_like/migration.sql` | 菜谱新增默认false的个人爱心列，本机备份并验证后应用。 |
 | `apps/api/prisma/migrations/20261012070427_add_takeout_candidates/migration.sql` | 新建按用户隔离的外卖候选表、URL哈希唯一索引与级联外键；备份验证后应用于本机开发库。 |
+| `apps/api/prisma/migrations/20261013000000_make_takeout_url_optional/migration.sql` | 将外卖候选URL和去重哈希列改为可空；仅移除NOT NULL约束，不修改现有数据；已应用于本机开发库。 |
 | `apps/api/src/modules/recipes/recipe.like.test.ts` | Mock HTTP验证爱心认证、严格输入、用户限定、幂等与错误形状。 |
-| `apps/api/prisma/schema.prisma`               | PostgreSQL用户邮箱/管理员权限、AuthSession、菜谱/厨房/历史及外卖候选关系；本机迁移已应用。 |
+| `apps/api/prisma/schema.prisma`               | PostgreSQL用户邮箱/管理员权限、AuthSession、菜谱/厨房/历史及外卖候选关系；外卖链接列可空的前向迁移已应用于本机开发库。 |
 | `apps/api/prisma/seed.ts`                     | 通过本机配置幂等初始化Sku001的空密码哈希，不覆盖已设密码。                       |
 | `apps/api/src/app.ts`                         | 构造Fastify实例，装配统一错误处理、Prisma、认证钩子、health与业务路由。           |
 | `apps/api/src/server.ts`                      | 读取服务/认证配置、启动监听、失败处理与退出。                                   |

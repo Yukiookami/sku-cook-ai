@@ -1,6 +1,6 @@
 # 吃什么饭 · V1 设计书索引
 
-状态：2026-10-12。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；S09为V2固定Excel模板导入；S10为V2账号注册、登录与切换；S11为受保护用户中心；S13为V2随机外卖管理，无独立设计图。A02–A19 API源码及Prisma Schema已实现；A20–A27覆盖账号、管理员和爱心；A28–A33为随机外卖API。S13本机迁移、隔离数据库/HTTP业务验收及浏览器手机视口验收均已通过，真机验收未做。
+状态：2026-10-12。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；S09为V2固定Excel模板导入；S10为V2账号注册、登录与切换；S11为受保护用户中心；S13为V2随机外卖管理，无独立设计图。A02–A19 API源码及Prisma Schema已实现；A20–A27覆盖账号、管理员和爱心；A28–A33为随机外卖API。S13此前版本的迁移、隔离数据库/HTTP业务验收及浏览器手机视口验收已通过；允许链接为空的迁移已应用于本机开发库，并验证列约束；新行为真实HTTP/数据库集成验收待补；真机验收未做。
 
 依据：[需求文档](../requirements/REQUIREMENTS_V1.md)、[技术栈](../architecture/TECH_STACK.md)、[目录规划](../architecture/PROJECT_STRUCTURE.md)。需求定义范围，设计书细化交互与接口，实施时在 shared 中建立相应 Zod Contract。除已确认的 V2 账号功能外，不新增图片、AI Runtime、通知、离线写入或 TodoList。
 
@@ -10,22 +10,22 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 
 每个路由页面独立一份；共用厨房弹层另外单列，避免在列表和详情里重复定义。
 
-| 编号 | 画面                                                    | 路由 / 形态                                  | 状态                                                                   |
-| ---- | ------------------------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------- |
-| S00  | [基础首页](screens/S00_HOME.md)                         | `/health-check`；`/` 导向正式入口 `/recipes` | 前端已有技术验证页                                                     |
-| S01  | [菜谱一览](screens/S01_RECIPE_LIST.md)                  | `/recipes`                                   | 前端已实现，待联调                                                     |
-| S02  | [菜谱详情](screens/S02_RECIPE_DETAIL.md)                | `/recipes/:id`                               | 前端已实现，待联调                                                     |
-| S03  | [新增菜谱](screens/S03_RECIPE_CREATE.md)                | `/recipes/new`                               | 前端已实现，待联调                                                     |
-| S04  | [编辑菜谱](screens/S04_RECIPE_EDIT.md)                  | `/recipes/:id/edit`                          | 前端已实现，待联调                                                     |
-| S05  | [菜谱导入 / 导出](screens/S05_RECIPE_IMPORT.md)         | `/recipes/import`                            | 前端已实现，待联调                                                     |
-| S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                   | 前端已实现，待联调                                                     |
-| S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                   | 前端已实现，待联调                                                     |
-| S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                           | 前端已实现，待联调                                                     |
-| S09  | [Excel 菜谱导入](screens/S09_RECIPE_EXCEL_IMPORT.md)    | `/recipes/import/excel`                      | 前端已实现，复用A08/A09                                                |
-| S10  | [账号登录、注册与切换](screens/S10_ACCOUNT.md)          | `/account`                                   | Web已实现，待端到端验收                                                |
-| S11  | [用户中心](screens/S11_USER_CENTER.md)                  | `/account/profile`                           | Web/API已实现，mock测试覆盖，待真实验收                                |
-| S12  | [管理员用户列表](screens/S12_ADMIN_USERS.md)            | `/admin/users`                               | 只读列表已实现，本机迁移已应用                                         |
-| S13  | [外卖候选管理与随机推荐](screens/S13_TAKEOUT.md)        | `/takeout`，S01首页共用推荐卡片              | Web/API已实现；迁移、数据库/HTTP及浏览器手机视口验收通过，未做真机验收 |
+| 编号 | 画面                                                    | 路由 / 形态                                  | 状态                                                                      |
+| ---- | ------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
+| S00  | [基础首页](screens/S00_HOME.md)                         | `/health-check`；`/` 导向正式入口 `/recipes` | 前端已有技术验证页                                                        |
+| S01  | [菜谱一览](screens/S01_RECIPE_LIST.md)                  | `/recipes`                                   | 前端已实现，待联调                                                        |
+| S02  | [菜谱详情](screens/S02_RECIPE_DETAIL.md)                | `/recipes/:id`                               | 前端已实现，待联调                                                        |
+| S03  | [新增菜谱](screens/S03_RECIPE_CREATE.md)                | `/recipes/new`                               | 前端已实现，待联调                                                        |
+| S04  | [编辑菜谱](screens/S04_RECIPE_EDIT.md)                  | `/recipes/:id/edit`                          | 前端已实现，待联调                                                        |
+| S05  | [菜谱导入 / 导出](screens/S05_RECIPE_IMPORT.md)         | `/recipes/import`                            | 前端已实现，待联调                                                        |
+| S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                   | 前端已实现，待联调                                                        |
+| S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                   | 前端已实现，待联调                                                        |
+| S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                           | 前端已实现，待联调                                                        |
+| S09  | [Excel 菜谱导入](screens/S09_RECIPE_EXCEL_IMPORT.md)    | `/recipes/import/excel`                      | 前端已实现，复用A08/A09                                                   |
+| S10  | [账号登录、注册与切换](screens/S10_ACCOUNT.md)          | `/account`                                   | Web已实现，待端到端验收                                                   |
+| S11  | [用户中心](screens/S11_USER_CENTER.md)                  | `/account/profile`                           | Web/API已实现，mock测试覆盖，待真实验收                                   |
+| S12  | [管理员用户列表](screens/S12_ADMIN_USERS.md)            | `/admin/users`                               | 只读列表已实现，本机迁移已应用                                            |
+| S13  | [外卖候选管理与随机推荐](screens/S13_TAKEOUT.md)        | `/takeout`，S01首页共用推荐卡片              | 可选链接已实现并应用本机迁移；新增HTTP/数据库业务验收待完成，未做真机验收 |
 
 静态路径 `new`、`import` 与 id 路由明确区分；详情 id 只能是正整数。不存在的前端路由显示简洁的“页面不存在 / 返回菜谱”状态，不另外设计业务页面。
 
@@ -33,41 +33,41 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 
 一次请求的方法与路径对应一份设计书。请求前缀统一为 `/api`。
 
-| 编号 | 接口                                                                       | 调用画面             | 状态                                    |
-| ---- | -------------------------------------------------------------------------- | -------------------- | --------------------------------------- |
-| A01  | [GET /api/health](apis/A01_HEALTH_GET.md)                                  | S00                  | 已实现                                  |
-| A02  | [GET /api/recipes](apis/A02_RECIPES_GET.md)                                | S01、S05             | 源码已实现，待数据库验收                |
-| A03  | [GET /api/recipes/tags](apis/A03_RECIPE_TAGS_GET.md)                       | S01、表单建议项      | 源码已实现，待数据库验收                |
-| A04  | [GET /api/recipes/:id](apis/A04_RECIPE_GET.md)                             | S02、S04             | 源码已实现，待数据库验收                |
-| A05  | [POST /api/recipes](apis/A05_RECIPE_POST.md)                               | S03                  | 源码已实现，待数据库验收                |
-| A06  | [PUT /api/recipes/:id](apis/A06_RECIPE_PUT.md)                             | S04                  | 源码已实现，待数据库验收                |
-| A07  | [DELETE /api/recipes/:id](apis/A07_RECIPE_DELETE.md)                       | S02                  | 源码已实现，待数据库验收                |
-| A08  | [POST /api/recipes/import/validate](apis/A08_IMPORT_VALIDATE_POST.md)      | S05、S09             | 源码已实现，待数据库验收                |
-| A09  | [POST /api/recipes/import](apis/A09_IMPORT_POST.md)                        | S05、S09             | 源码已实现，待数据库验收                |
-| A10  | [GET /api/kitchen/session](apis/A10_KITCHEN_GET.md)                        | S06、S07             | 源码已实现，待数据库验收                |
-| A11  | [PUT /api/kitchen/session](apis/A11_KITCHEN_PUT.md)                        | S07 发送菜单         | 源码已实现，待数据库验收                |
-| A12  | [PATCH /api/kitchen/session/active](apis/A12_KITCHEN_ACTIVE_PATCH.md)      | S06 切换菜谱         | 源码已实现，待数据库验收                |
-| A13  | [DELETE /api/kitchen/session](apis/A13_KITCHEN_DELETE.md)                  | S07 清空，不记历史   | 源码已实现，待数据库验收                |
-| A14  | [GET /api/recipes/random](apis/A14_RECIPE_RANDOM_GET.md)                   | S01 随机推荐、换一个 | 源码已实现，待数据库验收                |
-| A15  | [POST /api/kitchen/session/complete](apis/A15_KITCHEN_COMPLETE_POST.md)    | S06 完成并记整顿历史 | 源码已实现，待数据库验收                |
-| A16  | [GET /api/cooking-history](apis/A16_COOKING_HISTORY_GET.md)                | S08 历史分页         | 源码已实现，待数据库验收                |
-| A17  | [POST /api/cooking-history](apis/A17_COOKING_HISTORY_POST.md)              | S02 手动记录做过     | 源码已实现，待数据库验收                |
-| A18  | [DELETE /api/cooking-history/:id](apis/A18_COOKING_HISTORY_DELETE.md)      | S08 删除整次误记     | 源码已实现，待数据库验收                |
-| A19  | [GET /api/recipes/export](apis/A19_RECIPE_EXPORT_GET.md)                   | S05 菜库迁移导出     | 源码已实现，待数据库验收                |
-| A20  | [POST /api/auth/register](apis/A20_AUTH_REGISTER_POST.md)                  | S10 开放注册         | 源码已实现，待数据库验收                |
-| A21  | [POST /api/auth/login](apis/A21_AUTH_LOGIN_POST.md)                        | S10 登录             | 源码已实现，待数据库验收                |
-| A22  | [GET /api/auth/session](apis/A22_AUTH_SESSION_GET.md)                      | S10 恢复会话         | 源码已实现，待数据库验收                |
-| A23  | [DELETE /api/auth/session](apis/A23_AUTH_SESSION_DELETE.md)                | S10 主动退出         | 源码已实现，待数据库验收                |
-| A24  | [PATCH /api/auth/username](apis/A24_AUTH_USERNAME_PATCH.md)                | S11 修改用户名       | 源码已实现，待数据库验收                |
-| A25  | [PUT /api/auth/password](apis/A25_AUTH_PASSWORD_PUT.md)                    | S11 修改密码         | 源码已实现，待数据库验收                |
-| A26  | [GET /api/admin/users](apis/A26_ADMIN_USERS_GET.md)                        | S12 注册用户分页     | 已实现，权限与分页测试覆盖              |
-| A27  | [PUT /api/recipes/:id/like](apis/A27_RECIPE_LIKE_PUT.md)                   | S01、S02 个人爱心    | 已实现，mock与专用数据库验证覆盖        |
-| A28  | [GET /api/takeout/candidates](apis/A28_TAKEOUT_CANDIDATES_GET.md)          | S13 候选列表         | 隔离数据库/HTTP验收通过，本机迁移已应用 |
-| A29  | [POST /api/takeout/candidates](apis/A29_TAKEOUT_CANDIDATE_POST.md)         | S13 新增候选         | 隔离数据库/HTTP验收通过，本机迁移已应用 |
-| A30  | [PUT /api/takeout/candidates/:id](apis/A30_TAKEOUT_CANDIDATE_PUT.md)       | S13 编辑候选         | 隔离数据库/HTTP验收通过，本机迁移已应用 |
-| A31  | [DELETE /api/takeout/candidates/:id](apis/A31_TAKEOUT_CANDIDATE_DELETE.md) | S13 删除候选         | 隔离数据库/HTTP验收通过，本机迁移已应用 |
-| A32  | [GET /api/takeout/random](apis/A32_TAKEOUT_RANDOM_GET.md)                  | S01 点外卖推荐       | 隔离数据库/HTTP验收通过，本机迁移已应用 |
-| A33  | [POST /api/takeout/candidates/import](apis/A33_TAKEOUT_IMPORT_POST.md)     | S13 JSON批量导入     | 隔离数据库/HTTP验收通过，本机迁移已应用 |
+| 编号 | 接口                                                                       | 调用画面             | 状态                                                 |
+| ---- | -------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------- |
+| A01  | [GET /api/health](apis/A01_HEALTH_GET.md)                                  | S00                  | 已实现                                               |
+| A02  | [GET /api/recipes](apis/A02_RECIPES_GET.md)                                | S01、S05             | 源码已实现，待数据库验收                             |
+| A03  | [GET /api/recipes/tags](apis/A03_RECIPE_TAGS_GET.md)                       | S01、表单建议项      | 源码已实现，待数据库验收                             |
+| A04  | [GET /api/recipes/:id](apis/A04_RECIPE_GET.md)                             | S02、S04             | 源码已实现，待数据库验收                             |
+| A05  | [POST /api/recipes](apis/A05_RECIPE_POST.md)                               | S03                  | 源码已实现，待数据库验收                             |
+| A06  | [PUT /api/recipes/:id](apis/A06_RECIPE_PUT.md)                             | S04                  | 源码已实现，待数据库验收                             |
+| A07  | [DELETE /api/recipes/:id](apis/A07_RECIPE_DELETE.md)                       | S02                  | 源码已实现，待数据库验收                             |
+| A08  | [POST /api/recipes/import/validate](apis/A08_IMPORT_VALIDATE_POST.md)      | S05、S09             | 源码已实现，待数据库验收                             |
+| A09  | [POST /api/recipes/import](apis/A09_IMPORT_POST.md)                        | S05、S09             | 源码已实现，待数据库验收                             |
+| A10  | [GET /api/kitchen/session](apis/A10_KITCHEN_GET.md)                        | S06、S07             | 源码已实现，待数据库验收                             |
+| A11  | [PUT /api/kitchen/session](apis/A11_KITCHEN_PUT.md)                        | S07 发送菜单         | 源码已实现，待数据库验收                             |
+| A12  | [PATCH /api/kitchen/session/active](apis/A12_KITCHEN_ACTIVE_PATCH.md)      | S06 切换菜谱         | 源码已实现，待数据库验收                             |
+| A13  | [DELETE /api/kitchen/session](apis/A13_KITCHEN_DELETE.md)                  | S07 清空，不记历史   | 源码已实现，待数据库验收                             |
+| A14  | [GET /api/recipes/random](apis/A14_RECIPE_RANDOM_GET.md)                   | S01 随机推荐、换一个 | 源码已实现，待数据库验收                             |
+| A15  | [POST /api/kitchen/session/complete](apis/A15_KITCHEN_COMPLETE_POST.md)    | S06 完成并记整顿历史 | 源码已实现，待数据库验收                             |
+| A16  | [GET /api/cooking-history](apis/A16_COOKING_HISTORY_GET.md)                | S08 历史分页         | 源码已实现，待数据库验收                             |
+| A17  | [POST /api/cooking-history](apis/A17_COOKING_HISTORY_POST.md)              | S02 手动记录做过     | 源码已实现，待数据库验收                             |
+| A18  | [DELETE /api/cooking-history/:id](apis/A18_COOKING_HISTORY_DELETE.md)      | S08 删除整次误记     | 源码已实现，待数据库验收                             |
+| A19  | [GET /api/recipes/export](apis/A19_RECIPE_EXPORT_GET.md)                   | S05 菜库迁移导出     | 源码已实现，待数据库验收                             |
+| A20  | [POST /api/auth/register](apis/A20_AUTH_REGISTER_POST.md)                  | S10 开放注册         | 源码已实现，待数据库验收                             |
+| A21  | [POST /api/auth/login](apis/A21_AUTH_LOGIN_POST.md)                        | S10 登录             | 源码已实现，待数据库验收                             |
+| A22  | [GET /api/auth/session](apis/A22_AUTH_SESSION_GET.md)                      | S10 恢复会话         | 源码已实现，待数据库验收                             |
+| A23  | [DELETE /api/auth/session](apis/A23_AUTH_SESSION_DELETE.md)                | S10 主动退出         | 源码已实现，待数据库验收                             |
+| A24  | [PATCH /api/auth/username](apis/A24_AUTH_USERNAME_PATCH.md)                | S11 修改用户名       | 源码已实现，待数据库验收                             |
+| A25  | [PUT /api/auth/password](apis/A25_AUTH_PASSWORD_PUT.md)                    | S11 修改密码         | 源码已实现，待数据库验收                             |
+| A26  | [GET /api/admin/users](apis/A26_ADMIN_USERS_GET.md)                        | S12 注册用户分页     | 已实现，权限与分页测试覆盖                           |
+| A27  | [PUT /api/recipes/:id/like](apis/A27_RECIPE_LIKE_PUT.md)                   | S01、S02 个人爱心    | 已实现，mock与专用数据库验证覆盖                     |
+| A28  | [GET /api/takeout/candidates](apis/A28_TAKEOUT_CANDIDATES_GET.md)          | S13 候选列表         | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
+| A29  | [POST /api/takeout/candidates](apis/A29_TAKEOUT_CANDIDATE_POST.md)         | S13 新增候选         | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
+| A30  | [PUT /api/takeout/candidates/:id](apis/A30_TAKEOUT_CANDIDATE_PUT.md)       | S13 编辑候选         | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
+| A31  | [DELETE /api/takeout/candidates/:id](apis/A31_TAKEOUT_CANDIDATE_DELETE.md) | S13 删除候选         | 隔离数据库/HTTP验收通过，本机迁移已应用              |
+| A32  | [GET /api/takeout/random](apis/A32_TAKEOUT_RANDOM_GET.md)                  | S01 点外卖推荐       | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
+| A33  | [POST /api/takeout/candidates/import](apis/A33_TAKEOUT_IMPORT_POST.md)     | S13 JSON批量导入     | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
 
 菜谱静态API路径 `tags` / `random` 与 `:id` 正整数路由明确区分，不能因新增随机入口破坏详情访问。随机区复用S01，不新增独立路由页面。
 

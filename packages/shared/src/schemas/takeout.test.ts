@@ -14,6 +14,14 @@ describe('takeout contracts', () => {
         url: ' https://food.example.com/share/123 ',
       }),
     ).toEqual({ name: '青椒肉丝', url: 'https://food.example.com/share/123' });
+    expect(TakeoutCandidateInputSchema.parse({ name: '街边小店' })).toEqual({
+      name: '街边小店',
+      url: '',
+    });
+    expect(TakeoutCandidateInputSchema.parse({ name: '街边小店', url: '  ' })).toEqual({
+      name: '街边小店',
+      url: '',
+    });
     for (const url of [
       'javascript:alert(1)',
       'file:///tmp/recipe',
@@ -37,6 +45,15 @@ describe('takeout contracts', () => {
         .success,
     ).toBe(false);
     expect(TakeoutImportInputSchema.safeParse({ version: 1, candidates: [] }).success).toBe(false);
+    expect(
+      TakeoutImportInputSchema.parse({
+        version: 1,
+        candidates: [{ name: '没有链接的店' }, { name: '另一家', url: '' }],
+      }).candidates,
+    ).toEqual([
+      { name: '没有链接的店', url: '' },
+      { name: '另一家', url: '' },
+    ]);
   });
 
   it('validates exclusion and explicit empty/one-candidate result shapes', () => {

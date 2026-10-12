@@ -72,6 +72,7 @@ function summary(id: number) {
 describe('RecipeListView selection behavior', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    localStorage.removeItem('sku-cook-ai:recommendation-mode');
     vi.mocked(getRecipes).mockResolvedValue({
       items: Array.from({ length: 11 }, (_, index) => summary(index + 1)),
       page: 1,
@@ -93,6 +94,8 @@ describe('RecipeListView selection behavior', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    sessionStorage.removeItem('recipe-list-scroll');
+    localStorage.removeItem('sku-cook-ai:recommendation-mode');
     observerCallback = undefined;
     observerInstance = undefined;
   });
@@ -170,6 +173,7 @@ describe('RecipeListView selection behavior', () => {
     await wrapper.get('.recommendation-mode-switch button:last-of-type').trigger('click');
     expect(wrapper.get('.home-header h1').text()).toBe('点什么饭');
     expect(wrapper.get('#recommend-title').text()).toBe('今天点什么？');
+    expect(localStorage.getItem('sku-cook-ai:recommendation-mode')).toBe('takeout');
     expect(
       wrapper.get('.recommendation-mode-switch .segmented-switch-indicator').classes(),
     ).toContain('is-second');
@@ -203,6 +207,44 @@ describe('RecipeListView selection behavior', () => {
     await flushPromises();
     expect(getRandomTakeoutCandidate).toHaveBeenLastCalledWith({ excludeCandidateId: 44 });
     expect(wrapper.get('.recommend-title').text()).toBe('店铺45');
+
+    vi.mocked(getRandomTakeoutCandidate).mockResolvedValueOnce({
+      candidate: {
+        id: 46,
+        name: '仅支持电话点餐',
+        url: '',
+        createdAt: '2026-10-12T00:00:00.000Z',
+        updatedAt: '2026-10-12T00:00:00.000Z',
+      },
+      reason: null,
+    });
+    await wrapper.get('.recommend-actions .button-secondary').trigger('click');
+    await flushPromises();
+    expect(wrapper.get('.recommend-title').text()).toBe('仅支持电话点餐');
+    expect(wrapper.get('.recommend-actions').text()).toContain('换一个');
+    expect(wrapper.find('.recommend-actions a').exists()).toBe(false);
+    expect(wrapper.text()).toContain('此候选没有可打开的平台链接。');
+    wrapper.unmount();
+  });
+
+  it('restores the selected recommendation mode after the app is reopened', async () => {
+    localStorage.setItem('sku-cook-ai:recommendation-mode', 'takeout');
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/recipes', component: RecipeListView }],
+    });
+    await router.push('/recipes');
+    await router.isReady();
+    const wrapper = mount(RecipeListView, {
+      global: { plugins: [router] },
+    });
+    await flushPromises();
+
+    expect(wrapper.get('.home-header h1').text()).toBe('点什么饭');
+    expect(wrapper.get('#recommend-title').text()).toBe('今天点什么？');
+    expect(
+      wrapper.get('.recommendation-mode-switch .segmented-switch-indicator').classes(),
+    ).toContain('is-second');
     wrapper.unmount();
   });
 
@@ -397,6 +439,14 @@ describe('RecipeListView selection behavior', () => {
     await flushPromises();
 
     expect(wrapper.get('.list-loading-state').text()).toContain('正在加载菜谱');
+    expect(
+      Boolean(
+        wrapper
+          .get('.recommendation-card')
+          .element.compareDocumentPosition(wrapper.get('.list-loading-state').element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    ).toBe(true);
     expect(wrapper.find('.list-error').exists()).toBe(false);
 
     rejectList({ isAxiosError: true, code: 'ERR_NETWORK' });
@@ -405,6 +455,25 @@ describe('RecipeListView selection behavior', () => {
     expect(wrapper.find('.list-loading-state').exists()).toBe(false);
     expect(wrapper.get('.list-error').text()).toContain('无法读取菜谱');
     expect(wrapper.find('.recipe-grid').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('ignores and clears stale scroll restoration data on a fresh app entry', async () => {
+    sessionStorage.setItem('recipe-list-scroll', '640');
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/recipes', component: RecipeListView }],
+    });
+    await router.push('/recipes');
+    await router.isReady();
+    const wrapper = mount(RecipeListView, {
+      global: { plugins: [router] },
+    });
+    await flushPromises();
+
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('recipe-list-scroll')).toBeNull();
     wrapper.unmount();
   });
 });

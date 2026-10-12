@@ -1,6 +1,6 @@
 # A32 GET /api/takeout/random
 
-状态：API源码、shared Contract和S01已实现；本机迁移/数据库验收进行中。调用方：[S01 点外卖推荐](../screens/S01_RECIPE_LIST.md#22-随机外卖)。
+状态：API源码、shared Contract和S01已实现；允许链接为空的迁移已应用于本机开发库，相关HTTP/数据库业务验收待完成。调用方：[S01 点外卖推荐](../screens/S01_RECIPE_LIST.md#22-随机外卖)。
 
 ## 请求
 
@@ -30,6 +30,7 @@
 ```
 
 无候选：`{"candidate":null,"reason":"EMPTY_LIBRARY"}`。排除后无其他候选：`{"candidate":null,"reason":"NO_ALTERNATIVE"}`。
+无平台链接的候选仍可被推荐，响应以`"url": ""`表示；调用方不显示打开链接操作。
 
 ## 错误
 

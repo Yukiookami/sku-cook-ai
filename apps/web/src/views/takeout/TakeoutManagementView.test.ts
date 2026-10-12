@@ -193,6 +193,16 @@ describe('TakeoutManagementView', () => {
     wrapper.unmount();
   });
 
+  it('shows candidates without links without rendering an empty external anchor', async () => {
+    vi.mocked(getTakeoutCandidates).mockResolvedValue([{ ...candidate, url: '' }]);
+    const wrapper = await mountView();
+    await flushPromises();
+
+    expect(wrapper.get('.takeout-candidate-card').text()).toContain('未设置平台链接');
+    expect(wrapper.find('.takeout-candidate-card a').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it('rejects unsafe links locally and preserves entered values when saving fails', async () => {
     const wrapper = await mountView();
     await flushPromises();
@@ -215,7 +225,7 @@ describe('TakeoutManagementView', () => {
     wrapper.unmount();
   });
 
-  it('shows required-field validation inline without the browser-native popup', async () => {
+  it('requires a name inline but allows the platform link to be empty', async () => {
     const wrapper = await mountView();
     await flushPromises();
     const form = wrapper.get('.takeout-form');
@@ -224,10 +234,14 @@ describe('TakeoutManagementView', () => {
     await form.trigger('submit');
 
     expect(wrapper.get('#candidate-name-error').text()).toBe('请填写店铺或菜品名称。');
-    expect(wrapper.get('#candidate-url-error').text()).toBe('请填写平台分享链接。');
     expect(wrapper.get('input[placeholder^="例如"]').attributes('aria-invalid')).toBe('true');
-    expect(wrapper.get('input[type="url"]').attributes('aria-invalid')).toBe('true');
+    expect(wrapper.get('input[type="url"]').attributes('aria-invalid')).toBe('false');
     expect(createTakeoutCandidate).not.toHaveBeenCalled();
+
+    await wrapper.get('input[placeholder^="例如"]').setValue('电话点餐店');
+    await form.trigger('submit');
+    await flushPromises();
+    expect(createTakeoutCandidate).toHaveBeenCalledExactlyOnceWith({ name: '电话点餐店', url: '' });
     wrapper.unmount();
   });
 
@@ -268,6 +282,31 @@ describe('TakeoutManagementView', () => {
     wrapper.unmount();
   });
 
+  it('allows multiple imported candidates to omit their links', async () => {
+    const wrapper = await mountView();
+    await flushPromises();
+    const input = {
+      version: 1,
+      candidates: [{ name: '电话点餐店' }, { name: '没有分享页', url: '' }],
+    };
+    await selectJsonFile(wrapper, JSON.stringify(input));
+
+    expect(wrapper.text()).toContain('将导入 2 项');
+    const importButton = wrapper.findAll('button').find((button) => button.text() === '确认导入');
+    expect(importButton).toBeDefined();
+    await importButton!.trigger('click');
+    await flushPromises();
+
+    expect(importTakeoutCandidates).toHaveBeenCalledExactlyOnceWith({
+      version: 1,
+      candidates: [
+        { name: '电话点餐店', url: '' },
+        { name: '没有分享页', url: '' },
+      ],
+    });
+    wrapper.unmount();
+  });
+
   it('shows the validated batch size and submits the exact versioned envelope', async () => {
     const wrapper = await mountView();
     await flushPromises();
@@ -287,6 +326,87 @@ describe('TakeoutManagementView', () => {
 
     expect(importTakeoutCandidates).toHaveBeenCalledExactlyOnceWith(input);
     expect(wrapper.text()).toContain('成功导入 2 项外卖候选');
+    wrapper.unmount();
+  });
+
+  it('keeps the uncertain import available and enables retry only after a fresh list shows no new items', async () => {
+    const wrapper = await mountView();
+    await flushPromises();
+    const input = {
+      version: 1,
+      candidates: [{ name: '电话点餐店', url: '' }],
+    } as const;
+    await selectJsonFile(wrapper, JSON.stringify(input));
+    vi.mocked(importTakeoutCandidates)
+      .mockRejectedValueOnce({ isAxiosError: true, code: 'ERR_NETWORK' })
+      .mockResolvedValueOnce({ importedCount: 1 });
+    vi.mocked(getTakeoutCandidates).mockResolvedValueOnce([candidate]);
+
+    await wrapper
+      .get('.takeout-import-card .takeout-form-actions button.button-primary')
+      .trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('导入结果暂未确认');
+    expect(wrapper.text()).toContain('已保留本次 1 项导入内容');
+    expect(wrapper.findAll('button').some((button) => button.text() === '确认导入')).toBe(false);
+    expect(wrapper.findAll('button').some((button) => button.text() === '等待核对…')).toBe(true);
+
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '重新读取候选')!
+      .trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('未发现本次新增项');
+    expect(wrapper.findAll('button').some((button) => button.text() === '再次确认导入')).toBe(true);
+
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '再次确认导入')!
+      .trigger('click');
+    await flushPromises();
+    expect(importTakeoutCandidates).toHaveBeenCalledTimes(2);
+    expect(importTakeoutCandidates).toHaveBeenLastCalledWith(input);
+    expect(wrapper.text()).toContain('成功导入 1 项外卖候选');
+    wrapper.unmount();
+  });
+
+  it('recognizes a committed import after the response was lost and does not resubmit it', async () => {
+    const wrapper = await mountView();
+    await flushPromises();
+    const input = {
+      version: 1,
+      candidates: [{ name: '电话点餐店', url: '' }],
+    } as const;
+    await selectJsonFile(wrapper, JSON.stringify(input));
+    vi.mocked(importTakeoutCandidates).mockRejectedValueOnce({
+      isAxiosError: true,
+      code: 'ERR_NETWORK',
+    });
+    vi.mocked(getTakeoutCandidates).mockResolvedValueOnce([
+      candidate,
+      {
+        ...candidate,
+        id: 32,
+        name: '电话点餐店',
+        url: '',
+      },
+    ]);
+
+    await wrapper
+      .get('.takeout-import-card .takeout-form-actions button.button-primary')
+      .trigger('click');
+    await flushPromises();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '重新读取候选')!
+      .trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('已在列表中确认导入 1 项');
+    expect(wrapper.findAll('button').some((button) => button.text() === '再次确认导入')).toBe(
+      false,
+    );
+    expect(importTakeoutCandidates).toHaveBeenCalledOnce();
     wrapper.unmount();
   });
 

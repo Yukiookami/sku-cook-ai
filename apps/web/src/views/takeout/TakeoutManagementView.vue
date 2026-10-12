@@ -50,6 +50,8 @@ const exportStatus = ref('');
 const exporting = ref(false);
 const importing = ref(false);
 const importNeedsReconcile = ref(false);
+const importCanRetry = ref(false);
+const importBaselineIds = ref<number[]>([]);
 const pendingImport = ref<TakeoutImportInput | null>(null);
 const importMode = ref<'file' | 'paste'>('file');
 const importModes = [
@@ -83,11 +85,45 @@ async function loadCandidates() {
   loading.value = true;
   listError.value = '';
   try {
-    candidates.value = await getTakeoutCandidates();
+    const latestCandidates = await getTakeoutCandidates();
     if (sequence !== requestSequence) return;
+    candidates.value = latestCandidates;
     loaded.value = true;
     if (saveNeedsReconcile.value) saveError.value = '';
-    if (importNeedsReconcile.value) importError.value = '';
+    if (importNeedsReconcile.value && pendingImport.value) {
+      const baselineIds = new Set(importBaselineIds.value);
+      const newlyAdded = latestCandidates.filter(({ id }) => !baselineIds.has(id));
+      const available = new Map<string, number>();
+      for (const candidate of newlyAdded) {
+        const key = JSON.stringify([candidate.name, candidate.url]);
+        available.set(key, (available.get(key) ?? 0) + 1);
+      }
+      const allImported = pendingImport.value.candidates.every(({ name, url }) => {
+        const key = JSON.stringify([name, url]);
+        const count = available.get(key) ?? 0;
+        if (count === 0) return false;
+        available.set(key, count - 1);
+        return true;
+      });
+      const anyImported = newlyAdded.some(({ name, url }) =>
+        pendingImport.value?.candidates.some((item) => item.name === name && item.url === url),
+      );
+
+      if (allImported) {
+        importStatus.value = `已在列表中确认导入 ${pendingImport.value.candidates.length} 项。`;
+        pendingImport.value = null;
+        importNeedsReconcile.value = false;
+        importCanRetry.value = false;
+        importError.value = '';
+        importBaselineIds.value = [];
+      } else if (!anyImported) {
+        importNeedsReconcile.value = false;
+        importCanRetry.value = true;
+        importError.value = '重新读取后未发现本次新增项。确认列表无误后，可以再次确认导入。';
+      } else {
+        importError.value = '只找到部分匹配项。为避免重复导入，请检查下方列表后重新读取核对。';
+      }
+    }
     if (deleteNeedsReconcile.value) {
       deleteError.value = candidates.value.some(({ id }) => id === uncertainDeleteId.value)
         ? '重新读取后，该候选仍在列表中。确认后可再次删除。'
@@ -96,7 +132,6 @@ async function loadCandidates() {
       uncertainDeleteId.value = null;
     }
     saveNeedsReconcile.value = false;
-    importNeedsReconcile.value = false;
   } catch (cause) {
     if (sequence === requestSequence) {
       listError.value = apiErrorMessage(cause, '无法读取外卖候选，请检查网络后重试。');
@@ -203,6 +238,9 @@ async function removeCandidate(candidate: TakeoutCandidate) {
 function cancelImport() {
   fileReadSequence += 1;
   pendingImport.value = null;
+  importNeedsReconcile.value = false;
+  importCanRetry.value = false;
+  importBaselineIds.value = [];
   pastedJson.value = '';
   importError.value = '';
   importIssues.value = [];
@@ -211,10 +249,11 @@ function cancelImport() {
 }
 
 function changeImportMode(mode: 'file' | 'paste') {
-  if (importMode.value === mode || importing.value) return;
+  if (importMode.value === mode || importing.value || importNeedsReconcile.value) return;
   fileReadSequence += 1;
   importMode.value = mode;
   pendingImport.value = null;
+  importCanRetry.value = false;
   importIssues.value = [];
   importError.value = '';
   importStatus.value = '';
@@ -228,6 +267,7 @@ function prepareImport(text: string, source: 'file' | 'paste') {
   importIssues.value = [];
   importError.value = '';
   importStatus.value = '';
+  importCanRetry.value = false;
   if (new TextEncoder().encode(text).byteLength > TAKEOUT_IMPORT_MAX_BYTES) {
     importError.value =
       source === 'file' ? 'JSON 文件不能超过 10 MiB。' : '粘贴内容不能超过 10 MiB，请缩减后重试。';
@@ -257,6 +297,7 @@ function prepareImport(text: string, source: 'file' | 'paste') {
   const seen = new Map<string, number>();
   const duplicateIssues: ApiErrorIssue[] = [];
   parsed.data.candidates.forEach((candidate, index) => {
+    if (!candidate.url) return;
     const previous = seen.get(candidate.url);
     if (previous === undefined) seen.set(candidate.url, index);
     else {
@@ -365,10 +406,14 @@ async function submitImport() {
   importError.value = '';
   importIssues.value = [];
   importStatus.value = '';
+  importCanRetry.value = false;
+  importBaselineIds.value = candidates.value.map(({ id }) => id);
   try {
     const result = await importTakeoutCandidates(pendingImport.value);
     if (sequence !== writeSequence) return;
     pendingImport.value = null;
+    importNeedsReconcile.value = false;
+    importBaselineIds.value = [];
     importStatus.value = `成功导入 ${result.importedCount} 项外卖候选。`;
     await loadCandidates();
   } catch (cause) {
@@ -376,7 +421,6 @@ async function submitImport() {
     importError.value = apiErrorMessage(cause, '导入失败，请检查文件后重试。');
     importIssues.value = localIssues(apiErrorIssues(cause));
     if (axios.isAxiosError(cause) && (!cause.response || cause.response.status >= 500)) {
-      pendingImport.value = null;
       importNeedsReconcile.value = true;
       importError.value = '导入结果暂未确认，请重新读取候选列表核对后再导入。';
     }
@@ -398,7 +442,7 @@ onBeforeUnmount(() => {
     <ConfirmDialog :options="dialog" @close="settle" />
     <PageHeader title="外卖候选" @back="back" />
 
-    <p class="takeout-intro">保存店铺或菜品分享链接，首页可以随机挑选今天点什么。</p>
+    <p class="takeout-intro">保存店铺或菜品，分享链接可选；首页可以随机挑选今天点什么。</p>
     <p v-if="listError" class="inline-error" role="alert">
       {{ listError }}
       <button class="text-button" type="button" @click="loadCandidates">重新读取</button>
@@ -435,22 +479,22 @@ onBeforeUnmount(() => {
           </small>
         </label>
         <label class="form-field">
-          <span>平台分享链接 <b aria-hidden="true">*</b></span>
+          <span>平台分享链接 <span class="muted">（可选）</span></span>
           <input
             v-model="url"
             type="url"
             maxlength="2048"
-            required
             :aria-invalid="Boolean(saveFieldErrors.url)"
             :aria-describedby="saveFieldErrors.url ? 'candidate-url-error' : undefined"
             autocomplete="url"
-            placeholder="粘贴店铺或菜品的 HTTP(S) 分享链接"
+            placeholder="如有链接，可粘贴 HTTP(S) 分享链接"
           />
           <small v-if="saveFieldErrors.url" id="candidate-url-error" class="field-error">
             {{ saveFieldErrors.url }}
           </small>
         </label>
-        <p class="muted">只保存链接并在外卖平台打开；不会抓取页面内容、下单或付款。</p>
+        <p class="muted">没有可跳转链接也可以添加；仅在提供链接时才可打开外卖平台。</p>
+        <p class="muted">不会抓取页面内容、下单或付款。</p>
         <div class="takeout-form-actions">
           <button
             class="button button-primary"
@@ -490,10 +534,11 @@ onBeforeUnmount(() => {
       <p v-if="exportStatus" class="inline-note" role="status">{{ exportStatus }}</p>
       <pre class="takeout-json-example">
 {"version":1,"candidates":[{"name":"店铺名称","url":"https://example.com/share"}]}</pre>
+      <p class="muted">分享链接可填写空字符串，也可以省略 url 字段。</p>
       <button
         class="text-button takeout-copy-example"
         type="button"
-        :disabled="importing"
+        :disabled="importing || importNeedsReconcile"
         @click="copyImportExample"
       >
         复制 JSON 格式示例
@@ -503,7 +548,7 @@ onBeforeUnmount(() => {
         :model-value="importMode"
         :options="importModes"
         label="选择导入方式"
-        :disabled="importing"
+        :disabled="importing || importNeedsReconcile"
         class="takeout-import-mode"
         @update:model-value="changeImportMode"
       />
@@ -514,7 +559,7 @@ onBeforeUnmount(() => {
             ref="fileInput"
             type="file"
             accept=".json,application/json"
-            :disabled="importing"
+            :disabled="importing || importNeedsReconcile"
             @change="onFileChange"
           />
         </label>
@@ -532,9 +577,13 @@ onBeforeUnmount(() => {
         />
         <span class="muted"> {{ pastedBytes.toLocaleString() }} / 10,485,760 字节 </span>
       </label>
-      <p v-if="pendingImport" class="inline-note" role="status">
+      <p v-if="pendingImport && !importNeedsReconcile" class="inline-note" role="status">
         已通过本地格式校验，将导入
         {{ pendingImport.candidates.length }} 项。确认后服务端会再次检查重复链接。
+      </p>
+      <p v-if="pendingImport && importNeedsReconcile" class="inline-note" role="status">
+        已保留本次
+        {{ pendingImport.candidates.length }} 项导入内容。请先重新读取核对结果，避免重复导入。
       </p>
       <ul v-if="importIssues.length" class="takeout-import-issues" aria-label="导入问题">
         <li v-for="(issue, index) in importIssues" :key="index">{{ issue }}</li>
@@ -548,7 +597,15 @@ onBeforeUnmount(() => {
           :disabled="importing || importNeedsReconcile"
           @click="submitImport"
         >
-          {{ importing ? '正在导入…' : '确认导入' }}
+          {{
+            importing
+              ? '正在导入…'
+              : importNeedsReconcile
+                ? '等待核对…'
+                : importCanRetry
+                  ? '再次确认导入'
+                  : '确认导入'
+          }}
         </button>
         <button
           class="button button-secondary"
@@ -559,8 +616,14 @@ onBeforeUnmount(() => {
           取消
         </button>
       </div>
-      <button v-if="importNeedsReconcile" class="text-button" type="button" @click="loadCandidates">
-        重新读取候选
+      <button
+        v-if="importNeedsReconcile"
+        class="text-button"
+        type="button"
+        :disabled="loading"
+        @click="loadCandidates"
+      >
+        {{ loading ? '正在重新读取…' : '重新读取候选' }}
       </button>
     </section>
 
@@ -580,9 +643,10 @@ onBeforeUnmount(() => {
           class="paper-card takeout-candidate-card"
         >
           <h3>{{ candidate.name }}</h3>
-          <a :href="candidate.url" target="_blank" rel="noopener noreferrer">
+          <a v-if="candidate.url" :href="candidate.url" target="_blank" rel="noopener noreferrer">
             打开平台链接 <span class="takeout-url">{{ candidate.url }}</span>
           </a>
+          <p v-else class="muted">未设置平台链接</p>
           <div class="takeout-candidate-actions">
             <button
               class="button button-secondary"

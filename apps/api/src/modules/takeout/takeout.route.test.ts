@@ -108,6 +108,52 @@ describe('takeout candidate routes', () => {
     expect(response.body.candidate.id).toBe(11);
   });
 
+  it('creates candidates without a URL and exposes an empty URL in the response', async () => {
+    useInteractiveTransactions();
+    vi.spyOn(app.prisma, '$queryRaw').mockResolvedValue([]);
+    const duplicateLookup = vi.spyOn(app.prisma.takeoutCandidate, 'findFirst');
+    const create = vi.spyOn(app.prisma.takeoutCandidate, 'create').mockResolvedValue({
+      ...candidate(12),
+      url: null,
+      urlHash: null,
+    });
+
+    const response = await request(app.server)
+      .post('/api/takeout/candidates')
+      .set('Cookie', cookie)
+      .send({ name: '不支持跳转的店铺' })
+      .expect(201);
+
+    expect(duplicateLookup).not.toHaveBeenCalled();
+    expect(create).toHaveBeenCalledWith({
+      data: { userId: 7, name: '不支持跳转的店铺', url: null, urlHash: null },
+    });
+    expect(response.body.candidate.url).toBe('');
+  });
+
+  it('clears an existing URL when updating with an empty value', async () => {
+    useInteractiveTransactions();
+    vi.spyOn(app.prisma, '$queryRaw').mockResolvedValue([]);
+    vi.spyOn(app.prisma.takeoutCandidate, 'findFirst').mockResolvedValue(candidate(13));
+    const update = vi.spyOn(app.prisma.takeoutCandidate, 'update').mockResolvedValue({
+      ...candidate(13),
+      url: null,
+      urlHash: null,
+    });
+
+    const response = await request(app.server)
+      .put('/api/takeout/candidates/13')
+      .set('Cookie', cookie)
+      .send({ name: '电话点餐店', url: '' })
+      .expect(200);
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 13 },
+      data: { name: '电话点餐店', url: null, urlHash: null },
+    });
+    expect(response.body.candidate.url).toBe('');
+  });
+
   it('rejects links duplicated within an import before writing any rows', async () => {
     useInteractiveTransactions();
     vi.spyOn(app.prisma, '$queryRaw').mockResolvedValue([]);
@@ -175,6 +221,33 @@ describe('takeout candidate routes', () => {
     const call = createMany.mock.calls[0];
     if (!call) throw new Error('Import did not call createMany');
     expect(call[0]?.data).toHaveLength(2);
+  });
+
+  it('imports multiple candidates without URLs without treating them as duplicates', async () => {
+    useInteractiveTransactions();
+    vi.spyOn(app.prisma, '$queryRaw').mockResolvedValue([]);
+    const lookup = vi.spyOn(app.prisma.takeoutCandidate, 'findMany');
+    const createMany = vi.spyOn(app.prisma.takeoutCandidate, 'createMany').mockResolvedValue({
+      count: 2,
+    });
+
+    const response = await request(app.server)
+      .post('/api/takeout/candidates/import')
+      .set('Cookie', cookie)
+      .send({
+        version: 1,
+        candidates: [{ name: '电话点餐店' }, { name: '不支持跳转的店', url: '' }],
+      })
+      .expect(200);
+
+    expect(response.body).toEqual({ importedCount: 2 });
+    expect(lookup).not.toHaveBeenCalled();
+    const call = createMany.mock.calls[0];
+    if (!call) throw new Error('Import did not call createMany');
+    expect(call[0]?.data).toEqual([
+      expect.objectContaining({ userId: 7, name: '电话点餐店', url: null, urlHash: null }),
+      expect.objectContaining({ userId: 7, name: '不支持跳转的店', url: null, urlHash: null }),
+    ]);
   });
 
   it('distinguishes an empty pool from a one-item pool with no alternative', async () => {

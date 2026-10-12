@@ -1,6 +1,6 @@
 # A28 GET /api/takeout/candidates
 
-状态：API源码、shared Contract和Web管理页已实现；本机迁移/数据库验收进行中。调用方：[S13 外卖候选管理](../screens/S13_TAKEOUT.md)。
+状态：API源码、shared Contract和Web管理页已实现；允许链接为空的迁移已应用于本机开发库，相关HTTP/数据库业务验收待完成。调用方：[S13 外卖候选管理](../screens/S13_TAKEOUT.md)。
 
 ## 请求
 
@@ -24,6 +24,7 @@
 ```
 
 按`createdAt DESC, id DESC`排序。空库返回`{"items":[]}`。响应不含userId、URL哈希或其它数据库字段。
+无平台链接的候选以`"url": ""`返回；数据库中的空值不会直接泄漏到公开Contract。
 
 ## 错误
 
