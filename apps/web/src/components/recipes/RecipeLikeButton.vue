@@ -60,7 +60,7 @@ async function toggle() {
           stroke-linejoin="round"
         />
       </svg>
-      <span>{{ pending ? '保存中…' : isLiked ? '已点爱心' : '点爱心' }}</span>
+      <span class="sr-only">{{ pending ? '保存中…' : isLiked ? '已点爱心' : '点爱心' }}</span>
     </button>
     <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
   </div>

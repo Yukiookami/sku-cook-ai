@@ -88,7 +88,8 @@ sku-cook-ai/
 │   │       │   ├── health.ts              【基础】共享 Schema 校验 API 联通响应
 │       │   │   ├── auth.ts                【V2】账号 API 函数与 shared Contract 校验
 │       │   │   ├── recipes.ts             【业务】菜谱 API 函数
-│       │   │   └── kitchen.ts             【业务】厨房会话 API 函数
+│       │   │   ├── kitchen.ts             【业务】厨房会话 API 函数
+│       │   │   └── takeout.ts             【V2】外卖候选 CRUD、随机与 JSON 导入
 │       │   ├── auth/                      【V2】前端当前账号与失效会话处理
 │       │   │   ├── session.ts
 │       │   │   └── unauthorized.ts
@@ -107,12 +108,16 @@ sku-cook-ai/
 │   │       │   │   └── RecipeImportView.vue   JSON 批量导入
 │   │       │   ├── kitchen/               【业务】厨房屏只读页面（平板常亮展示）
 │   │       │   │   └── KitchenDisplayView.vue
-│   │       │   └── history/               【业务】做饭历史页面
+│   │       │   ├── history/               【业务】做饭历史页面
 │   │       │       └── CookingHistoryView.vue
+│   │       │   └── takeout/               【V2】外卖候选管理页面
+│   │       │       ├── TakeoutManagementView.vue
+│   │       │       └── TakeoutManagementView.test.ts
 │   │       ├── components/
 │   │       │   ├── common/                【已实现】跨业务可复用组件
 │       │   │   │   ├── PageHeader.vue
-│       │   │   │   └── AccountMenu.vue     【V2】当前账号展示及主动退出/切换
+│       │       │   │   ├── SegmentedSwitch.vue 二选一滑动切换，支持减少动态效果
+│       │       │   │   └── AccountMenu.vue     【V2】当前账号展示及主动退出/切换
 │   │       │   ├── recipes/               【业务】菜谱专用组件
 │   │       │   │   ├── RecipeForm.vue      新增与编辑共用
 │   │       │   │   ├── RecipeBasicFields.vue
@@ -128,7 +133,7 @@ sku-cook-ai/
 │   │       │   └── recipe-form.ts          已实现：草稿与Contract映射纯函数
 │   │       ├── stores/                    【按需】跨页面 Pinia 状态
 │   │       ├── assets/                    【按需】由构建工具处理的资源
-│   │       ├── utils/                     【按需】无副作用工具函数
+│       │       ├── utils/                     【按需】跨页面工具；剪贴板复制提供浏览器兼容回退
 │   │       └── test/
 │   │           └── setup.ts               【按需】测试确有公共配置时创建
 │   │
@@ -175,6 +180,9 @@ sku-cook-ai/
 │       │       ├── kitchen/               【业务】厨房会话模块
 │       │       │   ├── kitchen.route.ts
 │       │       │   └── kitchen.service.ts
+│       │       ├── takeout/               【V2】个人外卖候选CRUD、随机推荐及整批JSON导入
+│       │       │   ├── takeout.route.ts
+│       │       │   └── takeout.service.ts
 │       │       ├── ingredients/           【按需】需要独立管理食材时；V1 食材内嵌在菜谱中
 │       │       ├── categories/            【按需】tags 需要治理时；V1 用 tags 代替分类
 │       │       ├── users/                 【按需】需要用户业务 API 时
@@ -195,6 +203,7 @@ sku-cook-ai/
 │           ├── schemas/
 │           │   ├── health.ts              【基础】验证两端导入的实际 Contract
 │           │   ├── recipe.ts              【业务】菜谱请求、响应与推导类型
+│           │   ├── takeout.ts             【V2】外卖候选请求、响应与JSON导入Contract
 │           │   ├── recipe-import.ts       【业务】批量导入文件结构，复用 recipe Schema
 │           │   └── kitchen.ts             【业务】厨房会话请求与响应
 │           ├── constants/                 【按需】共享业务常量

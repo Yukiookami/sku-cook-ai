@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { randomCandidateIndex, recipeExportDto } from './recipe.service.js';
+import { randomCandidateIndex } from '../common/random.js';
+import { recipeExportDto } from './recipe.service.js';
 
 describe('randomCandidateIndex', () => {
   it.each([

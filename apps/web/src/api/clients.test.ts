@@ -10,6 +10,7 @@ import {
   RecipeResponseSchema,
   RecipeSummarySchema,
   RecipeTagsResponseSchema,
+  TakeoutCandidateSchema,
 } from '@sku-cook/shared';
 import { client } from './client';
 import { apiErrorIssues, apiErrorMessage } from './errors';
@@ -21,6 +22,14 @@ import {
   setKitchenActiveRecipe,
 } from './kitchen';
 import { deleteCookingHistory, getCookingHistory, recordCookingHistory } from './cooking-history';
+import {
+  createTakeoutCandidate,
+  deleteTakeoutCandidate,
+  getRandomTakeoutCandidate,
+  getTakeoutCandidates,
+  importTakeoutCandidates,
+  updateTakeoutCandidate,
+} from './takeout';
 import {
   createRecipe,
   deleteRecipe,
@@ -127,6 +136,14 @@ const history = CookingHistoryResponseSchema.parse({
     source: 'manual',
     items: [{ recipeId: 101, title: '番茄炒蛋', targetServings: 3 }],
   },
+});
+
+const takeoutCandidate = TakeoutCandidateSchema.parse({
+  id: 301,
+  name: '面馆',
+  url: 'https://food.example.com/share/301',
+  createdAt: '2026-10-12T00:00:00.000Z',
+  updatedAt: '2026-10-12T00:00:00.000Z',
 });
 
 beforeEach(() => {
@@ -248,6 +265,51 @@ describe('Web API clients use the shared Contract and Axx routes', () => {
     expect(calls[0]?.params).toEqual({ page: 1, pageSize: 20 });
     expect(requestBody(1)).toEqual({ recipeId: 101, targetServings: 3 });
     expect(calls[2]?.data).toBeUndefined();
+  });
+
+  it('uses the takeout candidate contracts for CRUD, import, and independent random choices', async () => {
+    responseBody = { items: [takeoutCandidate] };
+    expect(await getTakeoutCandidates()).toEqual([takeoutCandidate]);
+    responseBody = { candidate: takeoutCandidate };
+    responseStatus = 201;
+    await createTakeoutCandidate({
+      name: takeoutCandidate.name,
+      url: takeoutCandidate.url,
+    });
+    responseStatus = 200;
+    await updateTakeoutCandidate(301, {
+      name: '面馆改名',
+      url: 'https://food.example.com/share/301',
+    });
+    responseStatus = 204;
+    await deleteTakeoutCandidate(301);
+    responseStatus = 200;
+    responseBody = { candidate: takeoutCandidate, reason: null };
+    await getRandomTakeoutCandidate({ excludeCandidateId: 301 });
+    responseBody = { importedCount: 1 };
+    await importTakeoutCandidates({
+      version: 1,
+      candidates: [{ name: '面馆', url: 'https://food.example.com/share/301' }],
+    });
+
+    expect(calls.map(({ method, url }) => [method, url])).toEqual([
+      ['get', '/takeout/candidates'],
+      ['post', '/takeout/candidates'],
+      ['put', '/takeout/candidates/301'],
+      ['delete', '/takeout/candidates/301'],
+      ['get', '/takeout/random'],
+      ['post', '/takeout/candidates/import'],
+    ]);
+    expect(calls[0]?.params).toEqual({});
+    expect(requestBody(1)).toEqual({
+      name: takeoutCandidate.name,
+      url: takeoutCandidate.url,
+    });
+    expect(calls[4]?.params).toEqual({ excludeCandidateId: 301 });
+    expect(requestBody(5)).toEqual({
+      version: 1,
+      candidates: [{ name: '面馆', url: 'https://food.example.com/share/301' }],
+    });
   });
 
   it('rejects malformed success payloads and reads the shared error envelope', async () => {

@@ -9,16 +9,22 @@ import {
   type RecipeImportInput,
 } from '@sku-cook/shared';
 import PageHeader from '../../components/common/PageHeader.vue';
+import SegmentedSwitch from '../../components/common/SegmentedSwitch.vue';
 import { apiErrorIssues, apiErrorMessage } from '../../api/errors';
 import { exportRecipes, importRecipes, validateRecipeImport } from '../../api/recipes';
+import { copyTextToClipboard } from '../../utils/clipboard';
 
 type InputMode = 'file' | 'paste';
 const router = useRouter();
 const mode = ref<InputMode>('paste');
+const importModes = [
+  { label: '选择 JSON 文件', value: 'file' },
+  { label: '粘贴 JSON', value: 'paste' },
+] as const;
 const text = ref('');
 const fileName = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
-const showExample = ref(false);
+const exampleStatus = ref('');
 const validating = ref(false);
 const importing = ref(false);
 const validationPassed = ref(false);
@@ -268,10 +274,10 @@ async function importValidated() {
 
 async function copyExample() {
   try {
-    await navigator.clipboard.writeText(example);
-    error.value = '';
+    await copyTextToClipboard(example);
+    exampleStatus.value = 'JSON 示例已复制，可粘贴给 GPT 参考。';
   } catch {
-    error.value = '复制失败，请手动选中示例文本复制。';
+    exampleStatus.value = '无法自动复制，请手动选中上方示例文本复制。';
   }
 }
 
@@ -345,28 +351,14 @@ function leave() {
     </div>
     <template v-else>
       <section class="paper-card import-input-card">
-        <div class="mode-switch" role="tablist" aria-label="选择导入方式">
-          <button
-            type="button"
-            role="tab"
-            :aria-selected="mode === 'file'"
-            :class="{ active: mode === 'file' }"
-            :disabled="importing"
-            @click="changeMode('file')"
-          >
-            选择 JSON 文件
-          </button>
-          <button
-            type="button"
-            role="tab"
-            :aria-selected="mode === 'paste'"
-            :class="{ active: mode === 'paste' }"
-            :disabled="importing"
-            @click="changeMode('paste')"
-          >
-            粘贴 JSON
-          </button>
-        </div>
+        <SegmentedSwitch
+          :model-value="mode"
+          :options="importModes"
+          label="选择导入方式"
+          :disabled="importing"
+          class="recipe-import-mode"
+          @update:model-value="changeMode"
+        />
         <template v-if="mode === 'file'">
           <input
             ref="fileInput"
@@ -416,13 +408,11 @@ function leave() {
         </label>
         <div class="example-row">
           <p class="muted">完整示例包含食材和步骤；结构片段不能直接导入。</p>
-          <button class="button button-secondary" type="button" @click="showExample = !showExample">
-            {{ showExample ? '收起示例' : '查看示例' }}
-          </button>
         </div>
-        <div v-if="showExample" class="example-content">
+        <div class="example-content">
           <pre>{{ example }}</pre>
-          <button class="text-button" type="button" @click="copyExample">复制示例</button>
+          <button class="text-button" type="button" @click="copyExample">复制 JSON 格式示例</button>
+          <p v-if="exampleStatus" class="inline-note" role="status">{{ exampleStatus }}</p>
         </div>
         <div v-if="importProgress" class="transfer-progress" role="status">
           <p>{{ importProgress.message }}</p>

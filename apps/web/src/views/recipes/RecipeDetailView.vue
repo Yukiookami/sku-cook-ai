@@ -272,13 +272,15 @@ onBeforeUnmount(() => {
     </section>
     <template v-else-if="recipe">
       <section class="paper-card recipe-summary">
-        <h2 class="detail-title">{{ recipe.title }}</h2>
-        <RecipeLikeButton
-          :recipe-id="recipe.id"
-          :is-liked="recipe.isLiked"
-          :disabled="writing"
-          @updated="updateLike"
-        />
+        <div class="detail-title-row">
+          <h2 class="detail-title">{{ recipe.title }}</h2>
+          <RecipeLikeButton
+            :recipe-id="recipe.id"
+            :is-liked="recipe.isLiked"
+            :disabled="writing"
+            @updated="updateLike"
+          />
+        </div>
         <p class="muted recipe-like-description">爱心表示：喜欢吃，也做得好吃。</p>
         <p v-if="recipe.description" class="detail-description">{{ recipe.description }}</p>
         <p class="recipe-meta">

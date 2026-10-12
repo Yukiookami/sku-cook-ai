@@ -1,10 +1,10 @@
 # 吃什么饭 · 实际项目目录与文件职责
 
-这是项目的**实际文件地图**，按目录分组列出每个现存文件及职责。更新基线：2026-10-10；以后增删、移动、改名或职责改变时同次维护，不把日期当作完成进度。
+这是项目的**实际文件地图**，按目录分组列出每个现存文件及职责。更新基线：2026-10-12；以后增删、移动、改名或职责改变时同次维护，不把日期当作完成进度。
 
 [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)是目标规划，不是这份实际清单。地图只记录源码、配置、测试、文档与可提交资源；不展开.git、node_modules、dist、coverage、真实.env、运行数据和空目录。依赖、构建与真实配置用途见第3节。
 
-产品名称为“吃什么饭”；仓库和包名保持原工程标识。设计图生成/修改的唯一提示词入口是[提示词文件](../design/screens/images/PROMPTS.md)，按S00–S08查找当前Memo规范、主提示词及补充状态；画面设计书负责交互、字段与验收，不存提示词副本。后续视觉提示更新集中在该文件，业务变更仍同步相关设计；生成新图同时维护图集索引、实际生成记录与本地图，详见[AI工作流](../development/AI_WORKFLOW.md#7-设计图提示词与版本维护)。S00技术验证页保留在`/health-check`（非正式产品首页），`/`现导向菜谱一览。S01–S08 Web界面已实现并按V3 Memo图稿还原；S09为复用JSON导入链路的固定Excel模板页面，使用项目样式且没有独立设计图；API client已按shared Contract接入，A02–A19源码已实现。初始迁移已应用于本地Docker开发数据库，Seed连续两次运行保持一个默认用户；A01、A02、A10、A16已通过真实HTTP只读冒烟检查，但写入事务及完整数据库集成仍待验收。浏览器图稿对照与Android真机验收亦待执行。已有9张Memo主图及2张补充图，旧V1/V2 PNG已按用户要求删除，历史输入记录保留。
+产品名称为“吃什么饭”；仓库和包名保持原工程标识。设计图生成/修改的唯一提示词入口是[提示词文件](../design/screens/images/PROMPTS.md)，按S00–S08查找当前Memo规范、主提示词及补充状态；画面设计书负责交互、字段与验收，不存提示词副本。后续视觉提示更新集中在该文件，业务变更仍同步相关设计；生成新图同时维护图集索引、实际生成记录与本地图，详见[AI工作流](../development/AI_WORKFLOW.md#7-设计图提示词与版本维护)。S00技术验证页保留在`/health-check`（非正式产品首页），`/`现导向菜谱一览。S01–S08 Web界面已实现并按V3 Memo图稿还原；S09为复用JSON导入链路的固定Excel模板页面，使用项目样式且没有独立设计图；S13为共用首页推荐卡的外卖候选管理与随机推荐，本机迁移、隔离数据库/HTTP及浏览器手机视口验收已通过，真机验收未做。API client按shared Contract接入，A02–A33源码已实现；A28–A33通过隔离数据库真实HTTP业务验收。初始、账号/管理员、菜谱爱心和外卖迁移均已应用于本地Docker开发数据库。已有9张Memo主图及2张补充图，旧V1/V2 PNG已按用户要求删除，历史输入记录保留。
 
 ## 1. 目录总览
 
@@ -26,20 +26,23 @@ sku-cook-ai/
 │   │       │   └── kitchen/          厨房菜单弹层
 │   │       ├── composables/          厨房屏Wake Lock生命周期
 │   │       ├── domain/               菜谱草稿映射与业务纯函数
-│   │       ├── router/               正式入口及S00–S09路由
+│   │       ├── router/               正式入口及S00–S13路由
 │   │       ├── styles/               全局奶油黄Memo样式与Vant主题
-│   │       └── views/                按业务分类的S00–S09页面
+│   │       └── views/                按业务分类的S00–S13页面
 │   │           ├── system/           技术联通检查
 │   │           ├── recipes/          菜谱页面
+│   │           ├── takeout/          外卖候选管理
 │   │           ├── kitchen/          厨房显示
 │   │           └── history/          做饭历史
 │   └── api/                          Fastify 服务与 API 测试
-│       ├── prisma/                   模型与 Seed
+│       ├── prisma/                   模型、版本化迁移与 Seed
 │       └── src/
 │           ├── config/               环境配置与测试
 │           ├── plugins/              错误处理与 Prisma 生命周期
+│           ├── modules/common/       共用业务错误、事务用户锁与随机索引
 │           ├── modules/health/       health 接口
 │           ├── modules/recipes/      菜谱CRUD、标签、随机与导入路由/服务
+│           ├── modules/takeout/      外卖候选CRUD、随机与原子导入
 │           ├── modules/kitchen/      厨房会话原子写入与快照
 │           └── modules/history/      做饭历史读写与删除
 ├── packages/shared/src/              共享 Zod Contract、换算函数与测试
@@ -138,6 +141,8 @@ sku-cook-ai/
 | `apps/web/src/api/clients.test.ts`              | 使用Contract合法响应和测试HTTP Adapter验证业务API路径/请求体/响应层级/204。 |
 | `apps/web/src/components/common/PageHeader.vue` | 业务子页统一返回、标题和右侧页面操作，不放账号入口。                           |
 | `apps/web/src/components/common/AccountMenu.vue` | 仅首页更多显示用户中心/退出，并按当前权限显示管理员入口。                     |
+| `apps/web/src/components/common/SegmentedSwitch.vue` | 首页推荐模式及JSON导入方式复用的二选一滑动切换组件，尊重减少动态效果设置。 |
+| `apps/web/src/components/common/SegmentedSwitch.test.ts` | 验证选中状态、值更新与禁用状态。 |
 | `apps/web/src/components/common/ConfirmDialog.vue` | 业务共用Memo确认弹窗，统一危险/普通按钮、取消默认焦点与键盘交互。            |
 | `apps/web/src/components/common/ConfirmDialog.test.ts` | 验证确认/取消、危险样式、纯文本、重复请求及卸载取消。                    |
 | `apps/web/src/auth/session.ts`                   | 保存当前前端用户状态并协调账号切换后的页面会话。                             |
@@ -160,21 +165,23 @@ sku-cook-ai/
 | `apps/web/src/composables/useWakeLock.ts`        | 厨房页可见状态下申请/释放Screen Wake Lock及安全降级。                         |
 | `apps/web/src/composables/useConfirmDialog.ts`   | 按页面协调异步确认状态，去重等待、结算确认/取消并在卸载时取消。               |
 | `apps/web/src/composables/useWakeLock.test.ts`  | 验证迟到的Wake Lock sentinel在菜单清空或组件卸载后释放。                     |
+| `apps/web/src/utils/clipboard.ts` | 优先使用原生Clipboard API；在不支持或权限失败时回退到浏览器复制命令。 |
+| `apps/web/src/utils/clipboard.test.ts` | 验证原生复制、兼容回退、权限拒绝回退及复制失败反馈。 |
 | `apps/web/src/domain/recipe-form.ts` | 菜谱草稿类型、回填、数量单位解析、shared校验映射与错误字段定位的纯函数。      |
 | `apps/web/src/domain/recipe-form.test.ts` | 验证编辑回填保留原数量/单位边界、可选数字与自定义/范围用量解析。              |
 | `apps/web/src/domain/recipe-excel-import.ts` | 生成含固定示例行的菜谱Excel模板，跳过第2行示例并将其余工作表数据转换为共享导入输入形状。 |
 | `apps/web/src/domain/recipe-excel-import.test.ts` | 验证示例行跳过、模板结构、菜谱字段/多行转换及工作簿格式边界。                    |
 | `apps/web/src/domain/recipe-export.ts` | 将菜谱详情转换为符合共享导入Contract的单菜JSON导出数据。 |
 | `apps/web/src/domain/recipe-export.test.ts` | 验证单菜导出字段、可导入格式及数据库元数据排除。 |
-| `apps/web/src/router/index.ts`                   | `/`正式重定向菜谱，注册S00–S11、认证守卫及未知路径。                          |
-| `apps/web/src/styles/main.css`                   | 奶油黄Memo主题、响应式页面、厨房横竖屏、发送成功弹窗和安全区布局。            |
+| `apps/web/src/router/index.ts`                   | `/`正式重定向菜谱，注册S00–S13、认证守卫及未知路径。                          |
+| `apps/web/src/styles/main.css`                   | 奶油黄Memo主题、响应式页面、厨房横竖屏、外卖导入键盘焦点、确认弹窗和安全区布局。 |
 | `apps/web/src/styles/vant-theme.css`              | 奶油黄Memo色彩与Vant文字/背景/边框变量。                                      |
 | `apps/web/src/views/system/HomeView.vue` | S00技术联通检查页；不验证数据库，不是正式业务首页。                            |
 | `apps/web/src/views/system/HomeView.test.ts` | 验证health初始、成功、失败提示与重试。                                         |
 | `apps/web/src/views/account/AccountView.vue` | S10登录/开放注册表单、认证错误提示及登录后站内跳转。                          |
 | `apps/web/src/views/account/UserCenterView.vue` | S11受保护用户中心、用户名更新与当前密码/新密码确认更新流程。                 |
-| `apps/web/src/views/recipes/RecipeListView.vue` | S01列表、搜索/tag过滤、分页、随机推荐、多选与导航。                          |
-| `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发、初次加载错误与发送后回到菜谱一览。                  |
+| `apps/web/src/views/recipes/RecipeListView.vue` | S01列表、搜索/tag过滤、分页、菜谱/外卖候选独立随机推荐、多选与导航。         |
+| `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发、加载错误、两种候选池切换及返回菜谱一览。             |
 | `apps/web/src/views/recipes/RecipeImportView.test.ts` | 验证A08/A09导入流程、A19下载状态及文件选择/模式切换竞态。                  |
 | `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情、份数参考换算、单菜JSON导出、编辑/删除/手动历史入口及单菜发送。    |
 | `apps/web/src/components/recipes/RecipeLikeButton.vue` | 列表/详情共用个人爱心按钮，等待防重、显式失败及旧响应隔离。 |
@@ -190,6 +197,9 @@ sku-cook-ai/
 | `apps/web/src/views/kitchen/KitchenDisplayView.vue` | S06厨房轮询、版本写入、整菜滚动/切换、完成历史及Wake Lock。                |
 | `apps/web/src/views/history/CookingHistoryView.test.ts` | 验证历史初次读取失败后可重试并恢复空列表状态。                         |
 | `apps/web/src/views/history/CookingHistoryView.vue` | S08历史分页、最新菜谱打开与删除误记。                                      |
+| `apps/web/src/api/takeout.ts` | A28–A33外卖候选typed client，按shared Contract校验响应。 |
+| `apps/web/src/views/takeout/TakeoutManagementView.vue` | S13候选新增/编辑/删除、JSON导入/导出、结果不确定时恢复与错误展示。 |
+| `apps/web/src/views/takeout/TakeoutManagementView.test.ts` | 验证候选管理表单、JSON校验/导入、删除确认及失败后的恢复行为。 |
 
 ### 2.6 API 配置、Prisma 与源码
 
@@ -207,8 +217,9 @@ sku-cook-ai/
 | `apps/api/prisma/migrations/20261011090000_add_super_admin_email_login/migration.sql` | 升级原id=1为唯一超级管理员，邮箱小写/唯一约束，本机备份验收后应用。 |
 | `apps/api/prisma/migrations/migration_lock.toml` | 固定Prisma迁移provider为PostgreSQL。                |
 | `apps/api/prisma/migrations/20261011110000_add_recipe_like/migration.sql` | 菜谱新增默认false的个人爱心列，本机备份并验证后应用。 |
+| `apps/api/prisma/migrations/20261012070427_add_takeout_candidates/migration.sql` | 新建按用户隔离的外卖候选表、URL哈希唯一索引与级联外键；备份验证后应用于本机开发库。 |
 | `apps/api/src/modules/recipes/recipe.like.test.ts` | Mock HTTP验证爱心认证、严格输入、用户限定、幂等与错误形状。 |
-| `apps/api/prisma/schema.prisma`               | PostgreSQL用户邮箱/管理员权限、AuthSession及菜谱/厨房/历史关系；本机迁移已应用。 |
+| `apps/api/prisma/schema.prisma`               | PostgreSQL用户邮箱/管理员权限、AuthSession、菜谱/厨房/历史及外卖候选关系；本机迁移已应用。 |
 | `apps/api/prisma/seed.ts`                     | 通过本机配置幂等初始化Sku001的空密码哈希，不覆盖已设密码。                       |
 | `apps/api/src/app.ts`                         | 构造Fastify实例，装配统一错误处理、Prisma、认证钩子、health与业务路由。           |
 | `apps/api/src/server.ts`                      | 读取服务/认证配置、启动监听、失败处理与退出。                                   |
@@ -220,11 +231,16 @@ sku-cook-ai/
 | `apps/api/src/modules/health/health.route.ts` | 无数据库查询的GET /api/health存活接口。                |
 | `apps/api/src/modules/health/health.test.ts`  | Supertest验证health Contract、404与500不泄漏内部信息。 |
 | `apps/api/src/modules/recipes/recipe.route.ts` | A02–A09/A14/A19/A27路由、用户范围、个人爱心、导入事务、完整导出与响应Contract。 |
-| `apps/api/src/modules/recipes/recipe.service.ts` | 菜谱DTO/导出输入转换、summary、归一化输入、用户事务锁与菜谱写入公共业务。 |
+| `apps/api/src/modules/common/random.ts`       | 校验随机样本和候选数量后生成安全的候选索引。 |
+| `apps/api/src/modules/common/transaction.ts`  | 提供事务内按认证用户加行锁的共用函数，串行化用户级写入。 |
+| `apps/api/src/modules/recipes/recipe.service.ts` | 菜谱DTO/导出输入转换、summary、归一化输入与菜谱写入公共业务。 |
 | `apps/api/src/modules/recipes/recipe.route.test.ts` | 不连接数据库的路由参数/未知字段/错误envelope边界测试。 |
-| `apps/api/src/modules/recipes/recipe.service.test.ts` | 测试随机候选索引边界与菜谱导出DTO，不模拟数据库业务集成。 |
+| `apps/api/src/modules/recipes/recipe.service.test.ts` | 测试共用随机候选索引边界与菜谱导出DTO，不模拟数据库业务集成。 |
 | `apps/api/src/modules/kitchen/kitchen.route.ts` | A10–A13/A15厨房快照、revision写入、完成记历史并清空。 |
-| `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及按认证用户事务锁。 |
+| `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及复用认证用户事务锁。 |
+| `apps/api/src/modules/takeout/takeout.route.ts` | A28–A33认证候选列表、增改删、随机推荐及JSON导入接口。 |
+| `apps/api/src/modules/takeout/takeout.service.ts` | 用户隔离的外卖候选DTO/查重/随机选择和事务原子批量写入。 |
+| `apps/api/src/modules/takeout/takeout.route.test.ts` | 验证外卖接口校验、认证与响应Contract边界。 |
 | `apps/api/src/modules/history/history.route.ts` | A16–A18认证用户历史分页、手动记录与整次删除。 |
 | `apps/api/src/modules/history/history.service.ts` | 历史DTO与持久化不变量校验。 |
 | `apps/api/src/modules/auth/auth.route.ts` | A20–A26认证、用户中心更新及服务端权限限定的只读用户分页Contract。 |
@@ -245,7 +261,7 @@ sku-cook-ai/
 | -------------------------------------------- | ------------------------------------------------- |
 | `packages/shared/package.json`               | Zod共享包依赖、编译/测试脚本与显式dist导出。      |
 | `packages/shared/tsconfig.json`              | 共享源码编译、声明输出与测试文件编译排除。        |
-| `packages/shared/src/index.ts`               | Health、账号、菜谱、厨房、历史Contract和份数函数公开出口。 |
+| `packages/shared/src/index.ts`               | Health、账号、菜谱、厨房、历史、外卖Contract和份数函数公开出口。 |
 | `packages/shared/src/schemas/auth.ts`         | 用户名、8–128位密码、认证及独立用户名/密码更新请求响应Zod Contract。 |
 | `packages/shared/src/schemas/auth.test.ts`    | 验证账号格式、密码边界、严格请求与公开响应字段。 |
 | `packages/shared/src/schemas/health.ts`      | health运行时Zod响应Contract及HealthResponse类型。 |
@@ -255,6 +271,8 @@ sku-cook-ai/
 | `packages/shared/src/schemas/recipe.test.ts` | 验证菜谱字段默认/边界、严格未知字段、分页、厨房及迁移导入/导出约束。 |
 | `packages/shared/src/schemas/kitchen.ts`     | 厨房会话/菜单/切换/版本请求Contract与DTO类型。 |
 | `packages/shared/src/schemas/history.ts`     | 做饭历史及分页/手动写入/参数Contract与DTO类型。 |
+| `packages/shared/src/schemas/takeout.ts`    | 外卖候选CRUD、随机与批量导入的严格输入/响应Contract及上限。 |
+| `packages/shared/src/schemas/takeout.test.ts` | 验证外卖URL、名称、严格字段、导入数量及JSON大小约束。 |
 | `packages/shared/src/domain/servings.ts`     | 精确十进制份数换算和菜谱总分钟纯函数。 |
 | `packages/shared/src/domain/servings.test.ts` | 验证精确换算、舍入、原文保留及小于0.01显示。 |
 
@@ -285,6 +303,7 @@ sku-cook-ai/
 | `docs/design/screens/S10_ACCOUNT.md`             | V2账号登录/注册、会话恢复/守卫、退出切换与错误状态设计。                  |
 | `docs/design/screens/S11_USER_CENTER.md`         | V2用户中心入口、独立用户名/密码表单、确认取消、状态及移动可读性设计，无独立图。 |
 | `docs/design/screens/S12_ADMIN_USERS.md`         | 只读管理员用户列表、首页权限入口、分页与失败恢复设计，无独立图。 |
+| `docs/design/screens/S13_TAKEOUT.md`             | 首页外卖随机推荐与候选管理/JSON导入交互、边界及验收状态，无独立图。 |
 | `docs/design/screens/S06_KITCHEN_DISPLAY.md` | 厨房多状态/整菜滚动/切换/轮询/常亮/断网设计、验收与独立提示词链接。            |
 | `docs/design/screens/S07_KITCHEN_PANEL.md`   | 手机发送/查看/替换/清空厨房菜单弹层设计、验收与独立提示词链接。               |
 | `docs/design/screens/S08_COOKING_HISTORY.md` | 历史分组/触底分页、最新做法与目标份数、已删菜保留及整次误记删除设计；Web已实现，数据库验收待做。 |
@@ -343,6 +362,12 @@ sku-cook-ai/
 | `docs/design/apis/A25_AUTH_PASSWORD_PUT.md`      | 当前密码校验、新散列原子比较更新及保留会话Contract设计。                       |
 | `docs/design/apis/A26_ADMIN_USERS_GET.md`        | 服务端管理员权限校验与安全用户字段、固定20项分页Contract。 |
 | `docs/design/apis/A27_RECIPE_LIKE_PUT.md` | 个人爱心目标状态写入、归属/幂等、导入导出与界面边界设计。 |
+| `docs/design/apis/A28_TAKEOUT_CANDIDATES_GET.md` | 当前用户外卖候选分页/列表读取及空池响应设计。 |
+| `docs/design/apis/A29_TAKEOUT_CANDIDATE_POST.md` | 外卖候选新增、HTTP(S)链接校验、用户范围与重复冲突设计。 |
+| `docs/design/apis/A30_TAKEOUT_CANDIDATE_PUT.md` | 外卖候选完整更新、归属检查与链接唯一约束设计。 |
+| `docs/design/apis/A31_TAKEOUT_CANDIDATE_DELETE.md` | 删除当前用户候选、归属检查与204响应设计。 |
+| `docs/design/apis/A32_TAKEOUT_RANDOM_GET.md` | 当前用户候选随机推荐、换项排除及空池响应设计。 |
+| `docs/design/apis/A33_TAKEOUT_IMPORT_POST.md` | 严格JSON批量校验、用户级查重及事务原子导入设计。 |
 
 ## 3. 不展开的目录与运行文件
 
@@ -355,7 +380,7 @@ sku-cook-ai/
 
 ## 4. 当前边界与维护
 
-已实现A02–A26源码/shared Contract、邮箱/用户名登录、用户中心、只读管理员列表及用户业务隔离；业务确认使用共用Memo组件，账号入口仅首页更多。认证及管理员迁移已在本机应用，备份成功恢复到专用无网络数据库，8张业务表摘要保持一致，邮箱/单管理员约束验证通过。其他机器需部署迁移并在私有环境绑定管理员邮箱；真机、多设备、完整业务写入事务及HTTPS/PWA/Wake Lock仍按设计书验收，不能用源码或health代替。
+已实现A02–A33源码/shared Contract、邮箱/用户名登录、用户中心、只读管理员列表、个人爱心和外卖候选管理及用户业务隔离；业务确认使用共用Memo组件，账号入口仅首页更多。认证、管理员、菜谱爱心及外卖迁移均已在本机应用；外卖迁移经备份/隔离数据库校验，A28–A33通过真实隔离数据库HTTP流程验证。其他机器需部署迁移并在私有环境绑定管理员邮箱；真机、多设备、HTTPS/PWA/Wake Lock仍按设计书验收，不能用源码或health代替。
 
 本次新增Instructions、6个Skills、3个Agents和只读地图检查工具。没有AGENTS.md，避免双份全局规则漂移；角色工具权限与操作流程见 [AI_WORKFLOW.md](../development/AI_WORKFLOW.md)。
 

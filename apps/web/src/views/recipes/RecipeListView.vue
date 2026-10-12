@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { recipeTotalMinutes, type RecipeSummary, type RecipeLikeResponse } from '@sku-cook/shared';
+import {
+  recipeTotalMinutes,
+  type RecipeSummary,
+  type RecipeLikeResponse,
+  type TakeoutCandidate,
+} from '@sku-cook/shared';
 import RecipeLikeButton from '../../components/recipes/RecipeLikeButton.vue';
 import KitchenMenuPanel from '../../components/kitchen/KitchenMenuPanel.vue';
 import AccountMenu from '../../components/common/AccountMenu.vue';
+import SegmentedSwitch from '../../components/common/SegmentedSwitch.vue';
 import { apiErrorMessage } from '../../api/errors';
 import { getRandomRecipe, getRecipeTags, getRecipes } from '../../api/recipes';
+import { getRandomTakeoutCandidate } from '../../api/takeout';
 
 const route = useRoute();
 const router = useRouter();
@@ -32,6 +39,16 @@ const randomLoading = ref(false);
 const randomError = ref('');
 const noAlternative = ref(false);
 const randomAttemptExclude = ref<number | undefined>();
+const recommendationMode = ref<'cook' | 'takeout'>('cook');
+const recommendationModes = [
+  { label: '自己做', value: 'cook' },
+  { label: '点外卖', value: 'takeout' },
+] as const;
+const takeoutRecommendation = ref<TakeoutCandidate | null>(null);
+const takeoutLoading = ref(false);
+const takeoutError = ref('');
+const takeoutNoAlternative = ref(false);
+const takeoutAttemptExclude = ref<number | undefined>();
 const listEnd = ref<HTMLElement | null>(null);
 const displayTags = computed(() => tags.value);
 const selectedRecipes = computed(() => [...selectionOrder.value.values()]);
@@ -41,6 +58,7 @@ const duplicateLoadError = computed(
 );
 let listSequence = 0;
 let randomSequence = 0;
+let takeoutSequence = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 let observer: IntersectionObserver | undefined;
 
@@ -218,6 +236,39 @@ async function requestRecommendation(exclude?: number) {
   }
 }
 
+async function requestTakeoutRecommendation(excludeCandidateId?: number) {
+  const request = ++takeoutSequence;
+  takeoutLoading.value = true;
+  takeoutError.value = '';
+  takeoutAttemptExclude.value = excludeCandidateId;
+  try {
+    const response = await getRandomTakeoutCandidate(
+      excludeCandidateId === undefined ? {} : { excludeCandidateId },
+    );
+    if (request !== takeoutSequence) return;
+    if (response.candidate) {
+      takeoutRecommendation.value = response.candidate;
+      takeoutNoAlternative.value = false;
+    } else if (response.reason === 'EMPTY_LIBRARY') {
+      takeoutRecommendation.value = null;
+      takeoutNoAlternative.value = false;
+      takeoutError.value = '还没有外卖候选，先添加店铺或菜品链接。';
+    } else {
+      takeoutNoAlternative.value = true;
+    }
+  } catch (cause) {
+    if (request === takeoutSequence) {
+      takeoutError.value = apiErrorMessage(cause, '外卖推荐失败，请重试。');
+    }
+  } finally {
+    if (request === takeoutSequence) takeoutLoading.value = false;
+  }
+}
+
+function openTakeoutManagement() {
+  void router.push('/takeout');
+}
+
 function goToRecipe(id: number, fromRecommendation = false) {
   if (selecting.value && !fromRecommendation) {
     const found = [...recipes.value, ...(recommendation.value ? [recommendation.value] : [])].find(
@@ -278,6 +329,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   listSequence += 1;
   randomSequence += 1;
+  takeoutSequence += 1;
   if (searchTimer) clearTimeout(searchTimer);
   observer?.disconnect();
   window.removeEventListener('scroll', handleListScroll);
@@ -287,7 +339,7 @@ onBeforeUnmount(() => {
 <template>
   <main class="page list-page" :class="{ 'selection-active': selecting }">
     <header class="home-header">
-      <h1>吃什么饭</h1>
+      <h1>{{ recommendationMode === 'cook' ? '吃什么饭' : '点什么饭' }}</h1>
       <div class="header-buttons">
         <RouterLink class="button button-primary compact-button" to="/recipes/new">新增</RouterLink>
         <button class="button button-primary compact-button" type="button" @click="showMore = true">
@@ -301,64 +353,128 @@ onBeforeUnmount(() => {
     </div>
 
     <section class="paper-card recommendation-card" aria-labelledby="recommend-title">
-      <h2 id="recommend-title" class="section-chip">今天吃什么？</h2>
-      <p class="muted">从全部菜谱随机</p>
-      <template v-if="recommendation">
-        <h3 class="recommend-title">{{ recommendation.title }}</h3>
-        <div class="tag-line">
-          <span v-for="tag in recommendation.tags" :key="tag" class="tag-pill">{{ tag }}</span>
-          <span v-if="duration(recommendation)" class="tag-pill neutral-pill">
-            {{ duration(recommendation) }}
-          </span>
-        </div>
-        <p v-if="recommendation.description" class="recommend-description">
-          {{ recommendation.description }}
+      <h2 id="recommend-title" class="section-chip">
+        {{ recommendationMode === 'cook' ? '今天吃什么？' : '今天点什么？' }}
+      </h2>
+      <SegmentedSwitch
+        v-model="recommendationMode"
+        class="recommendation-mode-switch"
+        :options="recommendationModes"
+        label="推荐方式"
+      />
+      <template v-if="recommendationMode === 'cook'">
+        <p class="muted">从全部菜谱随机</p>
+        <template v-if="recommendation">
+          <h3 class="recommend-title">{{ recommendation.title }}</h3>
+          <div class="tag-line">
+            <span v-for="tag in recommendation.tags" :key="tag" class="tag-pill">{{ tag }}</span>
+            <span v-if="duration(recommendation)" class="tag-pill neutral-pill">
+              {{ duration(recommendation) }}
+            </span>
+          </div>
+          <p v-if="recommendation.description" class="recommend-description">
+            {{ recommendation.description }}
+          </p>
+          <p v-if="noAlternative" class="inline-note" role="status">没有其他可推荐的菜谱。</p>
+        </template>
+        <p v-else-if="randomError" class="inline-error" role="alert">{{ randomError }}</p>
+        <p v-else class="muted">按下按钮，为今天找一道灵感。</p>
+        <p v-if="randomError.includes('还没有菜谱')" class="inline-links">
+          <RouterLink to="/recipes/new">新增菜谱</RouterLink>
+          <button class="text-button" type="button" @click="openImport">菜谱导入 / 导出</button>
         </p>
-        <p v-if="noAlternative" class="inline-note" role="status">没有其他可推荐的菜谱。</p>
+        <div class="recommend-actions">
+          <button
+            v-if="recommendation"
+            class="button button-primary"
+            type="button"
+            @click="goToRecipe(recommendation.id, true)"
+          >
+            查看做法
+          </button>
+          <button
+            v-if="recommendation"
+            class="button button-secondary"
+            type="button"
+            :disabled="randomLoading || noAlternative"
+            @click="requestRecommendation(recommendation.id)"
+          >
+            {{ randomLoading ? '换菜中…' : '换一个' }}
+          </button>
+          <button
+            v-else
+            class="button button-primary"
+            type="button"
+            :disabled="randomLoading"
+            @click="requestRecommendation()"
+          >
+            {{ randomLoading ? '正在推荐…' : '随机推荐' }}
+          </button>
+        </div>
+        <p v-if="randomError && !randomError.includes('还没有菜谱')" class="inline-links">
+          <button
+            class="text-button"
+            type="button"
+            @click="requestRecommendation(randomAttemptExclude)"
+          >
+            重试推荐
+          </button>
+        </p>
       </template>
-      <p v-else-if="randomError" class="inline-error" role="alert">{{ randomError }}</p>
-      <p v-else class="muted">按下按钮，为今天找一道灵感。</p>
-      <p v-if="randomError.includes('还没有菜谱')" class="inline-links">
-        <RouterLink to="/recipes/new">新增菜谱</RouterLink>
-        <button class="text-button" type="button" @click="openImport">菜谱导入 / 导出</button>
-      </p>
-      <div class="recommend-actions">
-        <button
-          v-if="recommendation"
-          class="button button-primary"
-          type="button"
-          @click="goToRecipe(recommendation.id, true)"
-        >
-          查看做法
-        </button>
-        <button
-          v-if="recommendation"
-          class="button button-secondary"
-          type="button"
-          :disabled="randomLoading || noAlternative"
-          @click="requestRecommendation(recommendation.id)"
-        >
-          {{ randomLoading ? '换菜中…' : '换一个' }}
-        </button>
-        <button
-          v-else
-          class="button button-primary"
-          type="button"
-          :disabled="randomLoading"
-          @click="requestRecommendation()"
-        >
-          {{ randomLoading ? '正在推荐…' : '随机推荐' }}
-        </button>
-      </div>
-      <p v-if="randomError && !randomError.includes('还没有菜谱')" class="inline-links">
-        <button
-          class="text-button"
-          type="button"
-          @click="requestRecommendation(randomAttemptExclude)"
-        >
-          重试推荐
-        </button>
-      </p>
+      <template v-else>
+        <p class="muted">从自己保存的外卖候选中随机挑选</p>
+        <template v-if="takeoutRecommendation">
+          <h3 class="recommend-title">{{ takeoutRecommendation.name }}</h3>
+          <p v-if="takeoutNoAlternative" class="inline-note" role="status">
+            没有其他外卖候选，添加更多后再换一个。
+          </p>
+        </template>
+        <p v-else-if="takeoutError" class="inline-error" role="alert">{{ takeoutError }}</p>
+        <p v-else class="muted">按下按钮，为今天挑一家店或一道想吃的菜。</p>
+        <div class="recommend-actions">
+          <a
+            v-if="takeoutRecommendation"
+            class="button button-primary"
+            :href="takeoutRecommendation.url"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            打开平台链接
+          </a>
+          <button
+            v-if="takeoutRecommendation"
+            class="button button-secondary"
+            type="button"
+            :disabled="takeoutLoading || takeoutNoAlternative"
+            @click="requestTakeoutRecommendation(takeoutRecommendation.id)"
+          >
+            {{ takeoutLoading ? '正在换…' : '换一个' }}
+          </button>
+          <button
+            v-else
+            class="button button-primary"
+            type="button"
+            :disabled="takeoutLoading"
+            @click="requestTakeoutRecommendation()"
+          >
+            {{ takeoutLoading ? '正在推荐…' : '随机推荐' }}
+          </button>
+        </div>
+        <p v-if="takeoutError && !takeoutError.includes('还没有外卖候选')" class="inline-links">
+          <button
+            class="text-button"
+            type="button"
+            @click="requestTakeoutRecommendation(takeoutAttemptExclude)"
+          >
+            重试推荐
+          </button>
+        </p>
+        <p class="inline-links">
+          <button class="text-button" type="button" @click="openTakeoutManagement">
+            管理外卖候选
+          </button>
+        </p>
+      </template>
     </section>
 
     <label class="search-field">
@@ -518,6 +634,9 @@ onBeforeUnmount(() => {
             打开厨房显示
           </RouterLink>
           <button class="menu-action" type="button" @click="openHistory">做饭历史</button>
+          <RouterLink class="menu-action" to="/takeout" @click="showMore = false">
+            外卖候选管理
+          </RouterLink>
           <RouterLink class="menu-action" to="/health-check" @click="showMore = false">
             技术联通检查
           </RouterLink>

@@ -5,6 +5,13 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
   if (!axios.isAxiosError(error)) return fallback;
 
   const status = error.response?.status;
+  const response = ApiErrorResponseSchema.safeParse(error.response?.data);
+  if (response.success && response.data.error.code === 'TAKEOUT_URL_CONFLICT') {
+    return '这个分享链接已经添加过了。';
+  }
+  if (response.success && response.data.error.code === 'TAKEOUT_IMPORT_VALIDATION_FAILED') {
+    return '导入校验未通过，未导入任何候选。';
+  }
   if (status === 400) return '请求内容不符合要求，请检查填写内容后重试。';
   if (status === 404) return '内容已不存在，请刷新后重试。';
   if (status === 409) return '内容已发生变化，请重新读取后确认。';

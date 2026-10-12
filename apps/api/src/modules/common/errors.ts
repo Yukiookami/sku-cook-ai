@@ -47,6 +47,23 @@ export function isRecipeTitleUniqueViolation(error: unknown): boolean {
     : target === 'recipes_user_id_title_key';
 }
 
+export function isTakeoutUrlUniqueViolation(error: unknown): boolean {
+  if (
+    !isPrismaCode(error, 'P2002') ||
+    typeof error !== 'object' ||
+    error === null ||
+    !('meta' in error)
+  ) {
+    return false;
+  }
+  const meta = error.meta;
+  if (typeof meta !== 'object' || meta === null || !('target' in meta)) return false;
+  const target = meta.target;
+  return Array.isArray(target)
+    ? target.includes('user_id') && target.includes('url_hash')
+    : target === 'takeout_candidates_user_url_hash_key';
+}
+
 export function isDatabaseUnavailable(error: unknown): boolean {
   return ['P1001', 'P1002', 'P1008', 'P1017'].some((code) => isPrismaCode(error, code));
 }

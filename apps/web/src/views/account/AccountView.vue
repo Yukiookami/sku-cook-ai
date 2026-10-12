@@ -36,7 +36,19 @@ function redirectPath(): string {
 }
 
 async function submit() {
-  if (submitting.value || !username.value || !password.value) return;
+  if (submitting.value) return;
+  if (!username.value) {
+    error.value = isRegister.value ? '请填写用户名。' : '请填写用户名或邮箱。';
+    return;
+  }
+  if (isRegister.value && !email.value) {
+    error.value = '请填写邮箱。';
+    return;
+  }
+  if (!password.value) {
+    error.value = '请填写密码。';
+    return;
+  }
   const inputError = validateAccountCredentials(
     username.value,
     password.value,
@@ -82,7 +94,7 @@ async function submit() {
       <p v-if="route.query.session === 'unavailable'" class="inline-error" role="alert">
         暂时无法确认登录状态，请重试或重新登录。
       </p>
-      <form class="account-form" @submit.prevent="submit">
+      <form class="account-form" novalidate @submit.prevent="submit">
         <label class="account-field">
           <span>{{ isRegister ? '用户名' : '用户名或邮箱' }}</span>
           <input
@@ -95,6 +107,7 @@ async function submit() {
             :maxlength="isRegister ? 32 : 254"
             required
             :disabled="submitting"
+            :aria-describedby="error ? 'account-error' : undefined"
           />
         </label>
         <label v-if="isRegister" class="account-field">
@@ -109,6 +122,7 @@ async function submit() {
             maxlength="254"
             required
             :disabled="submitting"
+            :aria-describedby="error ? 'account-error' : undefined"
           />
           <span class="muted">邮箱可用于登录，不发送验证邮件。</span>
         </label>

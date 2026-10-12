@@ -10,6 +10,7 @@ import CookingHistoryView from '../views/history/CookingHistoryView.vue';
 import AccountView from '../views/account/AccountView.vue';
 import UserCenterView from '../views/account/UserCenterView.vue';
 import AdminUsersView from '../views/account/AdminUsersView.vue';
+import TakeoutManagementView from '../views/takeout/TakeoutManagementView.vue';
 import { ensureAccountSession } from '../auth/session';
 
 export const router = createRouter({
@@ -85,6 +86,12 @@ export const router = createRouter({
       path: '/cooking-history',
       name: 'cooking-history',
       component: CookingHistoryView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/takeout',
+      name: 'takeout-management',
+      component: TakeoutManagementView,
       meta: { requiresAuth: true },
     },
     { path: '/health-check', name: 'health-check', component: HomeView },

@@ -2,7 +2,8 @@ import { KitchenStateResponseSchema, type KitchenStateResponse } from '@sku-cook
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
 import { ApiError } from '../common/errors.js';
-import { lockUser, recipeDto } from '../recipes/recipe.service.js';
+import { lockUser } from '../common/transaction.js';
+import { recipeDto } from '../recipes/recipe.service.js';
 
 const kitchenInclude = {
   items: {

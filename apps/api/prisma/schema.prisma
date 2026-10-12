@@ -8,21 +8,37 @@ datasource db {
 }
 
 model User {
-  id               Int              @id @default(autoincrement())
-  name             String
-  username         String           @db.VarChar(32)
-  usernameKey      String           @unique @map("username_key") @db.VarChar(32)
-  email            String?          @unique
-  isSuperAdmin     Boolean          @default(false) @map("is_super_admin")
-  passwordHash     String?          @map("password_hash")
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
-  recipes          Recipe[]
-  kitchenSession   KitchenSession?
-  cookingHistories CookingHistory[]
-  authSessions     AuthSession[]
+  id                Int                @id @default(autoincrement())
+  name              String
+  username          String             @db.VarChar(32)
+  usernameKey       String             @unique @map("username_key") @db.VarChar(32)
+  email             String?            @unique
+  isSuperAdmin      Boolean            @default(false) @map("is_super_admin")
+  passwordHash      String?            @map("password_hash")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  recipes           Recipe[]
+  kitchenSession    KitchenSession?
+  cookingHistories  CookingHistory[]
+  authSessions      AuthSession[]
+  takeoutCandidates TakeoutCandidate[]
 
   @@map("users")
+}
+
+model TakeoutCandidate {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  name      String   @db.VarChar(100)
+  url       String   @db.VarChar(2048)
+  urlHash   String   @map("url_hash") @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, urlHash], map: "takeout_candidates_user_url_hash_key")
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)], map: "takeout_candidates_user_created_id_idx")
+  @@map("takeout_candidates")
 }
 
 model AuthSession {

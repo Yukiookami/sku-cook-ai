@@ -21,12 +21,12 @@ import { Prisma } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
 import { authenticatedUser } from '../auth/auth.session.js';
 import { ApiError, isRecipeTitleUniqueViolation, validationIssues } from '../common/errors.js';
+import { lockUser } from '../common/transaction.js';
+import { randomCandidateIndex } from '../common/random.js';
 import {
   createRecipe,
   findTitleConflicts,
-  lockUser,
   parseRecipeInput,
-  randomCandidateIndex,
   recipeExportDto,
   recipeDto,
   summaryDto,

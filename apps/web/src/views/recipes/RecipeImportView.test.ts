@@ -3,11 +3,16 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RecipeImportView from './RecipeImportView.vue';
 import { exportRecipes, importRecipes, validateRecipeImport } from '../../api/recipes';
+import { copyTextToClipboard } from '../../utils/clipboard';
 
 vi.mock('../../api/recipes', () => ({
   exportRecipes: vi.fn(),
   importRecipes: vi.fn(),
   validateRecipeImport: vi.fn(),
+}));
+
+vi.mock('../../utils/clipboard', () => ({
+  copyTextToClipboard: vi.fn(),
 }));
 
 const validImport = JSON.stringify({
@@ -56,8 +61,24 @@ function mountView() {
 }
 
 describe('RecipeImportView', () => {
-  beforeEach(() => vi.resetAllMocks());
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(copyTextToClipboard).mockResolvedValue();
+  });
   afterEach(() => vi.unstubAllGlobals());
+
+  it('copies the recipe JSON example through the shared clipboard helper', async () => {
+    const wrapper = await mountView();
+
+    expect(wrapper.get('.example-content pre').text()).toContain('"recipes"');
+    await wrapper.get('.example-content .text-button').trigger('click');
+
+    expect(copyTextToClipboard).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('"recipes"'),
+    );
+    expect(wrapper.get('.example-content [role="status"]').text()).toContain('已复制');
+    wrapper.unmount();
+  });
 
   it('shows all server validation issues with 1-based recipe indices', async () => {
     vi.mocked(validateRecipeImport).mockRejectedValueOnce(
@@ -259,7 +280,7 @@ describe('RecipeImportView', () => {
     await wrapper.get('.fixed-action button').trigger('click');
     expect(wrapper.get('.fixed-action button').attributes('disabled')).toBeDefined();
 
-    await wrapper.get('[role="tab"]').trigger('click');
+    await wrapper.get('[aria-label="选择导入方式"] button:first-of-type').trigger('click');
     const file = new File([differentImport], 'new-recipes.json', { type: 'application/json' });
     Object.defineProperty(file, 'text', { value: vi.fn().mockResolvedValue(differentImport) });
     const fileInput = wrapper.get('input[type="file"]');
@@ -308,9 +329,9 @@ describe('RecipeImportView', () => {
     expect(wrapper.get('.fixed-action button').attributes('disabled')).toBeUndefined();
 
     await wrapper.get('.fixed-action button').trigger('click');
-    await wrapper.get('[role="tab"]').trigger('click');
+    await wrapper.get('[aria-label="选择导入方式"] button:first-of-type').trigger('click');
     expect(wrapper.find('input[type="file"]').exists()).toBe(true);
-    await wrapper.findAll('[role="tab"]')[1]?.trigger('click');
+    await wrapper.get('[aria-label="选择导入方式"] button:last-of-type').trigger('click');
     await wrapper.get('.json-input').setValue(validImport);
     expect(wrapper.get('.fixed-action button').attributes('disabled')).toBeUndefined();
 

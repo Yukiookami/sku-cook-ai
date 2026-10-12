@@ -7,6 +7,7 @@ import { kitchenRoutes } from './modules/kitchen/kitchen.route.js';
 import { historyRoutes } from './modules/history/history.route.js';
 import { authRoutes } from './modules/auth/auth.route.js';
 import { registerAuthentication } from './modules/auth/auth.session.js';
+import { takeoutRoutes } from './modules/takeout/takeout.route.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -34,5 +35,6 @@ export function buildApp(
   app.register(recipeRoutes, { prefix: '/api' });
   app.register(kitchenRoutes, { prefix: '/api' });
   app.register(historyRoutes, { prefix: '/api' });
+  app.register(takeoutRoutes, { prefix: '/api' });
   return app;
 }

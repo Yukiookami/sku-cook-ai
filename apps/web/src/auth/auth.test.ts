@@ -67,6 +67,18 @@ afterEach(() => {
 });
 
 describe('account API and session guard', () => {
+  it('shows required account errors inline instead of using browser-native validation', async () => {
+    const wrapper = mount(AccountView, { global: { plugins: [router] } });
+    const form = wrapper.get('.account-form');
+
+    expect(form.attributes('novalidate')).toBeDefined();
+    await form.trigger('submit');
+
+    expect(wrapper.get('#account-error').text()).toBe('请填写用户名或邮箱。');
+    expect(calls).toHaveLength(0);
+    wrapper.unmount();
+  });
+
   it('uses shared schemas, cookie credentials, and the agreed auth routes', async () => {
     await registerAccount(user.username, validPassword, 'alice@example.com');
     await loginAccount(user.username, validPassword);

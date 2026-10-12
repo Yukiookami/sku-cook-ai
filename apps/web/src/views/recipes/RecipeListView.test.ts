@@ -3,12 +3,16 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RecipeListView from './RecipeListView.vue';
 import { getRecipeTags, getRecipes, setRecipeLiked } from '../../api/recipes';
+import { getRandomTakeoutCandidate } from '../../api/takeout';
 
 vi.mock('../../api/recipes', () => ({
   getRecipes: vi.fn(),
   getRecipeTags: vi.fn(),
   getRandomRecipe: vi.fn(),
   setRecipeLiked: vi.fn(),
+}));
+vi.mock('../../api/takeout', () => ({
+  getRandomTakeoutCandidate: vi.fn(),
 }));
 vi.mock('../../components/kitchen/KitchenMenuPanel.vue', () => ({
   default: {
@@ -75,6 +79,16 @@ describe('RecipeListView selection behavior', () => {
       hasMore: false,
     });
     vi.mocked(getRecipeTags).mockResolvedValue({ tags: [] });
+    vi.mocked(getRandomTakeoutCandidate).mockResolvedValue({
+      candidate: {
+        id: 44,
+        name: '店铺44',
+        url: 'https://food.example.com/share/44',
+        createdAt: '2026-10-12T00:00:00.000Z',
+        updatedAt: '2026-10-12T00:00:00.000Z',
+      },
+      reason: null,
+    });
   });
 
   afterEach(() => {
@@ -133,6 +147,92 @@ describe('RecipeListView selection behavior', () => {
     await flushPromises();
     expect(router.currentRoute.value.path).toBe('/account/profile');
     expect(wrapper.find('.more-menu').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('switches to an independent takeout pool, excludes the current item, and opens safely', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/recipes', component: RecipeListView },
+        { path: '/takeout', component: { template: '<p>候选管理</p>' } },
+      ],
+    });
+    await router.push('/recipes');
+    await router.isReady();
+    const wrapper = mount(RecipeListView, {
+      global: { plugins: [router], stubs: { RouterLink: true } },
+    });
+    await flushPromises();
+
+    expect(wrapper.get('.home-header h1').text()).toBe('吃什么饭');
+    expect(wrapper.get('#recommend-title').text()).toBe('今天吃什么？');
+    await wrapper.get('.recommendation-mode-switch button:last-of-type').trigger('click');
+    expect(wrapper.get('.home-header h1').text()).toBe('点什么饭');
+    expect(wrapper.get('#recommend-title').text()).toBe('今天点什么？');
+    expect(
+      wrapper.get('.recommendation-mode-switch .segmented-switch-indicator').classes(),
+    ).toContain('is-second');
+    await wrapper.get('.recommendation-mode-switch button:first-of-type').trigger('click');
+    expect(wrapper.get('.home-header h1').text()).toBe('吃什么饭');
+    expect(wrapper.get('#recommend-title').text()).toBe('今天吃什么？');
+    expect(
+      wrapper.get('.recommendation-mode-switch .segmented-switch-indicator').classes(),
+    ).not.toContain('is-second');
+    await wrapper.get('.recommendation-mode-switch button:last-of-type').trigger('click');
+    await wrapper.get('.recommend-actions .button-primary').trigger('click');
+    await flushPromises();
+    expect(getRandomTakeoutCandidate).toHaveBeenCalledExactlyOnceWith({});
+    expect(wrapper.get('.recommend-title').text()).toBe('店铺44');
+    const platformLink = wrapper.get('.recommend-actions a');
+    expect(platformLink.attributes('href')).toBe('https://food.example.com/share/44');
+    expect(platformLink.attributes('target')).toBe('_blank');
+    expect(platformLink.attributes('rel')).toBe('noopener noreferrer');
+
+    vi.mocked(getRandomTakeoutCandidate).mockResolvedValueOnce({
+      candidate: {
+        id: 45,
+        name: '店铺45',
+        url: 'https://food.example.com/share/45',
+        createdAt: '2026-10-12T00:00:00.000Z',
+        updatedAt: '2026-10-12T00:00:00.000Z',
+      },
+      reason: null,
+    });
+    await wrapper.get('.recommend-actions .button-secondary').trigger('click');
+    await flushPromises();
+    expect(getRandomTakeoutCandidate).toHaveBeenLastCalledWith({ excludeCandidateId: 44 });
+    expect(wrapper.get('.recommend-title').text()).toBe('店铺45');
+    wrapper.unmount();
+  });
+
+  it('offers the candidate manager when the takeout pool is empty', async () => {
+    vi.mocked(getRandomTakeoutCandidate).mockResolvedValue({
+      candidate: null,
+      reason: 'EMPTY_LIBRARY',
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/recipes', component: RecipeListView },
+        { path: '/takeout', component: { template: '<p>候选管理</p>' } },
+      ],
+    });
+    await router.push('/recipes');
+    await router.isReady();
+    const wrapper = mount(RecipeListView, { global: { plugins: [router] } });
+    await flushPromises();
+    await wrapper.get('.recommendation-mode-switch button:last-of-type').trigger('click');
+    await wrapper.get('.recommend-actions .button-primary').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('还没有外卖候选');
+    expect(wrapper.text()).not.toContain('添加外卖候选');
+    const manage = wrapper.findAll('button').find((button) => button.text() === '管理外卖候选');
+    expect(manage).toBeDefined();
+    await manage!.trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe('/takeout');
     wrapper.unmount();
   });
 
