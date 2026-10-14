@@ -7,12 +7,14 @@
   },
   "scripts": {
     "dev": "pnpm --filter @sku-cook/shared build && pnpm --parallel -r dev",
+    "dev:https": "node scripts/dev-https.mjs",
+    "test:startup": "node --test scripts/dev-https.test.mjs",
     "build": "pnpm -r build",
     "typecheck": "pnpm --filter @sku-cook/shared build && pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "pnpm --filter @sku-cook/shared build && pnpm -r test",
+    "test": "pnpm test:startup && pnpm --filter @sku-cook/shared build && pnpm -r test",
     "db:generate": "pnpm --filter @sku-cook/api db:generate",
     "db:migrate": "pnpm --filter @sku-cook/api db:migrate",
     "db:seed": "pnpm --filter @sku-cook/api db:seed"

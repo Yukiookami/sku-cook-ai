@@ -27,6 +27,9 @@ sku-cook-ai/
 ├── .gitignore                             【基础】排除依赖、产物、密钥及数据
 ├── .env.example                           【基础】Compose 配置示例
 ├── compose.yaml                           【基础】开发 PostgreSQL
+├── scripts/
+│   ├── dev-https.mjs                      已创建：Tailnet HTTPS 一键开发启动
+│   └── dev-https.test.mjs                 已创建：启动状态与失败边界回归测试
 │
 ├── .github/
 │   ├── copilot-instructions.md             已创建：唯一全局规则入口

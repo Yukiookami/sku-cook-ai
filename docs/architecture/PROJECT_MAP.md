@@ -15,6 +15,7 @@ sku-cook-ai/
 │   ├── instructions/                 前后端范围规则
 │   ├── agents/                       Frontend / Backend / Reviewer
 │   └── skills/                       开发、评审、Git 与地图工作流
+├── scripts/                          Tailnet HTTPS 一键开发启动与回归测试
 ├── apps/
 │   ├── web/                          Vue/Vant Web 与组件测试
 │   │   ├── public/icons/             PWA 安装图标
@@ -70,7 +71,9 @@ sku-cook-ai/
 | `.prettierrc.json`    | 全仓统一Prettier代码格式。                                   |
 | `compose.yaml`        | PostgreSQL17本地服务、回环端口、持久Volume与健康检查。       |
 | `eslint.config.mjs`   | TypeScript/Vue/Node的flat lint配置与产物排除。               |
-| `package.json`        | workspace总入口、版本约束与统一dev/build/check/test/db脚本。 |
+| `package.json`        | workspace总入口、版本约束与dev/dev:https/build/check/test/db脚本。 |
+| `scripts/dev-https.mjs` | 检查Tailscale、启动数据库与开发服务、建立私有HTTPS并管理开发子进程退出。 |
+| `scripts/dev-https.test.mjs` | 覆盖Tailnet状态、Serve冲突/Funnel拒绝、服务就绪重试与失败。 |
 | `pnpm-lock.yaml`      | pnpm生成的可提交依赖解析锁，不能手工维护版本树。             |
 | `pnpm-workspace.yaml` | workspace包范围及允许执行的必要依赖安装脚本。                |
 | `tsconfig.base.json`  | 各包共用strict与ES2022等基础TypeScript选项。                 |
@@ -120,7 +123,7 @@ sku-cook-ai/
 | `apps/web/tsconfig.json`                         | 汇总浏览器应用与Node工具配置的TypeScript引用。                             |
 | `apps/web/tsconfig.app.json`                     | Vue/浏览器源码与DOM/PWA类型检查范围。                                      |
 | `apps/web/tsconfig.node.json`                    | Vite/Vitest工具配置的Node类型检查范围。                                    |
-| `apps/web/vite.config.ts`                        | Vue编译、开发代理、Tailscale白名单、开发/生产共用的全站安装Manifest与PWA构建；开发不注册Service Worker并排除ExcelJS预缓存。 |
+| `apps/web/vite.config.ts`                        | Vue编译、仅本机监听的开发代理、Tailscale白名单、开发/生产共用的全站安装Manifest与PWA构建；开发不注册Service Worker并排除ExcelJS预缓存。 |
 | `apps/web/vitest.config.ts`                      | Vue插件、jsdom和组件测试文件匹配。                                         |
 
 ### 2.5 Web 源码与测试
@@ -285,7 +288,7 @@ sku-cook-ai/
 | `docs/architecture/PROJECT_STRUCTURE.md` | 完整目标目录规划与各层职责，不代表所有规划已实现。                                  |
 | `docs/architecture/TECH_STACK.md`        | 技术栈、开发边界、家庭账号、部署与平板设备方案。                                    |
 | `docs/requirements/REQUIREMENTS_V1.md`   | V1纯文字菜谱范围与验收，以及V2随机外卖、Excel导入和账号规则/状态。                  |
-| `docs/development/SETUP.md`              | 本地环境配置、数据库首次初始化、日常启动/停止命令与常见问题。                       |
+| `docs/development/SETUP.md`              | 本地环境配置、数据库首次初始化、Tailnet HTTPS入口与一键启动/停止命令及常见问题。 |
 | `docs/development/AI_WORKFLOW.md`        | Instructions、Agents、Skills的加载、选择、交接、地图及设计图提示词/版本维护方式。   |
 
 ### 2.9 共通设计与画面设计
