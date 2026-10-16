@@ -210,7 +210,7 @@ describe('RecipeDetailView', () => {
     const { router, wrapper } = await mountDetailView();
     await sendRecipeToKitchen(wrapper);
 
-    expect(wrapper.get('.panel-success').text()).toContain('添加成功');
+    expect(wrapper.get('.panel-success').text()).toContain('已发送到厨房');
     expect(replaceKitchenMenu).toHaveBeenCalledWith({
       items: [{ recipeId: 11, targetServings: 2 }],
       expectedRevision: 7,
@@ -227,7 +227,7 @@ describe('RecipeDetailView', () => {
   it('closes the kitchen success dialog and navigates to the recipe list', async () => {
     const { router, wrapper } = await mountDetailView();
     await sendRecipeToKitchen(wrapper);
-    expect(wrapper.get('.panel-success').text()).toContain('添加成功');
+    expect(wrapper.get('.panel-success').text()).toContain('已发送到厨房');
 
     await wrapper.get('.kitchen-panel .panel-actions .button-primary').trigger('click');
     await flushPromises();

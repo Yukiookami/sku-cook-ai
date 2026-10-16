@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 const execute = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
 const macTailscale = '/Applications/Tailscale.app/Contents/MacOS/Tailscale';
+const service = 'svc:food';
 
 export function pnpmLaunch(executable) {
   return /\.(?:c|m)?js$/i.test(executable)
@@ -19,28 +20,38 @@ export function privateOrigin(status) {
   if (status.BackendState !== 'Running') {
     throw new Error('Tailscale 未连接，请先打开客户端并登录 Tailnet。');
   }
-  const hostname = status.Self?.DNSName?.replace(/\.$/, '');
-  if (!hostname || !/^[a-z0-9.-]+\.ts\.net$/i.test(hostname)) {
-    throw new Error('未找到有效的 MagicDNS 名称，请在 Tailscale 后台启用 MagicDNS。');
+  if (!status.Self?.Tags?.length) {
+    throw new Error('服务主机需要标签身份，请先在 Tailscale 后台为当前设备应用服务主机标签。');
   }
-  return `https://${hostname}`;
+  const suffix = status.CurrentTailnet?.MagicDNSSuffix;
+  if (
+    !status.CurrentTailnet?.MagicDNSEnabled ||
+    !suffix ||
+    !/^[a-z0-9-]+\.ts\.net$/i.test(suffix)
+  ) {
+    throw new Error('未找到有效的 MagicDNS 后缀，请在 Tailscale 后台启用 MagicDNS。');
+  }
+  return `https://food.${suffix}`;
 }
 
 export function serveConfigured(config, origin) {
   if (Object.values(config.AllowFunnel ?? {}).some(Boolean)) {
     throw new Error('检测到 Funnel 公网入口，请先人工关闭；本命令只允许私有 Tailnet 访问。');
   }
+  const target = config.Services?.[service];
+  if (!target) return false;
   const hostname = new URL(origin).hostname;
-  const handlers = config.Web?.[`${hostname}:443`]?.Handlers;
-  if (!config.TCP?.['443'] && !handlers) return false;
+  const handlers = target.Web?.[`${hostname}:443`]?.Handlers;
   if (
-    config.TCP?.['443']?.HTTPS &&
+    target.TCP?.['443']?.HTTPS &&
     handlers?.['/']?.Proxy === 'http://127.0.0.1:5173' &&
-    Object.keys(handlers).length === 1
+    Object.keys(handlers).length === 1 &&
+    Object.keys(target.TCP).length === 1 &&
+    Object.keys(target.Web).length === 1
   ) {
     return true;
   }
-  throw new Error('已有不同的 Tailscale Serve 配置；为避免覆盖，请先人工核对 serve status。');
+  throw new Error('已有不同的 svc:food 配置；为避免覆盖，请先人工核对 serve status。');
 }
 
 async function command(file, args, timeout = 30_000) {
@@ -152,7 +163,9 @@ async function main() {
     if (
       !serveConfigured(JSON.parse(await command(tailscale, ['serve', 'status', '--json'])), origin)
     ) {
-      console.info(await command(tailscale, ['serve', '--bg', '--yes', '--https=443', '5173']));
+      console.info(
+        await command(tailscale, ['serve', `--service=${service}`, '--https=443', '5173']),
+      );
     }
     if (
       !serveConfigured(JSON.parse(await command(tailscale, ['serve', 'status', '--json'])), origin)
@@ -160,6 +173,9 @@ async function main() {
       throw new Error('Tailscale 未建立 HTTPS 代理，请检查证书和 Serve 权限。');
     }
     console.info(`\n手机／平板连接 Tailscale 后打开：${origin}`);
+    console.info(
+      '本机服务与 svc:food 配置已就绪；请从手机确认服务主机批准、访问策略及 HTTPS 可达性。',
+    );
     console.info('按 Ctrl+C 停止开发服务；数据库与 Serve 配置保留。电脑休眠后无法访问。');
     await Promise.race([
       exited.then(() => {

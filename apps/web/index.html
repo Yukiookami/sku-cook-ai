@@ -15,9 +15,240 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180-v1.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32-v1.png" />
     <title>吃什么饭</title>
+    <script id="startup-session">
+      try {
+        if (sessionStorage.getItem('sku-cook-ai:startup-ready') === 'true') {
+          document.documentElement.setAttribute('data-startup-resume', '');
+        }
+      } catch (error) {
+        console.warn('无法读取启动会话，将使用首次启动画面。', error);
+      }
+    </script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #fffdf8;
+      }
+      #startup-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        box-sizing: border-box;
+        padding: max(40px, env(safe-area-inset-top)) 24px max(36px, env(safe-area-inset-bottom));
+        background: #fffdf8;
+        color: #332e28;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        text-align: center;
+        overflow: auto;
+        transition: opacity 220ms ease;
+      }
+      #startup-screen.is-leaving {
+        opacity: 0;
+        pointer-events: none;
+      }
+      html[data-startup-resume] #startup-screen {
+        display: none;
+      }
+      .startup-label {
+        padding: 9px 16px;
+        border: 1px solid #eadcc4;
+        border-radius: 24px;
+        font-size: 13px;
+        letter-spacing: 3px;
+        color: #716452;
+      }
+      .startup-art {
+        width: min(80vw, 340px);
+        margin: 24px 0;
+        flex-shrink: 0;
+      }
+      .startup-friend {
+        animation: startup-float 3s ease-in-out infinite;
+        transform-origin: center;
+      }
+      .startup-steam {
+        animation: startup-steam 2.8s ease-in-out infinite;
+      }
+      .startup-brand h1 {
+        margin: 0 0 12px;
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: 4px;
+      }
+      .startup-brand p {
+        margin: 0;
+        color: #716452;
+        font-size: 14px;
+        letter-spacing: 2px;
+        line-height: 1.8;
+      }
+      #startup-status {
+        margin: 26px 0 0;
+        font-size: 13px;
+        color: #716452;
+        letter-spacing: 0;
+      }
+      #startup-retry {
+        margin: 16px auto 0;
+        padding: 12px 24px;
+        min-height: 48px;
+        border: 0;
+        border-radius: 14px;
+        background: #ffe28a;
+        color: #332e28;
+        font: inherit;
+        cursor: pointer;
+      }
+      #startup-retry[hidden] {
+        display: none;
+      }
+      .startup-dots {
+        display: inline-flex;
+        gap: 6px;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      .startup-dots i {
+        width: 5px;
+        height: 5px;
+        background: #a47a35;
+        border-radius: 50%;
+        animation: startup-dot 1.2s ease-in-out infinite;
+      }
+      .startup-dots i:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .startup-dots i:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      #startup-screen.is-failed .startup-dots {
+        display: none;
+      }
+      @keyframes startup-float {
+        50% {
+          transform: translateY(-7px);
+        }
+      }
+      @keyframes startup-steam {
+        50% {
+          opacity: 0.4;
+          transform: translateY(-6px);
+        }
+      }
+      @keyframes startup-dot {
+        50% {
+          opacity: 0.3;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #startup-screen {
+          transition: none;
+        }
+        #startup-screen * {
+          animation: none;
+        }
+      }
+      @media (max-height: 600px) {
+        #startup-screen {
+          padding-top: 20px;
+          padding-bottom: 20px;
+        }
+        .startup-art {
+          width: 190px;
+          margin: 12px 0;
+        }
+        .startup-brand h1 {
+          font-size: 26px;
+        }
+        #startup-status {
+          margin-top: 12px;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="startup-screen" aria-label="应用启动">
+      <div class="startup-label">把日子，煮得香香的</div>
+      <svg class="startup-art" viewBox="0 0 340 310" aria-hidden="true">
+        <ellipse cx="170" cy="272" rx="104" ry="13" fill="#f3e8d4" />
+        <circle cx="170" cy="153" r="121" fill="#fff4c2" />
+        <g
+          fill="none"
+          stroke="#b89460"
+          stroke-width="5"
+          stroke-linecap="round"
+          class="startup-steam"
+        >
+          <path d="M125 77c-14-17 14-22 0-39M171 65c-14-17 14-22 0-39M217 77c-14-17 14-22 0-39" />
+        </g>
+        <g class="startup-friend">
+          <path
+            d="M82 206c-26-3-31-23-13-30M258 206c26-3 31-23 13-30"
+            fill="none"
+            stroke="#806143"
+            stroke-width="5"
+            stroke-linecap="round"
+          />
+          <path
+            d="M98 158c-6-36 13-48 28-43 5-23 31-30 46-16 16-17 44-9 48 13 22-5 34 14 27 46"
+            fill="#fffdf8"
+            stroke="#806143"
+            stroke-width="4"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M81 159h178c-6 72-35 97-89 97s-83-25-89-97Z"
+            fill="#ffe28a"
+            stroke="#806143"
+            stroke-width="5"
+            stroke-linejoin="round"
+          />
+          <path d="M91 168h157" stroke="#fffdf8" stroke-width="6" stroke-linecap="round" />
+          <ellipse cx="126" cy="207" rx="13" ry="8" fill="#edb6a1" />
+          <ellipse cx="214" cy="207" rx="13" ry="8" fill="#edb6a1" />
+          <path
+            d="M139 193v6M201 193v6M159 205q11 15 22 0"
+            fill="none"
+            stroke="#654c35"
+            stroke-width="5"
+            stroke-linecap="round"
+          />
+          <path
+            d="M135 257l-7 10M205 257l7 10"
+            stroke="#806143"
+            stroke-width="6"
+            stroke-linecap="round"
+          />
+          <path
+            d="M153 124l8 5M188 135l8-4M130 141l7 2"
+            stroke="#eadcc4"
+            stroke-width="3"
+            stroke-linecap="round"
+          />
+        </g>
+        <g fill="#b89460">
+          <path d="m50 105 3-8 3 8 8 3-8 3-3 8-3-8-8-3Z" />
+          <path d="m289 139 3-8 3 8 8 3-8 3-3 8-3-8-8-3Z" />
+        </g>
+      </svg>
+      <div class="startup-brand">
+        <h1>吃什么饭</h1>
+        <p>一餐一饭，好好生活</p>
+        <div id="startup-status" role="status" aria-live="polite">
+          <span class="startup-dots" aria-hidden="true"><i></i><i></i><i></i></span
+          ><span id="startup-message">正在准备你的小厨房…</span>
+        </div>
+        <button id="startup-retry" type="button" hidden>重新加载</button>
+        <noscript><p>请启用 JavaScript 后重新打开小厨房。</p></noscript>
+      </div>
+    </div>
+    <div id="app" inert></div>
+    <script src="/startup.js"></script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

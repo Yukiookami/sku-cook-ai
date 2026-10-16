@@ -1,6 +1,6 @@
 # A11 PUT /api/kitchen/session
 
-状态：源码已实现；初始迁移已应用于本地开发数据库；A11写入、revision冲突与持久化行为尚未通过真实HTTP验收。调用方：[S07](../screens/S07_KITCHEN_PANEL.md)发送 / 明确替换菜单。shared Contract：`KitchenReplaceInputSchema`，响应KitchenState复用[A10](A10_KITCHEN_GET.md)。
+状态：源码已实现；独立临时PostgreSQL应用现有迁移后，已通过真实HTTP初始发送、完整响应、份数持久化、同账号第二设备读取和旧revision返回409且不改数据的集成测试。浏览器已验证发送成功弹窗与厨房读取显示；并发/回滚等其余场景仍需单独验收。调用方：[S07](../screens/S07_KITCHEN_PANEL.md)发送 / 明确替换菜单。shared Contract：`KitchenReplaceInputSchema`，响应KitchenState复用[A10](A10_KITCHEN_GET.md)。
 
 ## 请求
 

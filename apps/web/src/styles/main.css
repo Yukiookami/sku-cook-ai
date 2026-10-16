@@ -872,7 +872,7 @@ body:has(.account-page) {
   min-height: 124px;
   align-items: center;
   gap: 10px;
-  padding: 16px;
+  padding: 16px 80px 16px 16px;
   border: 0;
   background: transparent;
   text-align: left;
@@ -883,7 +883,6 @@ body:has(.account-page) {
   flex: 1;
   gap: 8px;
   min-width: 0;
-  padding-right: 42px;
 }
 
 .recipe-card-content > strong {
@@ -1311,15 +1310,26 @@ body:has(.account-page) {
   padding-top: 10px;
 }
 
-.panel-operation-status {
-  margin: 8px 0 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  color: var(--ink);
-  background: #fff4c2;
-  font-size: 14px;
-  font-weight: 600;
-  text-align: center;
+.send-success-scrim {
+  align-items: center;
+  padding: 20px;
+}
+
+.kitchen-panel.send-success-dialog {
+  width: min(100%, 440px);
+  padding: 20px;
+  overflow-y: auto;
+  border-radius: 24px;
+}
+
+.send-success-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--honey);
+  font-size: 32px;
 }
 
 .panel-success {

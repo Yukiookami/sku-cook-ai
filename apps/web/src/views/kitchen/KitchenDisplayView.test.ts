@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KitchenStateResponseSchema } from '@sku-cook/shared';
 import KitchenDisplayView from './KitchenDisplayView.vue';
 import { completeKitchenMenu, getKitchenState, setKitchenActiveRecipe } from '../../api/kitchen';
@@ -105,6 +105,108 @@ describe('KitchenDisplayView A15 completion', () => {
     window.localStorage.removeItem(wakeLockNoticeStorageKey);
     window.sessionStorage.clear();
     vi.mocked(setKitchenActiveRecipe).mockResolvedValue(queuedState);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('keeps polling while idle and displays a menu sent after the second polling interval', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    vi.mocked(getKitchenState)
+      .mockResolvedValueOnce(emptyState)
+      .mockResolvedValueOnce(emptyState)
+      .mockResolvedValueOnce(queuedState)
+      .mockResolvedValue(queuedState);
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    expect(wrapper.text()).toContain('厨房当前没有菜单');
+
+    await vi.advanceTimersByTimeAsync(10000);
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('厨房当前没有菜单');
+
+    await vi.advanceTimersByTimeAsync(10000);
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(3);
+    expect(wrapper.get('.kitchen-recipe-heading h1').text()).toBe('番茄炒蛋');
+    expect(wrapper.text()).toContain('炒熟。');
+
+    await vi.advanceTimersByTimeAsync(10000);
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(4);
+    wrapper.unmount();
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(getKitchenState).toHaveBeenCalledTimes(4);
+  });
+
+  it('waits for each response and recovers polling after a failed read', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    let resolveRead: ((value: typeof emptyState) => void) | undefined;
+    vi.mocked(getKitchenState)
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRead = resolve;
+        }),
+      )
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValue(queuedState);
+    const wrapper = mountKitchenView();
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(getKitchenState).toHaveBeenCalledTimes(1);
+
+    resolveRead?.(emptyState);
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(10000);
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('连接中断，显示上次内容');
+
+    await vi.advanceTimersByTimeAsync(10000);
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(3);
+    expect(wrapper.get('.kitchen-recipe-heading h1').text()).toBe('番茄炒蛋');
+    wrapper.unmount();
+  });
+
+  it('pauses polling while hidden and immediately reads on returning to the foreground', async () => {
+    vi.useFakeTimers();
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    vi.mocked(getKitchenState).mockResolvedValue(emptyState);
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(getKitchenState).toHaveBeenCalledTimes(1);
+
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(getKitchenState).toHaveBeenCalledTimes(3);
+    wrapper.unmount();
+  });
+
+  it('does not restart polling when an in-flight read resolves after unmount', async () => {
+    vi.useFakeTimers();
+    let resolveRead: ((value: typeof emptyState) => void) | undefined;
+    vi.mocked(getKitchenState).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRead = resolve;
+      }),
+    );
+    const wrapper = mountKitchenView();
+    wrapper.unmount();
+    resolveRead?.(emptyState);
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(getKitchenState).toHaveBeenCalledTimes(1);
   });
 
   it('sends the observed revision and only celebrates after the API confirms completion', async () => {

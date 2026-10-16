@@ -2,10 +2,16 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { pnpmLaunch, privateOrigin, serveConfigured, waitForServices } from './dev-https.mjs';
 
-const origin = 'https://device.example.ts.net';
-const config = {
+const origin = 'https://food.example.ts.net';
+const target = {
   TCP: { 443: { HTTPS: true } },
-  Web: { 'device.example.ts.net:443': { Handlers: { '/': { Proxy: 'http://127.0.0.1:5173' } } } },
+  Web: { 'food.example.ts.net:443': { Handlers: { '/': { Proxy: 'http://127.0.0.1:5173' } } } },
+};
+const config = { Services: { 'svc:food': target } };
+const status = {
+  BackendState: 'Running',
+  Self: { DNSName: 'device.example.ts.net.', Tags: ['tag:pwa-host'] },
+  CurrentTailnet: { MagicDNSSuffix: 'example.ts.net', MagicDNSEnabled: true },
 };
 
 test('同时支持 pnpm JavaScript CLI 与独立可执行文件', () => {
@@ -20,14 +26,21 @@ test('同时支持 pnpm JavaScript CLI 与独立可执行文件', () => {
   });
 });
 
-test('从连接中的 Tailscale 状态读取 HTTPS 地址', () => {
-  assert.equal(
-    privateOrigin({ BackendState: 'Running', Self: { DNSName: 'device.example.ts.net.' } }),
-    origin,
-  );
+test('从 Tailnet 后缀构造 food 服务地址，不依赖设备名', () => {
+  assert.equal(privateOrigin(status), origin);
+  assert.equal(privateOrigin({ ...status, Self: { Tags: ['tag:other'] } }), origin);
   assert.throws(() => privateOrigin({ BackendState: 'Stopped' }), /未连接/);
+  assert.throws(() => privateOrigin({ ...status, Self: { Tags: [] } }), /标签身份/);
   assert.throws(
-    () => privateOrigin({ BackendState: 'Running', Self: { DNSName: 'localhost' } }),
+    () => privateOrigin({ ...status, CurrentTailnet: { MagicDNSSuffix: 'localhost' } }),
+    /MagicDNS/,
+  );
+  assert.throws(
+    () =>
+      privateOrigin({
+        ...status,
+        CurrentTailnet: { MagicDNSSuffix: 'example.ts.net', MagicDNSEnabled: false },
+      }),
     /MagicDNS/,
   );
 });
@@ -38,19 +51,31 @@ test('允许空配置或已有同目标代理，不覆盖不同 Serve 配置', (
   assert.equal(serveConfigured(otherPorts, origin), false);
   assert.deepEqual(otherPorts, { TCP: { 8443: { HTTPS: true } } });
   assert.equal(serveConfigured(config, origin), true);
-  assert.throws(
-    () => serveConfigured({ TCP: { 443: { TCPForward: 'localhost:8080' } } }, origin),
-    /已有不同/,
+  const unrelated = {
+    TCP: { 443: { HTTPS: true } },
+    Web: { 'device.example.ts.net:443': { Handlers: { '/': { Proxy: 'http://127.0.0.1:8080' } } } },
+    Services: { 'svc:todo': target },
+  };
+  const before = structuredClone(unrelated);
+  assert.equal(serveConfigured(unrelated, origin), false);
+  assert.equal(
+    serveConfigured(
+      { ...unrelated, Services: { ...unrelated.Services, ...config.Services } },
+      origin,
+    ),
+    true,
   );
+  assert.deepEqual(unrelated, before);
   const other = structuredClone(config);
-  other.Web['device.example.ts.net:443'].Handlers['/'].Proxy = 'http://127.0.0.1:8080';
+  other.Services['svc:food'].Web['food.example.ts.net:443'].Handlers['/'].Proxy =
+    'http://127.0.0.1:8080';
   assert.throws(() => serveConfigured(other, origin), /已有不同/);
+  assert.throws(() => serveConfigured({ Services: { 'svc:food': {} } }, origin), /已有不同/);
 });
 
 test('拒绝公开 Funnel，即使 Serve 目标一致', () => {
   assert.throws(
-    () =>
-      serveConfigured({ ...config, AllowFunnel: { 'device.example.ts.net:443': true } }, origin),
+    () => serveConfigured({ ...config, AllowFunnel: { 'food.example.ts.net:443': true } }, origin),
     /Funnel/,
   );
 });

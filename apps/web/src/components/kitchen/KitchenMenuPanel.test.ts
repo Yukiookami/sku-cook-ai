@@ -65,14 +65,29 @@ const menuKitchen = KitchenStateResponseSchema.parse({
   pollIntervalSeconds: 10,
 });
 
+function sentKitchen(items: typeof currentKitchen.session.items, revision = 8) {
+  return KitchenStateResponseSchema.parse({
+    session: {
+      recipeIds: items.map((item) => item.recipeId),
+      items,
+      activeRecipeId: items[0]?.recipeId ?? null,
+      revision,
+      updatedAt: '2026-10-08T05:00:00.000Z',
+      recipes: items.map((item) =>
+        item.recipeId === soup.id ? fullSoup : { ...fullSoup, ...recipe },
+      ),
+    },
+    pollIntervalSeconds: 10,
+  });
+}
+
 describe('KitchenMenuPanel', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(getKitchenState).mockResolvedValue(currentKitchen);
-    vi.mocked(replaceKitchenMenu).mockResolvedValue({
-      ...currentKitchen,
-      session: { ...currentKitchen.session, revision: 8 },
-    });
+    vi.mocked(replaceKitchenMenu).mockImplementation(async (input) =>
+      sentKitchen(input.items, input.expectedRevision + 1),
+    );
     vi.mocked(clearKitchenMenu).mockResolvedValue(currentKitchen);
   });
 
@@ -105,8 +120,10 @@ describe('KitchenMenuPanel', () => {
       expectedRevision: 7,
     });
     expect(wrapper.emitted('sent')).toHaveLength(1);
-    expect(wrapper.get('.panel-success').text()).toContain('添加成功');
-    expect(wrapper.get('.panel-success').text()).toContain('厨房屏将在下次读取时更新');
+    expect(wrapper.get('.send-success-dialog .panel-success').text()).toContain('已发送到厨房');
+    expect(wrapper.get('.panel-success').text()).toContain('将在下次读取时更新');
+    expect(wrapper.get('.panel-success').text()).toContain('登录同一账号');
+    expect(wrapper.get('.panel-success').text()).toContain('已保存 2 道菜');
     expect(wrapper.findAll('.panel-actions button').map((button) => button.text())).toEqual([
       '完成',
       '返回菜谱一览',
@@ -136,7 +153,8 @@ describe('KitchenMenuPanel', () => {
     expect(sendButton.attributes('disabled')).toBeUndefined();
     await sendButton.trigger('click');
     await flushPromises();
-    expect(wrapper.get('[role="status"]').text()).toContain('正在发送菜单，请稍候');
+    expect(wrapper.find('.panel-operation-status').exists()).toBe(false);
+    expect(wrapper.text().match(/正在发送/g)).toHaveLength(1);
     const pendingButton = wrapper.get('.button-primary');
     expect(pendingButton.text()).toContain('正在发送…');
     expect(pendingButton.attributes('aria-busy')).toBe('true');
@@ -149,13 +167,10 @@ describe('KitchenMenuPanel', () => {
     expect(wrapper.emitted('close')).toBeUndefined();
     expect(replaceKitchenMenu).toHaveBeenCalledTimes(1);
 
-    resolveSend?.({
-      ...currentKitchen,
-      session: { ...currentKitchen.session, revision: 8 },
-    });
+    resolveSend?.(sentKitchen([{ recipeId: 11, targetServings: 2 }]));
     await flushPromises();
 
-    expect(wrapper.get('.panel-success').text()).toContain('添加成功');
+    expect(wrapper.get('.send-success-dialog .panel-success').text()).toContain('已发送到厨房');
     expect(wrapper.emitted('sent')).toHaveLength(1);
     await wrapper.get('.panel-actions button:last-child').trigger('click');
     expect(wrapper.emitted('return-to-recipes')).toHaveLength(1);
@@ -179,6 +194,33 @@ describe('KitchenMenuPanel', () => {
     await wrapper.setProps({ show: false });
     await flushPromises();
     expect(getKitchenState).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not turn an unknown send result into a version conflict or allow blind resending', async () => {
+    vi.mocked(replaceKitchenMenu).mockRejectedValueOnce(
+      Object.assign(new Error('network timeout'), { isAxiosError: true }),
+    );
+    const wrapper = mount(KitchenMenuPanel, {
+      props: { show: false, mode: 'send', selections: [recipe] },
+      global: { stubs: { Teleport: true } },
+    });
+    await wrapper.setProps({ show: true });
+    await flushPromises();
+    await wrapper.get('.panel-actions .button-primary').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('发送结果暂未确认');
+    expect(wrapper.text()).not.toContain('厨房菜单已变更');
+    expect(wrapper.get('.panel-actions .button-primary').attributes('disabled')).toBeDefined();
+    expect(getKitchenState).toHaveBeenCalledTimes(1);
+    expect(replaceKitchenMenu).toHaveBeenCalledOnce();
+    expect(wrapper.find('.panel-success').exists()).toBe(false);
+    await wrapper.get('.inline-error .text-button').trigger('click');
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    expect(replaceKitchenMenu).toHaveBeenCalledOnce();
+    expect(wrapper.get('.panel-actions .button-primary').attributes('disabled')).toBeUndefined();
+    wrapper.unmount();
   });
 
   it('reloads a conflicting kitchen revision without automatically resending', async () => {
@@ -212,11 +254,116 @@ describe('KitchenMenuPanel', () => {
 
     expect(getKitchenState).toHaveBeenCalledTimes(2);
     expect(replaceKitchenMenu).toHaveBeenCalledTimes(1);
-    expect(wrapper.text()).toContain('厨房菜单已变更，请重新读取后确认');
+    expect(wrapper.get('[role="status"]').text()).toContain('已读取最新菜单');
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.find('.inline-error .text-button').exists()).toBe(false);
     expect(wrapper.text()).toContain('目标 3 人份');
     expect(wrapper.text()).toContain('冬瓜汤');
     expect(wrapper.find('.panel-success').exists()).toBe(false);
-    expect(wrapper.text()).not.toContain('添加成功');
+    expect(wrapper.text()).not.toContain('已发送到厨房');
+  });
+
+  it('requires explicit confirmation to resend against the refreshed kitchen revision', async () => {
+    const updated = KitchenStateResponseSchema.parse({
+      session: {
+        ...currentKitchen.session,
+        recipeIds: [12],
+        items: [{ recipeId: 12, targetServings: 1 }],
+        activeRecipeId: 12,
+        revision: 8,
+        recipes: [fullSoup],
+      },
+      pollIntervalSeconds: 10,
+    });
+    const conflict = Object.assign(new Error('revision conflict'), {
+      isAxiosError: true,
+      response: { status: 409 },
+    });
+    vi.mocked(getKitchenState).mockResolvedValueOnce(currentKitchen).mockResolvedValueOnce(updated);
+    vi.mocked(replaceKitchenMenu)
+      .mockRejectedValueOnce(conflict)
+      .mockResolvedValueOnce(sentKitchen([{ recipeId: 11, targetServings: 3 }], 9));
+
+    const wrapper = mount(KitchenMenuPanel, {
+      props: { show: false, mode: 'send', selections: [recipe] },
+      global: { stubs: { Teleport: true } },
+    });
+    await wrapper.setProps({ show: true });
+    await flushPromises();
+    await wrapper.get('[aria-label="番茄炒蛋增加一份"]').trigger('click');
+    await wrapper.get('.panel-actions .button-primary').trigger('click');
+    await flushPromises();
+
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    expect(replaceKitchenMenu).toHaveBeenCalledExactlyOnceWith({
+      items: [{ recipeId: 11, targetServings: 3 }],
+      expectedRevision: 7,
+    });
+    expect(wrapper.get('.panel-actions .button-primary').text()).toContain('确认并发送到厨房');
+    expect(wrapper.find('.panel-success').exists()).toBe(false);
+
+    await wrapper.get('.panel-actions .button-primary').trigger('click');
+    await flushPromises();
+
+    expect(replaceKitchenMenu).toHaveBeenCalledTimes(2);
+    expect(replaceKitchenMenu).toHaveBeenLastCalledWith({
+      items: [{ recipeId: 11, targetServings: 3 }],
+      expectedRevision: 8,
+    });
+    expect(wrapper.get('.panel-success').text()).toContain('已发送到厨房');
+    wrapper.unmount();
+  });
+
+  it('keeps a refresh failure visible and requires a fresh read before confirming the resend', async () => {
+    const updated = KitchenStateResponseSchema.parse({
+      session: {
+        ...currentKitchen.session,
+        recipeIds: [12],
+        items: [{ recipeId: 12, targetServings: 1 }],
+        activeRecipeId: 12,
+        revision: 8,
+        recipes: [fullSoup],
+      },
+      pollIntervalSeconds: 10,
+    });
+    const conflict = Object.assign(new Error('revision conflict'), {
+      isAxiosError: true,
+      response: { status: 409 },
+    });
+    vi.mocked(getKitchenState)
+      .mockResolvedValueOnce(currentKitchen)
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValueOnce(updated);
+    vi.mocked(replaceKitchenMenu)
+      .mockRejectedValueOnce(conflict)
+      .mockResolvedValueOnce(sentKitchen([{ recipeId: 11, targetServings: 2 }], 9));
+
+    const wrapper = mount(KitchenMenuPanel, {
+      props: { show: false, mode: 'send', selections: [recipe] },
+      global: { stubs: { Teleport: true } },
+    });
+    await wrapper.setProps({ show: true });
+    await flushPromises();
+    await wrapper.get('.panel-actions .button-primary').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('无法读取厨房菜单');
+    expect(wrapper.get('.panel-actions .button-primary').attributes('disabled')).toBeDefined();
+    expect(replaceKitchenMenu).toHaveBeenCalledOnce();
+
+    await wrapper.get('.inline-error .text-button').trigger('click');
+    await flushPromises();
+    expect(wrapper.get('.panel-actions .button-primary').text()).toContain('确认并发送到厨房');
+    expect(wrapper.get('.panel-actions .button-primary').attributes('disabled')).toBeUndefined();
+
+    await wrapper.get('.panel-actions .button-primary').trigger('click');
+    await flushPromises();
+    expect(replaceKitchenMenu).toHaveBeenLastCalledWith({
+      items: [{ recipeId: 11, targetServings: 2 }],
+      expectedRevision: 8,
+    });
+    expect(wrapper.get('.panel-success').text()).toContain('已发送到厨房');
+    wrapper.unmount();
   });
 
   it('clears the kitchen with its observed revision only after confirmation', async () => {

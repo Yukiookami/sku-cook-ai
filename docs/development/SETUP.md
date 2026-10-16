@@ -12,11 +12,11 @@
 pnpm dev:https
 ```
 
-**当前 Mac 的唯一设备访问入口：<https://shiro-mac-home.taila48442.ts.net>**
+**日常统一访问入口：<https://food.taila48442.ts.net>（Tailscale Service：`svc:food`）**
 
-手机／平板必须连接同一 Tailnet。Web 的 5173 和 API 的 3000 均仅监听本机 `127.0.0.1`，不再提供局域网 IP／Tailscale IP 的 HTTP 直连入口。Tailscale 到本机的 HTTP 仅作为内部反向代理链路保留，不能关闭，否则 HTTPS 也无法工作；日常统一使用上述 HTTPS 地址。换电脑启动时，以命令打印的新地址为准。
+手机／平板必须连接同一 Tailnet。服务仍由当前 `shiro-mac-home` 运行，不改电脑名；`food` 是独立的服务名。Web 的 5173 和 API 的 3000 均仅监听本机 `127.0.0.1`，不再提供局域网 IP／Tailscale IP 的 HTTP 直连入口。Tailscale 到本机的 HTTP 仅作为内部反向代理链路保留，不能关闭，否则 HTTPS 也无法工作；日常统一使用上述 HTTPS 地址。同一 Tailnet 内换电脑承载并批准服务主机后仍可保留此地址；换 Tailnet 时，以命令打印的新后缀为准。
 
-前提是 Docker Desktop 已启动，电脑的 Tailscale 已登录并连接，且已完成下方首次初始化及 HTTPS 设置。命令自动检查端口和既有 Serve 配置、启动 PostgreSQL 并等待健康状态、运行 `pnpm dev`、等待 Web 与 `/api/health` 代理就绪，然后配置私有 HTTPS 并打印实际地址。不安装依赖、不修改 `.env`、不执行迁移或 Seed，也不会覆盖冲突的 Serve 配置或终止已有服务。后端业务与数据库验收仍需单独执行，启动检查不等于完整业务验收。
+前提是 Docker Desktop 已启动，电脑的 Tailscale 已连接且采用标签身份，后台已定义 `food` 并批准当前服务主机，且已完成下方首次初始化及 HTTPS 设置。命令自动检查端口和 `svc:food` 配置、启动 PostgreSQL 并等待健康状态、运行 `pnpm dev`、等待本机 Web 与 `/api/health` 代理就绪，再配置并核对 `svc:food`，打印访问地址。本机就绪和配置核对不代表远端访问已验收，须从手机验证服务批准、HTTPS 和业务；服务主机访问自己的虚拟地址可能超时，不作为必过启动条件。不安装依赖、不修改 `.env`、不执行迁移或 Seed，也不会覆盖冲突的 `svc:food` 配置或终止已有服务。后端业务与数据库验收仍需单独执行，启动检查不等于完整业务验收。
 
 启动进程使用该 HTTPS 地址作为 `APP_ORIGIN`，并临时固定 API 为 `127.0.0.1:3000`、Web API 为同站点 `/api`，不覆盖配置文件。macOS 自动使用已安装的 Tailscale App 内置 CLI；Windows / Linux 需确保 `tailscale` 可在终端执行。按 `Ctrl+C` 停止本命令创建的开发进程，数据库和后台 Serve 配置保留；没有 Web 服务时 HTTPS 入口不会继续提供页面。再次运行同一命令即可恢复。电脑必须开机且不休眠。
 
@@ -41,13 +41,31 @@ docker compose stop postgres
 
 再次启动仍执行 `docker compose up -d postgres`。不要用 `docker compose down -v`，它会删除数据库 Volume 和其中的数据。
 
+## 厨房真实数据库回归测试
+
+`kitchen.integration.test.ts` 默认跳过；需显式设置 `TEST_DATABASE_URL`，仅允许本机且数据库名以 `sku_cook_test_` 开头的独立测试库，禁止指向日常数据库。先为该测试库应用现有版本化迁移，不运行 reset 或清空日常数据：
+
+```sh
+pnpm --filter @sku-cook/shared build
+DATABASE_URL="$TEST_DATABASE_URL" pnpm --filter @sku-cook/api db:deploy
+pnpm --filter @sku-cook/api exec vitest run src/modules/kitchen/kitchen.integration.test.ts
+```
+
+上面的环境变量须预先设置并导出，连接凭据不要提交。测试创建独立随机账号和菜谱，验证真实HTTP发送、数据库持久化、同账号第二设备读取与旧版本拒绝；不会清空数据库，运行后的测试数据随专用临时数据库销毁。不代表真机、并发写入、完成或清空流程已验收。
+
 ## 首次设置 Tailnet HTTPS（macOS / Windows、iPhone / Android）
 
-Tailscale Serve 可将本机 Web 开发服务器以仅限 Tailnet 访问的 HTTPS 地址提供给手机；不要使用 Funnel，也不要把 API 或 PostgreSQL 端口转发到公网。
+Tailscale Services 为本机 Web 提供与设备名解耦的私有 HTTPS 地址；不要使用 Funnel，也不要把 API 或 PostgreSQL 端口转发到公网。服务主机需要 Tailscale 1.86.0 或更新版本；访问端推荐 1.94 或更新版本，较旧 Linux 客户端可能需要手动接受路由。
 
 1. 运行项目的电脑和手机／平板均安装 Tailscale 并加入同一个 Tailnet，确认设备在线；家人可通过邀请加入，并按 Tailnet 访问策略限制权限。
-2. 在 Tailscale 管理后台启用 MagicDNS 和 HTTPS Certificates，并允许当前用户使用 Serve；如果命令提示未启用或没有权限，按提示完成后台设置后再运行。
-3. 完成首次初始化后，在仓库根目录执行 `pnpm dev:https`。终端打印的 `https://<电脑名>.<Tailnet名>.ts.net` 就是访问入口。该命令通过 `tailscale serve --bg --yes --https=443 5173` 建立代理，只在 443 未占用时创建；既有同目标配置会复用，443 冲突时停止而不是重置，其他端口的 Serve 配置保留。
+2. 在 Tailscale 管理后台启用 MagicDNS 和 HTTPS Certificates。在 Services 定义名称 `food`、端点 `tcp:443`；为当前 Mac 应用已由你管理的 `tag:pwa-host`，使其成为标签服务主机。标签身份不改电脑名，但不再按个人设备身份匹配权限；变更前核对访问策略及 SSH 等个人身份规则，不为新服务扩大已有访问范围。当前 Mac 已应用此标签并完成 `food` 创建及主机批准。
+3. 首次发布服务可执行以下命令，再到 Services → food → Hosts 批准当前设备；只批准 `food`，不改变其他服务：
+
+   ```sh
+   tailscale serve --service=svc:food --https=443 5173
+   ```
+
+   后台创建和批准属于一次性管理操作，启动脚本不自动修改标签、访问策略或批准主机。之后在仓库根目录执行 `pnpm dev:https`，入口是 `https://food.<Tailnet名>.ts.net`；复用已有 `svc:food` 配置，缺失时仅创建该服务代理，冲突则停止。设备级代理、其他端口和 `svc:jp-study` / `svc:todo` 等配置不受影响。
 
    若需要手动管理，可使用以下命令；macOS 没有 `tailscale` 命令时，将它替换为 `/Applications/Tailscale.app/Contents/MacOS/Tailscale`：
 
@@ -55,7 +73,7 @@ Tailscale Serve 可将本机 Web 开发服务器以仅限 Tailnet 访问的 HTTP
    tailscale serve status
    ```
 
-   使用状态输出中的 HTTPS MagicDNS 地址。若要移除本项目的 443 根路径代理，可执行 `tailscale serve --https=443 off`；操作前核对配置，不使用 `serve reset` 清空其他服务。不要启用 Funnel。
+   使用状态输出中 `svc:food` 的 HTTPS 地址。若要关闭本服务代理，可执行 `tailscale serve --service=svc:food --https=443 off`；操作前核对配置，不使用 `serve reset` 清空其他服务。不要启用 Funnel。旧设备地址代理暂保留，不作为本项目日常入口；`pnpm dev:https` 只允许 `food` 作为写入来源，不应混用旧地址。
 
 4. iPhone 连上 Tailscale 后，在 Safari 打开该 HTTPS 地址，点“分享”→“添加到主屏幕”；若出现“作为 Web App 打开”选项，保持开启。Android 连上 Tailscale 后，在 Chrome 打开同一地址，通过菜单选择“安装应用”或“添加到主屏幕”。
 
@@ -65,7 +83,13 @@ iPhone 使用 HTML 中的 Apple touch icon。`pnpm dev` 与生产构建提供同
 
 此处仍连接本机正在运行的开发环境；不是公网部署，离线写入也不受支持。
 
+开屏只在当前页面会话首次冷启动时播放；启动成功后，同会话刷新或恢复文档不再重播，普通前后台切换也不重复展示。更新此逻辑后需先刷新一次以加载新启动脚本；不需要删除主屏幕图标或清除登录数据。完全新建会话或系统丢失 sessionStorage 时仍可能冷启动；系统自身的启动画面和恢复快照不由网页控制，iPhone 进程回收后的体验仍需真机验收。
+
 从 HTTP 改为 HTTPS 是不同站点：需要重新登录、重新添加主屏幕入口，本地模式偏好不会自动迁移；服务端菜谱、账号、外卖等数据库数据不受影响。通过 HTTPS 访问可满足剪贴板、厨房常亮等安全上下文要求，实际设备能力仍需真机确认。`pnpm dev:https` 不会改变开发环境不注册 Service Worker 的行为；完整 PWA 需另行使用生产构建验收。
+
+从旧设备地址切换到 `food` 同样是不同站点，需要重新登录及重新添加主屏幕入口。升级脚本后先自行停止原 `pnpm dev:https`，再启动一次，以加载新 `APP_ORIGIN`；脚本不终止你已有的服务。数据库数据不变。
+
+2026-10-14 切换记录：当前 Mac 的 `food` 主机已批准并显示 Online，用户已在手机确认新地址可打开且重启后登录成功。自动化测试覆盖命名服务配置隔离；本机来源检查确认 `food` 来源进入输入校验、旧设备来源被拒绝。服务主机自访问虚拟地址出现 TLS 超时，不据此宣称主机端 HTTPS 直连已验收；Windows 与主屏幕重新安装尚未验证。
 
 ## 首次初始化或新克隆仓库
 

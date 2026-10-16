@@ -110,8 +110,8 @@ function cancelPoll() {
 
 function schedulePoll() {
   cancelPoll();
-  if (document.visibilityState !== 'visible') return;
-  pollTimer = setTimeout(() => void readState(false), pollIntervalSeconds * 1000);
+  if (viewDisposed || document.visibilityState !== 'visible') return;
+  pollTimer = setTimeout(() => void readState(true), pollIntervalSeconds * 1000);
 }
 
 function applyState(result: Awaited<ReturnType<typeof getKitchenState>>) {
@@ -138,8 +138,10 @@ async function readState(scheduleNext: boolean) {
     if (request !== requestSequence) return;
     loadError.value = apiErrorMessage(cause, '无法读取厨房菜单，请检查网络后重试。');
   } finally {
-    initialLoading.value = false;
-    if (scheduleNext) schedulePoll();
+    if (request === requestSequence && !viewDisposed) {
+      initialLoading.value = false;
+      if (scheduleNext) schedulePoll();
+    }
   }
 }
 

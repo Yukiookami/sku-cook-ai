@@ -72,8 +72,8 @@ sku-cook-ai/
 | `compose.yaml`        | PostgreSQL17本地服务、回环端口、持久Volume与健康检查。       |
 | `eslint.config.mjs`   | TypeScript/Vue/Node的flat lint配置与产物排除。               |
 | `package.json`        | workspace总入口、版本约束与dev/dev:https/build/check/test/db脚本。 |
-| `scripts/dev-https.mjs` | 检查Tailscale、启动数据库与开发服务、建立私有HTTPS并管理开发子进程退出。 |
-| `scripts/dev-https.test.mjs` | 覆盖Tailnet状态、Serve冲突/Funnel拒绝、服务就绪重试与失败。 |
+| `scripts/dev-https.mjs` | 检查标签身份、启动数据库与开发服务、建立并核对svc:food私有HTTPS配置，管理开发子进程退出；远端可达性需客户端验收。 |
+| `scripts/dev-https.test.mjs` | 覆盖food地址推导、标签身份、命名服务冲突/其他服务隔离、Funnel拒绝与就绪失败。 |
 | `pnpm-lock.yaml`      | pnpm生成的可提交依赖解析锁，不能手工维护版本树。             |
 | `pnpm-workspace.yaml` | workspace包范围及允许执行的必要依赖安装脚本。                |
 | `tsconfig.base.json`  | 各包共用strict与ES2022等基础TypeScript选项。                 |
@@ -119,7 +119,7 @@ sku-cook-ai/
 | `apps/web/public/icons/favicon-32-v1.png` | 饭碗与问号品牌图标；对应尺寸与平台用途见品牌说明。 |
 | `docs/design/brand/app-logo-v1.png` | 抽象饭碗与问号品牌原图，已用于安装图标。 |
 | `docs/design/brand/README.md` | 品牌资源用途、提示词入口与图标更新说明。 |
-| `apps/web/index.html`                            | “吃什么饭”HTML宿主、viewport安全区、PWA主题色、iOS独立模式与应用挂载节点。  |
+| `apps/web/index.html`                            | HTML宿主、首帧开屏与恢复会话前置判定、viewport安全区、PWA元数据及挂载节点。  |
 | `apps/web/tsconfig.json`                         | 汇总浏览器应用与Node工具配置的TypeScript引用。                             |
 | `apps/web/tsconfig.app.json`                     | Vue/浏览器源码与DOM/PWA类型检查范围。                                      |
 | `apps/web/tsconfig.node.json`                    | Vite/Vitest工具配置的Node类型检查范围。                                    |
@@ -130,7 +130,9 @@ sku-cook-ai/
 
 | 文件                                  | 职责                                                         |
 | ------------------------------------- | ------------------------------------------------------------ |
-| `apps/web/src/main.ts`                | 创建Vue应用、注册Pinia/Router、注入认证401处理器、加载样式并挂载。 |
+| `apps/web/src/main.ts`                | 创建Vue应用、注册Pinia/Router与认证处理器，等待初始路由就绪后挂载并通知开屏。 |
+| `apps/web/public/startup.js` | 协调首次开屏、就绪会话记录、恢复免重播、后台退出与超时失败恢复。 |
+| `apps/web/src/startup.test.ts` | 验证首次开屏、最短展示、会话恢复首帧隐藏、后台清理、存储降级及失败重试。 |
 | `apps/web/src/App.vue`                | 路由出口与PWA新版本刷新提示。                                |
 | `apps/web/src/vite-env.d.ts`          | Vite和PWA虚拟模块的类型声明。                                |
 | `apps/web/src/api/client.ts`                    | Axios统一baseURL/超时配置及业务API 401响应拦截。                              |
@@ -162,9 +164,9 @@ sku-cook-ai/
 | `apps/web/src/components/recipes/IngredientEditor.vue` | 单条食材编辑、组合用量、快捷项与高级选项；仅接收字段级错误。               |
 | `apps/web/src/components/recipes/RecipeStepsEditor.vue` | 步骤编辑、添加/删除/重排；通过数组更新事件传递修改。                       |
 | `apps/web/src/components/recipes/RecipeForm.test.ts` | 验证shared字段限制、提交后实时校验、必填提示及数量/单位组合联想。            |
-| `apps/web/src/components/kitchen/KitchenMenuPanel.vue` | S07查看/发送/清空弹层、目标份数、冲突刷新及A11成功确认弹窗。                |
-| `apps/web/src/components/kitchen/KitchenMenuPanel.test.ts` | 验证开弹层读取、独立份数调整、A11成功确认操作及冲突不误报成功。           |
-| `apps/web/src/views/kitchen/KitchenDisplayView.test.ts` | 验证A15完成、整菜连续滚动、返回滚动恢复及常亮提醒收起状态。                 |
+| `apps/web/src/components/kitchen/KitchenMenuPanel.vue` | S07查看/发送/清空弹层、目标份数、冲突刷新后显式确认重发及A11成功确认弹窗。                |
+| `apps/web/src/components/kitchen/KitchenMenuPanel.test.ts` | 验证开弹层读取、独立份数调整、A11成功确认操作及冲突刷新/显式确认重发。           |
+| `apps/web/src/views/kitchen/KitchenDisplayView.test.ts` | 验证多轮待机后接收新菜单、A15完成、整菜连续滚动、返回滚动恢复及常亮提醒收起状态。                 |
 | `apps/web/src/composables/useWakeLock.ts`        | 厨房页可见状态下申请/释放Screen Wake Lock及安全降级。                         |
 | `apps/web/src/composables/useConfirmDialog.ts`   | 按页面协调异步确认状态，去重等待、结算确认/取消并在卸载时取消。               |
 | `apps/web/src/composables/useWakeLock.test.ts`  | 验证迟到的Wake Lock sentinel在菜单清空或组件卸载后释放。                     |
@@ -242,6 +244,7 @@ sku-cook-ai/
 | `apps/api/src/modules/recipes/recipe.service.test.ts` | 测试共用随机候选索引边界与菜谱导出DTO，不模拟数据库业务集成。 |
 | `apps/api/src/modules/kitchen/kitchen.route.ts` | A10–A13/A15厨房快照、revision写入、完成记历史并清空。 |
 | `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及复用认证用户事务锁。 |
+| `apps/api/src/modules/kitchen/kitchen.integration.test.ts` | 显式独立本机测试库下验证真实HTTP发送、持久化、同账号第二设备读取及旧版本拒绝。 |
 | `apps/api/src/modules/takeout/takeout.route.ts` | A28–A33认证候选列表、增改删、随机推荐及JSON导入接口。 |
 | `apps/api/src/modules/takeout/takeout.service.ts` | 用户隔离的外卖候选DTO/查重/随机选择和事务原子批量写入。 |
 | `apps/api/src/modules/takeout/takeout.route.test.ts` | 验证外卖接口校验、认证与响应Contract边界。 |
