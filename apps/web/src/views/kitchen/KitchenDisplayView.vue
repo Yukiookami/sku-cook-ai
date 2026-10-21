@@ -224,9 +224,19 @@ function dismissWakeLockNotice() {
   window.localStorage.setItem(wakeLockNoticeStorageKey, 'true');
 }
 
+function saveReadingPosition() {
+  if (activeRecipe.value) {
+    window.sessionStorage.setItem(
+      kitchenScrollStorageKey(activeRecipe.value.id),
+      String(window.scrollY),
+    );
+  }
+}
+
 function handleVisibility() {
   cancelPoll();
   if (document.visibilityState === 'visible') void readState(true);
+  else saveReadingPosition();
 }
 
 watch(
@@ -250,6 +260,7 @@ watch(
 onMounted(async () => {
   measureViewport();
   window.addEventListener('resize', measureViewport);
+  window.addEventListener('pagehide', saveReadingPosition);
   document.addEventListener('visibilitychange', handleVisibility);
   await readState(true);
 });
@@ -257,16 +268,12 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   viewDisposed = true;
   scrollRestoreSequence += 1;
-  if (activeRecipe.value) {
-    window.sessionStorage.setItem(
-      kitchenScrollStorageKey(activeRecipe.value.id),
-      String(window.scrollY),
-    );
-  }
+  saveReadingPosition();
   requestSequence += 1;
   cancelPoll();
   if (completeTimer) clearTimeout(completeTimer);
   window.removeEventListener('resize', measureViewport);
+  window.removeEventListener('pagehide', saveReadingPosition);
   document.removeEventListener('visibilitychange', handleVisibility);
 });
 </script>

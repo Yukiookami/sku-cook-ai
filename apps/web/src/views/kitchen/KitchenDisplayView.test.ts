@@ -290,6 +290,82 @@ describe('KitchenDisplayView A15 completion', () => {
     });
   });
 
+  it('saves the reading position on pagehide before a browser reload unmounts anything', async () => {
+    const originalScrollY = window.scrollY;
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    vi.mocked(getKitchenState).mockResolvedValue(queuedState);
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    try {
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: 1200 });
+      window.dispatchEvent(new Event('pagehide'));
+      expect(window.sessionStorage.getItem('sku-cook-ai:kitchen-scroll:101')).toBe('1200');
+    } finally {
+      wrapper.unmount();
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: originalScrollY });
+    }
+    window.sessionStorage.removeItem('sku-cook-ai:kitchen-scroll:101');
+    window.dispatchEvent(new Event('pagehide'));
+    expect(window.sessionStorage.getItem('sku-cook-ai:kitchen-scroll:101')).toBeNull();
+  });
+
+  it('saves the reading position when hidden and does not reset it on foreground refresh or polling', async () => {
+    vi.useFakeTimers();
+    const originalScrollY = window.scrollY;
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    vi.mocked(getKitchenState).mockImplementation(async () => structuredClone(queuedState));
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    const step = wrapper.get('.kitchen-step-text').element;
+    scrollTo.mockClear();
+    try {
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: 1200 });
+      visibility.mockReturnValue('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(window.sessionStorage.getItem('sku-cook-ai:kitchen-scroll:101')).toBe('1200');
+      visibility.mockReturnValue('visible');
+      document.dispatchEvent(new Event('visibilitychange'));
+      await flushPromises();
+      await vi.advanceTimersByTimeAsync(30000);
+      await flushPromises();
+      expect(wrapper.get('.kitchen-step-text').element).toBe(step);
+      expect(scrollTo).not.toHaveBeenCalled();
+      expect(window.scrollY).toBe(1200);
+    } finally {
+      wrapper.unmount();
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: originalScrollY });
+    }
+  });
+
+  it('updates recipe text, servings and revisions without resetting the current reading position', async () => {
+    vi.useFakeTimers();
+    const originalScrollY = window.scrollY;
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const updatedState = structuredClone(queuedState);
+    updatedState.session.revision += 1;
+    updatedState.session.items[0]!.targetServings = 4;
+    updatedState.session.recipes[0]!.steps[0]!.text = '更新后的做法。';
+    vi.mocked(getKitchenState).mockResolvedValueOnce(queuedState).mockResolvedValue(updatedState);
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    const step = wrapper.get('.kitchen-step-text').element;
+    scrollTo.mockClear();
+    try {
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: 1200 });
+      await vi.advanceTimersByTimeAsync(10000);
+      await flushPromises();
+      expect(wrapper.text()).toContain('更新后的做法。');
+      expect(wrapper.text()).toContain('目标 4 人份');
+      expect(wrapper.get('.kitchen-step-text').element).toBe(step);
+      expect(scrollTo).not.toHaveBeenCalled();
+      expect(window.scrollY).toBe(1200);
+    } finally {
+      wrapper.unmount();
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: originalScrollY });
+    }
+  });
+
   it('remembers dismissal of the wake-lock notice on later visits', async () => {
     vi.mocked(getKitchenState).mockResolvedValue(queuedState);
     const firstVisit = mountKitchenView();
