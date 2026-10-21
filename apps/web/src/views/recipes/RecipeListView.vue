@@ -9,6 +9,8 @@ import {
 } from '@sku-cook/shared';
 import RecipeLikeButton from '../../components/recipes/RecipeLikeButton.vue';
 import KitchenMenuPanel from '../../components/kitchen/KitchenMenuPanel.vue';
+import ShoppingPanel from '../../components/kitchen/ShoppingPanel.vue';
+import type { ShoppingPreviewInput } from '@sku-cook/shared';
 import AccountMenu from '../../components/common/AccountMenu.vue';
 import SegmentedSwitch from '../../components/common/SegmentedSwitch.vue';
 import { apiErrorMessage } from '../../api/errors';
@@ -34,7 +36,21 @@ const searchExpanded = ref(false);
 const selecting = ref(false);
 const selectionOrder = ref(new Map<number, RecipeSummary>());
 const showMore = ref(false);
+const showAddMenu = ref(false);
 const showKitchen = ref(false);
+const showShopping = ref(false);
+const shoppingSelections = ref<ShoppingPreviewInput['items']>([]);
+
+function openShopping(withSelection: boolean) {
+  shoppingSelections.value = withSelection
+    ? selectedRecipes.value.map((recipe) => ({
+        recipeId: recipe.id,
+        targetServings: recipe.servings,
+      }))
+    : [];
+  showMore.value = false;
+  showShopping.value = true;
+}
 const kitchenMode = ref<'send' | 'view'>('send');
 const recommendation = ref<RecipeSummary | null>(null);
 const randomLoading = ref(false);
@@ -287,6 +303,7 @@ function goToRecipe(id: number, fromRecommendation = false) {
 
 function openImport() {
   showMore.value = false;
+  showAddMenu.value = false;
   void router.push('/recipes/import');
 }
 
@@ -351,12 +368,41 @@ onBeforeUnmount(() => {
     <header class="home-header">
       <h1>{{ recommendationMode === 'cook' ? '吃什么饭' : '点什么饭' }}</h1>
       <div class="header-buttons">
-        <RouterLink class="button button-primary compact-button" to="/recipes/new">新增</RouterLink>
+        <button
+          class="button button-primary compact-button"
+          type="button"
+          aria-haspopup="dialog"
+          :aria-expanded="showAddMenu"
+          @click="showAddMenu = true"
+        >
+          新增
+        </button>
         <button class="button button-primary compact-button" type="button" @click="showMore = true">
           更多
         </button>
       </div>
     </header>
+    <Teleport to="body">
+      <div v-if="showAddMenu" class="menu-scrim" @click.self="showAddMenu = false">
+        <nav class="more-menu paper-card add-menu" aria-label="新增菜谱">
+          <div class="more-menu-heading">
+            <span>新增菜谱</span>
+            <button
+              class="icon-button close-more"
+              type="button"
+              aria-label="关闭新增菜单"
+              @click="showAddMenu = false"
+            >
+              ×
+            </button>
+          </div>
+          <RouterLink class="menu-action" to="/recipes/new" @click="showAddMenu = false">
+            手动新增菜谱
+          </RouterLink>
+          <button class="menu-action" type="button" @click="openImport">从 JSON 导入菜谱</button>
+        </nav>
+      </div>
+    </Teleport>
     <section class="paper-card recommendation-card" aria-labelledby="recommend-title">
       <h2 id="recommend-title" class="section-chip">
         {{ recommendationMode === 'cook' ? '今天吃什么？' : '今天点什么？' }}
@@ -609,8 +655,16 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <div v-if="selecting" class="selection-bar">
+    <div v-if="selecting" class="selection-bar shopping-selection-bar">
       <span>已选 {{ selectionOrder.size }} 道</span>
+      <button
+        class="button button-secondary"
+        type="button"
+        :disabled="selectionOrder.size === 0"
+        @click="openShopping(true)"
+      >
+        发送采购清单
+      </button>
       <button
         class="button button-primary"
         type="button"
@@ -644,6 +698,9 @@ onBeforeUnmount(() => {
             打开厨房显示
           </RouterLink>
           <button class="menu-action" type="button" @click="openHistory">做饭历史</button>
+          <button class="menu-action" type="button" @click="openShopping(false)">
+            采购发送记录 / 重试
+          </button>
           <RouterLink class="menu-action" to="/takeout" @click="showMore = false">
             外卖候选管理
           </RouterLink>
@@ -661,6 +718,11 @@ onBeforeUnmount(() => {
       @close="showKitchen = false"
       @sent="onKitchenSent"
       @return-to-recipes="returnToRecipeList"
+    />
+    <ShoppingPanel
+      :show="showShopping"
+      :selections="shoppingSelections"
+      @close="showShopping = false"
     />
   </main>
 </template>

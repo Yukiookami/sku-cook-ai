@@ -22,8 +22,28 @@ model User {
   cookingHistories  CookingHistory[]
   authSessions      AuthSession[]
   takeoutCandidates TakeoutCandidate[]
+  shoppingBatches   ShoppingBatch[]
 
   @@map("users")
+}
+
+model ShoppingBatch {
+  id          String    @id @db.Uuid
+  userId      Int       @map("user_id")
+  payload     Json
+  payloadHash String    @map("payload_hash") @db.VarChar(64)
+  status      String    @default("pending") @db.VarChar(16)
+  errorCode   String?   @map("error_code") @db.VarChar(64)
+  message     String?
+  receipt     Json?
+  leaseUntil  DateTime? @map("lease_until")
+  attemptId   String?   @map("attempt_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("shopping_batches")
 }
 
 model TakeoutCandidate {

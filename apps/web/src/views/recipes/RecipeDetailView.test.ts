@@ -7,6 +7,7 @@ import { deleteRecipe, getRecipe, setRecipeLiked } from '../../api/recipes';
 import { recordCookingHistory } from '../../api/cooking-history';
 import RecipeDetailView from './RecipeDetailView.vue';
 import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
+import ShoppingPanel from '../../components/kitchen/ShoppingPanel.vue';
 
 vi.mock('../../api/recipes', () => ({
   deleteRecipe: vi.fn(),
@@ -90,6 +91,7 @@ async function mountDetailView() {
         PageHeader: { template: '<header><slot name="right" /></header>' },
         Teleport: true,
         ConfirmDialog: true,
+        ShoppingPanel: true,
       },
     },
   });
@@ -115,6 +117,23 @@ describe('RecipeDetailView', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it('采购入口携带当前目标份数，不改变厨房或菜谱', async () => {
+    const { wrapper } = await mountDetailView();
+    await wrapper.get('[aria-label="增加目标份数"]').trigger('click');
+    await wrapper.get('.shopping-action .button-secondary').trigger('click');
+    expect(
+      wrapper
+        .findAllComponents(ShoppingPanel)
+        .find((panel) => panel.props('show'))
+        ?.props(),
+    ).toMatchObject({
+      show: true,
+      selections: [{ recipeId: 11, targetServings: 3 }],
+    });
+    expect(replaceKitchenMenu).not.toHaveBeenCalled();
+    wrapper.unmount();
   });
 
   it('shows the personal heart meaning and updates the detail marker from a saved response', async () => {

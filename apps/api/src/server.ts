@@ -20,6 +20,14 @@ const app = buildApp(
     secureCookie: config.NODE_ENV === 'production',
     allowedOrigin: config.APP_ORIGIN,
     kitchenPollIntervalSeconds: config.KITCHEN_POLL_INTERVAL_SECONDS,
+    shoppingIntegration:
+      config.TODO_COOK_INTEGRATION_TOKEN && config.TODO_COOK_USER_ID
+        ? {
+            origin: config.TODO_ORIGIN,
+            token: config.TODO_COOK_INTEGRATION_TOKEN,
+            userId: config.TODO_COOK_USER_ID,
+          }
+        : undefined,
   },
 );
 

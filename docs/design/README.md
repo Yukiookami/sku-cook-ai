@@ -1,8 +1,8 @@
 # 吃什么饭 · V1 设计书索引
 
-状态：2026-10-12。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；S09为V2固定Excel模板导入；S10为V2账号注册、登录与切换；S11为受保护用户中心；S13为V2随机外卖管理，无独立设计图。A02–A19 API源码及Prisma Schema已实现；A20–A27覆盖账号、管理员和爱心；A28–A33为随机外卖API。S13此前版本的迁移、隔离数据库/HTTP业务验收及浏览器手机视口验收已通过；允许链接为空的迁移已应用于本机开发库，并验证列约束；新行为真实HTTP/数据库集成验收待补；真机验收未做。
+状态：2026-10-12。S00–S08 的 Web 画面与交互框架已实现并接入shared Contract/API clients；S09为V2固定Excel模板导入；S10为V2账号注册、登录与切换；S11为受保护用户中心；S13为V2随机外卖管理，无独立设计图。A02–A19 API源码及Prisma Schema已实现；A20–A27覆盖账号、管理员和爱心；A28–A33为随机外卖API。S13此前版本的迁移、隔离数据库/HTTP业务验收及浏览器手机视口验收已通过；允许链接为空的迁移已应用于本机开发库，并验证列约束；真实联动验收待补；真机验收未做。
 
-依据：[需求文档](../requirements/REQUIREMENTS_V1.md)、[技术栈](../architecture/TECH_STACK.md)、[目录规划](../architecture/PROJECT_STRUCTURE.md)。需求定义范围，设计书细化交互与接口，实施时在 shared 中建立相应 Zod Contract。除已确认的 V2 账号功能外，不新增图片、AI Runtime、通知、离线写入或 TodoList。
+依据：[需求文档](../requirements/REQUIREMENTS_V1.md)、[技术栈](../architecture/TECH_STACK.md)、[目录规划](../architecture/PROJECT_STRUCTURE.md)。需求定义范围，设计书细化交互与接口，实施时在 shared 中建立相应 Zod Contract。不新增图片、AI Runtime、通知、离线写入或通用 TodoList。已确认V2采购增量仅发送快照到独立Todo，S14/A34–A38源码已实现并进行隔离验证，不表示真实两端部署已联通。
 
 ## 1. 画面设计书
 
@@ -13,11 +13,11 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 | 编号 | 画面                                                    | 路由 / 形态                                  | 状态                                                                      |
 | ---- | ------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
 | S00  | [基础首页](screens/S00_HOME.md)                         | `/health-check`；`/` 导向正式入口 `/recipes` | 前端已有技术验证页                                                        |
-| S01  | [菜谱一览](screens/S01_RECIPE_LIST.md)                  | `/recipes`                                   | 前端已实现，待联调                                                        |
+| S01  | [菜谱一览](screens/S01_RECIPE_LIST.md)                  | `/recipes`                                   | 前端已实现；“新增”含手动新增/JSON导入入口                                 |
 | S02  | [菜谱详情](screens/S02_RECIPE_DETAIL.md)                | `/recipes/:id`                               | 前端已实现，待联调                                                        |
 | S03  | [新增菜谱](screens/S03_RECIPE_CREATE.md)                | `/recipes/new`                               | 前端已实现，待联调                                                        |
 | S04  | [编辑菜谱](screens/S04_RECIPE_EDIT.md)                  | `/recipes/:id/edit`                          | 前端已实现，待联调                                                        |
-| S05  | [菜谱导入 / 导出](screens/S05_RECIPE_IMPORT.md)         | `/recipes/import`                            | 前端已实现，待联调                                                        |
+| S05  | [菜谱导入 / 导出](screens/S05_RECIPE_IMPORT.md)         | `/recipes/import`                            | 前端已实现；S01新增菜单含JSON导入入口                                     |
 | S06  | [厨房显示](screens/S06_KITCHEN_DISPLAY.md)              | `/kitchen`                                   | 前端已实现，待联调                                                        |
 | S07  | [发送 / 查看厨房菜单弹层](screens/S07_KITCHEN_PANEL.md) | S01 / S02 共用，不增加路由                   | 前端已实现，待联调                                                        |
 | S08  | [做饭历史](screens/S08_COOKING_HISTORY.md)              | `/cooking-history`                           | 前端已实现，待联调                                                        |
@@ -26,6 +26,7 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 | S11  | [用户中心](screens/S11_USER_CENTER.md)                  | `/account/profile`                           | Web/API已实现，mock测试覆盖，待真实验收                                   |
 | S12  | [管理员用户列表](screens/S12_ADMIN_USERS.md)            | `/admin/users`                               | 只读列表已实现，本机迁移已应用                                            |
 | S13  | [外卖候选管理与随机推荐](screens/S13_TAKEOUT.md)        | `/takeout`，S01首页共用推荐卡片              | 可选链接已实现并应用本机迁移；新增HTTP/数据库业务验收待完成，未做真机验收 |
+| S14  | [发送采购清单](screens/S14_SHOPPING_PANEL.md)           | S01/S02/S07共用弹层，不新增路由              | 已实现；独立数据库/模拟Todo及组件验证，未做用户环境联调                   |
 
 静态路径 `new`、`import` 与 id 路由明确区分；详情 id 只能是正整数。不存在的前端路由显示简洁的“页面不存在 / 返回菜谱”状态，不另外设计业务页面。
 
@@ -68,6 +69,11 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 | A31  | [DELETE /api/takeout/candidates/:id](apis/A31_TAKEOUT_CANDIDATE_DELETE.md) | S13 删除候选         | 隔离数据库/HTTP验收通过，本机迁移已应用              |
 | A32  | [GET /api/takeout/random](apis/A32_TAKEOUT_RANDOM_GET.md)                  | S01 点外卖推荐       | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
 | A33  | [POST /api/takeout/candidates/import](apis/A33_TAKEOUT_IMPORT_POST.md)     | S13 JSON批量导入     | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
+| A34  | [POST /api/shopping/preview](apis/A34_SHOPPING_PREVIEW_POST.md)            | S14                  | 已实现，隔离数据库验证                               |
+| A35  | [GET /api/shopping/batches](apis/A35_SHOPPING_BATCHES_GET.md)              | S14                  | 已实现，隔离数据库验证                               |
+| A36  | [GET /api/shopping/batches/:id](apis/A36_SHOPPING_BATCH_GET.md)            | S14                  | 已实现，隔离数据库验证                               |
+| A37  | [PUT /api/shopping/batches/:id](apis/A37_SHOPPING_BATCH_PUT.md)            | S14                  | 已实现，隔离数据库验证                               |
+| A38  | [POST /api/shopping/batches/:id/send](apis/A38_SHOPPING_SEND_POST.md)      | S14                  | 已实现，真实做菜数据库、模拟Todo传输验证             |
 | A39  | [GET /api/kitchen/events](apis/A39_KITCHEN_EVENTS_GET.md)                | S06                  | SSE变化通知、心跳、会话复验与断线回退；隔离库/HTTP验证 |
 
 菜谱静态API路径 `tags` / `random` 与 `:id` 正整数路由明确区分，不能因新增随机入口破坏详情访问。随机区复用S01，不新增独立路由页面。

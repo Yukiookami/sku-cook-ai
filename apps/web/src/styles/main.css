@@ -945,6 +945,20 @@ body:has(.account-page) {
   min-width: 180px;
 }
 
+.shopping-selection-bar {
+  flex-wrap: wrap;
+}
+
+.shopping-selection-bar > span {
+  flex-basis: 100%;
+}
+
+.shopping-selection-bar .button {
+  flex: 1;
+  min-width: 0;
+  padding-inline: 8px;
+}
+
 .recipe-grid:has(.list-end) {
   padding-bottom: 16px;
 }
@@ -961,6 +975,10 @@ body:has(.account-page) {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0 18px 18px;
+}
+
+.add-menu {
+  margin: auto;
 }
 
 .more-menu-heading {
@@ -1191,6 +1209,17 @@ body:has(.account-page) {
   width: 100%;
   min-height: 54px;
   font-size: 18px;
+}
+
+.shopping-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.shopping-action .button {
+  min-width: 0;
+  font-size: 16px;
 }
 
 .bottom-spacer {

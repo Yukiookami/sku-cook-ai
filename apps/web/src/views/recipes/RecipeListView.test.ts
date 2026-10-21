@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RecipeListView from './RecipeListView.vue';
 import { getRecipeTags, getRecipes, setRecipeLiked } from '../../api/recipes';
 import { getRandomTakeoutCandidate } from '../../api/takeout';
+import ShoppingPanel from '../../components/kitchen/ShoppingPanel.vue';
 
 vi.mock('../../api/recipes', () => ({
   getRecipes: vi.fn(),
@@ -98,6 +99,71 @@ describe('RecipeListView selection behavior', () => {
     localStorage.removeItem('sku-cook-ai:recommendation-mode');
     observerCallback = undefined;
     observerInstance = undefined;
+  });
+
+  it('从新增菜单选择手动创建或JSON导入', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/recipes', component: RecipeListView },
+        { path: '/recipes/new', component: { template: '<main>手动新建菜谱</main>' } },
+        { path: '/recipes/import', component: { template: '<main>JSON导入菜谱</main>' } },
+      ],
+    });
+    await router.push('/recipes');
+    const wrapper = mount(RecipeListView, {
+      global: { plugins: [router], stubs: { Teleport: true } },
+    });
+    await flushPromises();
+
+    await wrapper.get('.header-buttons button').trigger('click');
+    expect(wrapper.get('.add-menu').text()).toContain('手动新增菜谱');
+    expect(wrapper.get('.add-menu').text()).toContain('从 JSON 导入菜谱');
+    await wrapper.get('.add-menu .menu-action').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe('/recipes/new');
+    expect(wrapper.find('.add-menu').exists()).toBe(false);
+
+    await wrapper.get('.header-buttons button').trigger('click');
+    await wrapper.findAll('.add-menu .menu-action')[1]?.trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe('/recipes/import');
+    expect(wrapper.find('.add-menu').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('多选采购默认原份数，更多菜单可无选择恢复发送记录', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/recipes', component: RecipeListView }],
+    });
+    await router.push('/recipes');
+    const wrapper = mount(RecipeListView, {
+      global: { plugins: [router], stubs: { ShoppingPanel: true, Teleport: true } },
+    });
+    await flushPromises();
+    await wrapper.get('.select-button').trigger('click');
+    await wrapper.get('.recipe-card .recipe-card-main').trigger('click');
+    await wrapper.get('.selection-bar .button-secondary').trigger('click');
+    expect(wrapper.getComponent(ShoppingPanel).props()).toMatchObject({
+      show: true,
+      selections: [{ recipeId: 1, targetServings: 2 }],
+    });
+    wrapper.getComponent(ShoppingPanel).vm.$emit('close');
+    await wrapper
+      .findAll('.header-buttons button')
+      .find((button) => button.text() === '更多')
+      ?.trigger('click');
+    const restore = wrapper
+      .findAll('button')
+      .find((button) => button.text() === '采购发送记录 / 重试');
+    expect(restore).toBeDefined();
+    await restore?.trigger('click');
+    expect(wrapper.getComponent(ShoppingPanel).props()).toMatchObject({
+      show: true,
+      selections: [],
+    });
+    wrapper.unmount();
   });
 
   it('marks a heart without opening the recipe and disables it while selecting dishes', async () => {

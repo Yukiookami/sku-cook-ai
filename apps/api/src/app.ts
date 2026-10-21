@@ -9,6 +9,8 @@ import { historyRoutes } from './modules/history/history.route.js';
 import { authRoutes } from './modules/auth/auth.route.js';
 import { registerAuthentication } from './modules/auth/auth.session.js';
 import { takeoutRoutes } from './modules/takeout/takeout.route.js';
+import { shoppingRoutes } from './modules/shopping/shopping.route.js';
+import type { ShoppingIntegration } from './modules/shopping/shopping.service.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -23,6 +25,7 @@ export function buildApp(
     secureCookie?: boolean;
     allowedOrigin?: string;
     kitchenPollIntervalSeconds?: number;
+    shoppingIntegration?: ShoppingIntegration;
   } = {},
 ) {
   const app = Fastify({ bodyLimit: 1_048_576, ...options });
@@ -38,5 +41,6 @@ export function buildApp(
   app.register(kitchenRoutes, { prefix: '/api' });
   app.register(historyRoutes, { prefix: '/api' });
   app.register(takeoutRoutes, { prefix: '/api' });
+  app.register(shoppingRoutes, { prefix: '/api', integration: settings.shoppingIntegration });
   return app;
 }

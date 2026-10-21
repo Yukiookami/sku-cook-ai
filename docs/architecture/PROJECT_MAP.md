@@ -128,6 +128,12 @@ sku-cook-ai/
 
 ### 2.5 Web 源码与测试
 
+| 文件 | 职责 |
+| --- | --- |
+| `apps/web/src/api/shopping.ts` | A34–A38采购预览、批次恢复、保存与发送typed client及响应校验。 |
+| `apps/web/src/components/kitchen/ShoppingPanel.vue` | S14共用采购弹层，预览排除/数量日期、冻结快照、显式新建、原批次恢复/重试和可信成功回执。 |
+| `apps/web/src/components/kitchen/ShoppingPanel.test.ts` | 验证预览编辑、空清单、双击、响应丢失重开原批次、冲突及明确新建确认。 |
+
 | 文件                                  | 职责                                                         |
 | ------------------------------------- | ------------------------------------------------------------ |
 | `apps/web/src/main.ts`                | 创建Vue应用、注册Pinia/Router与认证处理器，等待初始路由就绪后挂载并通知开屏。 |
@@ -165,8 +171,8 @@ sku-cook-ai/
 | `apps/web/src/components/recipes/IngredientEditor.vue` | 单条食材编辑、组合用量、快捷项与高级选项；仅接收字段级错误。               |
 | `apps/web/src/components/recipes/RecipeStepsEditor.vue` | 步骤编辑、添加/删除/重排；通过数组更新事件传递修改。                       |
 | `apps/web/src/components/recipes/RecipeForm.test.ts` | 验证shared字段限制、提交后实时校验、必填提示及数量/单位组合联想。            |
-| `apps/web/src/components/kitchen/KitchenMenuPanel.vue` | S07查看/发送/清空弹层、目标份数、冲突刷新后显式确认重发及A11成功确认弹窗。                |
-| `apps/web/src/components/kitchen/KitchenMenuPanel.test.ts` | 验证开弹层读取、独立份数调整、A11成功确认操作及冲突刷新/显式确认重发。           |
+| `apps/web/src/components/kitchen/KitchenMenuPanel.vue` | S07查看/发送/清空弹层、目标份数、冲突核对、成功确认及本次选择/厨房菜单采购入口。 |
+| `apps/web/src/components/kitchen/KitchenMenuPanel.test.ts` | 验证读取/份数、A11成功/冲突核对与本次选择/当前菜单的采购份数隔离。 |
 | `apps/web/src/views/kitchen/KitchenDisplayView.test.ts` | 验证SSE通知/轮询回退、并发读写、后台清理、完成、滚动恢复及常亮提醒。 |
 | `apps/web/src/composables/useWakeLock.ts`        | 厨房页可见状态下申请/释放Screen Wake Lock及安全降级。                         |
 | `apps/web/src/composables/useConfirmDialog.ts`   | 按页面协调异步确认状态，去重等待、结算确认/取消并在卸载时取消。               |
@@ -186,13 +192,13 @@ sku-cook-ai/
 | `apps/web/src/views/system/HomeView.test.ts` | 验证health初始、成功、失败提示与重试。                                         |
 | `apps/web/src/views/account/AccountView.vue` | S10登录/开放注册表单、认证错误提示及登录后站内跳转。                          |
 | `apps/web/src/views/account/UserCenterView.vue` | S11受保护用户中心、用户名更新与当前密码/新密码确认更新流程。                 |
-| `apps/web/src/views/recipes/RecipeListView.vue` | S01列表、搜索/tag过滤、分页、菜谱/外卖候选独立随机推荐、多选与导航。         |
-| `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限、分页并发、加载错误、两种候选池切换及返回菜谱一览。             |
+| `apps/web/src/views/recipes/RecipeListView.vue` | S01列表/筛选/分页、独立随机推荐、多选、手动新增/JSON导入菜单、采购预览/恢复与导航。 |
+| `apps/web/src/views/recipes/RecipeListView.test.ts` | 验证选择上限/分页并发、候选池、手动新增和JSON导入入口、多选采购/发送记录。 |
 | `apps/web/src/views/recipes/RecipeImportView.test.ts` | 验证A08/A09导入流程、A19下载状态及文件选择/模式切换竞态。                  |
-| `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情、份数参考换算、单菜JSON导出、编辑/删除/手动历史入口及单菜发送。    |
+| `apps/web/src/views/recipes/RecipeDetailView.vue` | S02详情/份数、单菜导出、编辑/删除/历史及厨房/采购两个独立发送入口。 |
 | `apps/web/src/components/recipes/RecipeLikeButton.vue` | 列表/详情共用个人爱心按钮，等待防重、显式失败及旧响应隔离。 |
 | `apps/web/src/components/recipes/RecipeLikeButton.test.ts` | 验证点亮/取消、失败保留、防重复、禁用及换菜谱/卸载隔离。 |
-| `apps/web/src/views/recipes/RecipeDetailView.test.ts` | 验证单菜JSON导出及发送到厨房成功后的留页/返回行为。 |
+| `apps/web/src/views/recipes/RecipeDetailView.test.ts` | 验证单菜导出、厨房成功留页/返回和采购携带当前目标份数。 |
 | `apps/web/src/views/recipes/RecipeCreateView.vue` | S03新增页，使用共用表单并保留失败草稿。                                      |
 | `apps/web/src/views/recipes/RecipeCreateView.test.ts` | 验证保存成功不误提醒，以及新增/编辑离开确认、取消保留与单次确认导航。       |
 | `apps/web/src/views/recipes/RecipeEditView.vue` | S04读取、回填并完整替换菜谱，复用新增表单。                                 |
@@ -208,6 +214,15 @@ sku-cook-ai/
 | `apps/web/src/views/takeout/TakeoutManagementView.test.ts` | 验证候选管理表单、JSON校验/导入、删除确认及失败后的恢复行为。 |
 
 ### 2.6 API 配置、Prisma 与源码
+
+| 文件 | 职责 |
+| --- | --- |
+| `apps/api/prisma/migrations/20261017063324_add_shopping_batches/migration.sql` | 新增不可变采购批次账本、用户Restrict外键与时间索引；仅部署于独立测试库，未迁移日常库。 |
+| `apps/api/src/modules/shopping/shopping.route.ts` | A34–A38登录及稳定ID绑定校验、严格输入、所属采购批次读写及安全日志。 |
+| `apps/api/src/modules/shopping/shopping.service.ts` | 持久确认快照、内容冲突、原子发送租约、事务外Todo转发与可信回执投影。 |
+| `apps/api/src/modules/shopping/shopping.preview.ts` | 服务端份数快照、稳定食材UUID、保守精确合并与原始用量来源。 |
+| `apps/api/src/modules/shopping/shopping.preview.test.ts` | 验证精确小数、单位/备注边界、原文/近似保留及来源上限拆项。 |
+| `apps/api/src/modules/shopping/shopping.integration.test.ts` | 专用15436临时库真实HTTP验证权限、快照、并发/重启/超时恢复及模拟Todo回执/失败边界。 |
 
 | 文件                                          | 职责                                                   |
 | --------------------------------------------- | ------------------------------------------------------ |
@@ -226,11 +241,11 @@ sku-cook-ai/
 | `apps/api/prisma/migrations/20261012070427_add_takeout_candidates/migration.sql` | 新建按用户隔离的外卖候选表、URL哈希唯一索引与级联外键；备份验证后应用于本机开发库。 |
 | `apps/api/prisma/migrations/20261013000000_make_takeout_url_optional/migration.sql` | 将外卖候选URL和去重哈希列改为可空；仅移除NOT NULL约束，不修改现有数据；已应用于本机开发库。 |
 | `apps/api/src/modules/recipes/recipe.like.test.ts` | Mock HTTP验证爱心认证、严格输入、用户限定、幂等与错误形状。 |
-| `apps/api/prisma/schema.prisma`               | PostgreSQL用户邮箱/管理员权限、AuthSession、菜谱/厨房/历史及外卖候选关系；外卖链接列可空的前向迁移已应用于本机开发库。 |
+| `apps/api/prisma/schema.prisma` | PostgreSQL账号、菜谱/厨房/历史、外卖与不可变采购批次/发送状态；新增采购模型仅在测试库迁移。 |
 | `apps/api/prisma/seed.ts`                     | 通过本机配置幂等初始化Sku001的空密码哈希，不覆盖已设密码。                       |
 | `apps/api/src/app.ts`                         | 构造Fastify实例，装配错误处理、Prisma、认证、厨房SSE生命周期与业务路由。 |
 | `apps/api/src/server.ts`                      | 读取服务/认证配置、启动监听、失败处理与退出。                                   |
-| `apps/api/src/config/env.ts`                  | Zod校验数据库、端口、监听、日志、Origin及厨房轮询间隔。                         |
+| `apps/api/src/config/env.ts` | Zod校验服务配置、Origin/轮询及成对采购专用凭据、稳定账号与Todo精确HTTPS origin。 |
 | `apps/api/src/config/env.test.ts`             | 验证配置必填、非法URL/端口与默认值。                   |
 | `apps/api/src/plugins/error-handler.ts`       | 基础校验/HTTP/内部异常映射、日志与404响应。            |
 | `apps/api/src/plugins/prisma.ts`              | Prisma Client注入与Fastify关闭时disconnect。           |
@@ -267,11 +282,16 @@ sku-cook-ai/
 
 ### 2.7 Shared
 
+| 文件 | 职责 |
+| --- | --- |
+| `packages/shared/src/schemas/shopping.ts` | 公开Todo机器输入镜像、采购预览/回执/批次状态及严格约束，不跨仓库依赖。 |
+| `packages/shared/src/schemas/shopping.test.ts` | 验证采购日期、引用、唯一编号、数量上限和严格字段。 |
+
 | 文件                                         | 职责                                              |
 | -------------------------------------------- | ------------------------------------------------- |
 | `packages/shared/package.json`               | Zod共享包依赖、编译/测试脚本与显式dist导出。      |
 | `packages/shared/tsconfig.json`              | 共享源码编译、声明输出与测试文件编译排除。        |
-| `packages/shared/src/index.ts`               | Health、账号、菜谱、厨房、历史、外卖Contract和份数函数公开出口。 |
+| `packages/shared/src/index.ts` | Health、账号、菜谱、厨房、历史、外卖、采购Contract和份数函数公开出口。 |
 | `packages/shared/src/schemas/auth.ts`         | 用户名、8–128位密码、认证及独立用户名/密码更新请求响应Zod Contract。 |
 | `packages/shared/src/schemas/auth.test.ts`    | 验证账号格式、密码边界、严格请求与公开响应字段。 |
 | `packages/shared/src/schemas/health.ts`      | health运行时Zod响应Contract及HealthResponse类型。 |
@@ -289,6 +309,10 @@ sku-cook-ai/
 
 ### 2.8 架构、需求与开发文档
 
+| 文件 | 职责 |
+| --- | --- |
+| `docs/development/TODO_INTEGRATION.md` | 采购联动配置/稳定ID/秘密边界、迁移数据影响、不可变幂等/租约、隔离测试及实际验收边界。 |
+
 | 文件                                     | 职责                                                                                |
 | ---------------------------------------- | ----------------------------------------------------------------------------------- |
 | `docs/architecture/PROJECT_MAP.md`       | 本实际文件清单和职责说明，增删移动/职责变化同次维护。                               |
@@ -299,6 +323,10 @@ sku-cook-ai/
 | `docs/development/AI_WORKFLOW.md`        | Instructions、Agents、Skills的加载、选择、交接、地图及设计图提示词/版本维护方式。   |
 
 ### 2.9 共通设计与画面设计
+
+| 文件 | 职责 |
+| --- | --- |
+| `docs/design/screens/S14_SHOPPING_PANEL.md` | 采购预览入口、排除/数量日期、冻结恢复、明确新建及无网页跳转的发送状态设计。 |
 
 | 文件                                         | 职责                                                                          |
 | -------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -344,6 +372,15 @@ sku-cook-ai/
 
 ### 2.10 逐接口设计
 
+| 文件 | 职责 |
+| --- | --- |
+| `docs/design/apis/A34_SHOPPING_PREVIEW_POST.md` | 绑定登录用户的菜谱份数/食材来源预览与保守合并契约。 |
+| `docs/design/apis/A35_SHOPPING_BATCHES_GET.md` | 最近20批所属采购快照和安全状态读取契约。 |
+| `docs/design/apis/A36_SHOPPING_BATCH_GET.md` | 单批次归属读取与不存在响应契约。 |
+| `docs/design/apis/A37_SHOPPING_BATCH_PUT.md` | 先持久化不可变采购快照、内容哈希、严格引用和幂等冲突契约。 |
+| `docs/design/apis/A38_SHOPPING_SEND_POST.md` | 原批次发送/重试、租约、Todo状态映射、安全回执及无副作用契约。 |
+| `docs/design/apis/A39_KITCHEN_EVENTS_GET.md` | SSE会话认证、隔离、心跳与失活、连接生命周期、通知边界及前端回退设计。 |
+
 | 文件                                             | 职责                                                                               |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------- |
 | `docs/design/apis/A01_HEALTH_GET.md`             | 已有health接口的输入、响应与存活非数据库验收边界。                                 |
@@ -379,7 +416,6 @@ sku-cook-ai/
 | `docs/design/apis/A31_TAKEOUT_CANDIDATE_DELETE.md` | 删除当前用户候选、归属检查与204响应设计。 |
 | `docs/design/apis/A32_TAKEOUT_RANDOM_GET.md` | 当前用户候选随机推荐、换项排除及空池响应设计。 |
 | `docs/design/apis/A33_TAKEOUT_IMPORT_POST.md` | 严格JSON批量校验、用户级查重及事务原子导入设计。 |
-| `docs/design/apis/A39_KITCHEN_EVENTS_GET.md` | SSE会话认证、隔离、心跳与失活、连接生命周期、通知边界及前端回退设计。 |
 
 ## 3. 不展开的目录与运行文件
 
@@ -391,6 +427,8 @@ sku-cook-ai/
 - README.md与README_personal_daily_app_memo.md已有删除状态，未恢复，不列作现存入口。
 
 ## 4. 当前边界与维护
+
+V2采购联动新增S14/A34–A38，已实现菜谱/菜单预览、服务端稳定ID绑定、不可变批次与原ID重试；隔离库迁移及模拟Todo传输验证，不改Todo仓库。本机开发库采购迁移已在用户确认备份并授权后应用；其他部署环境的迁移、配置及两端真实联调仍需单独验收，不能把源码或模拟回执称为采购已送达。
 
 已实现A02–A33源码/shared Contract、邮箱/用户名登录、用户中心、只读管理员列表、个人爱心和外卖候选管理及用户业务隔离；业务确认使用共用Memo组件，账号入口仅首页更多。认证、管理员、菜谱爱心及外卖迁移均已在本机应用；外卖迁移经备份/隔离数据库校验，A28–A33通过真实隔离数据库HTTP流程验证。其他机器需部署迁移并在私有环境绑定管理员邮箱；真机、多设备、HTTPS/PWA/Wake Lock仍按设计书验收，不能用源码或health代替。
 

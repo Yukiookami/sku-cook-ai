@@ -5,6 +5,8 @@ import type { RecipeSummary } from '@sku-cook/shared';
 import { apiErrorMessage } from '../../api/errors';
 import { clearKitchenMenu, getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
 import ConfirmDialog from '../common/ConfirmDialog.vue';
+import ShoppingPanel from './ShoppingPanel.vue';
+import type { ShoppingPreviewInput } from '@sku-cook/shared';
 import { useConfirmDialog } from '../../composables/useConfirmDialog';
 
 type Selection = { recipe: RecipeSummary; targetServings: number };
@@ -19,6 +21,14 @@ const props = defineProps<{
 const emit = defineEmits<{ close: []; sent: []; 'return-to-recipes': [] }>();
 
 const loading = ref(false);
+const showShopping = ref(false);
+const shoppingSelections = ref<ShoppingPreviewInput['items']>([]);
+function openShopping(useCurrent: boolean) {
+  shoppingSelections.value = useCurrent
+    ? [...(session.value?.items ?? [])]
+    : selected.value.map(({ recipe, targetServings }) => ({ recipeId: recipe.id, targetServings }));
+  showShopping.value = true;
+}
 const saving = ref(false);
 const { dialog, confirm, settle } = useConfirmDialog();
 const sendSucceeded = ref(false);
@@ -235,6 +245,14 @@ async function emptyKitchen() {
             <template v-else>
               <section v-if="mode === 'send'" class="paper-card">
                 <h3 class="section-chip">本次选择（{{ selected.length }}道）</h3>
+                <button
+                  class="text-button"
+                  type="button"
+                  :disabled="saving || !selected.length"
+                  @click="openShopping(false)"
+                >
+                  为本次选择发送采购清单
+                </button>
                 <p v-if="!selected.length" class="muted">请先从菜谱一览选择菜谱。</p>
                 <div v-for="(item, index) in selected" :key="item.recipe.id" class="target-row">
                   <div class="target-heading">
@@ -265,6 +283,15 @@ async function emptyKitchen() {
 
               <section class="paper-card">
                 <h3 class="section-chip">厨房当前菜单</h3>
+                <button
+                  v-if="session?.items.length"
+                  class="text-button"
+                  type="button"
+                  :disabled="saving || loading || !stateFresh"
+                  @click="openShopping(true)"
+                >
+                  为厨房菜单发送采购清单
+                </button>
                 <p class="muted">这是打开弹层时读取的菜单快照，不代表厨房设备已收到或在线。</p>
                 <p v-if="!session?.items.length" class="muted">厨房当前没有菜单。</p>
                 <div
@@ -335,4 +362,9 @@ async function emptyKitchen() {
       </section>
     </div>
   </Teleport>
+  <ShoppingPanel
+    :show="showShopping"
+    :selections="shoppingSelections"
+    @close="showShopping = false"
+  />
 </template>

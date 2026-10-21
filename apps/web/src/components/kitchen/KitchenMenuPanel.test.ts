@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import KitchenMenuPanel from './KitchenMenuPanel.vue';
 import ConfirmDialog from '../common/ConfirmDialog.vue';
+import ShoppingPanel from './ShoppingPanel.vue';
 import { clearKitchenMenu, getKitchenState, replaceKitchenMenu } from '../../api/kitchen';
 import { KitchenStateResponseSchema, RecipeSummarySchema } from '@sku-cook/shared';
 
@@ -89,6 +90,37 @@ describe('KitchenMenuPanel', () => {
       sentKitchen(input.items, input.expectedRevision + 1),
     );
     vi.mocked(clearKitchenMenu).mockResolvedValue(currentKitchen);
+  });
+
+  it('分别为已调份数的本次选择和厨房菜单打开采购，不发送或清空厨房', async () => {
+    vi.mocked(getKitchenState).mockResolvedValue(menuKitchen);
+    const wrapper = mount(KitchenMenuPanel, {
+      props: { show: false, mode: 'send', selections: [recipe] },
+      global: { stubs: { Teleport: true, ShoppingPanel: true } },
+    });
+    await wrapper.setProps({ show: true });
+    await flushPromises();
+    await wrapper.get('[aria-label="番茄炒蛋增加一份"]').trigger('click');
+    const selectedEntry = wrapper
+      .findAll('button')
+      .find((button) => button.text() === '为本次选择发送采购清单');
+    expect(selectedEntry).toBeDefined();
+    await selectedEntry?.trigger('click');
+    expect(wrapper.getComponent(ShoppingPanel).props('selections')).toEqual([
+      { recipeId: 11, targetServings: 3 },
+    ]);
+    wrapper.getComponent(ShoppingPanel).vm.$emit('close');
+    await flushPromises();
+    const currentEntry = wrapper
+      .findAll('button')
+      .find((button) => button.text() === '为厨房菜单发送采购清单');
+    await currentEntry?.trigger('click');
+    expect(wrapper.getComponent(ShoppingPanel).props('selections')).toEqual([
+      { recipeId: 12, targetServings: 2 },
+    ]);
+    expect(replaceKitchenMenu).not.toHaveBeenCalled();
+    expect(clearKitchenMenu).not.toHaveBeenCalled();
+    wrapper.unmount();
   });
 
   it('reads only when opened and sends the independently adjusted target with the observed revision', async () => {

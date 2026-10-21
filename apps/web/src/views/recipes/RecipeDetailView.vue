@@ -15,6 +15,7 @@ import RecipeLikeButton from '../../components/recipes/RecipeLikeButton.vue';
 import ConfirmDialog from '../../components/common/ConfirmDialog.vue';
 import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import KitchenMenuPanel from '../../components/kitchen/KitchenMenuPanel.vue';
+import ShoppingPanel from '../../components/kitchen/ShoppingPanel.vue';
 import { apiErrorMessage } from '../../api/errors';
 import { deleteRecipe, getRecipe } from '../../api/recipes';
 import { recordCookingHistory } from '../../api/cooking-history';
@@ -32,6 +33,7 @@ const { dialog, confirm, settle } = useConfirmDialog();
 const writeError = ref('');
 const showMore = ref(false);
 const showKitchen = ref(false);
+const showShopping = ref(false);
 const kitchenSelection = ref<RecipeSummary[]>([]);
 const exportStatus = ref('');
 const exportError = ref('');
@@ -388,7 +390,15 @@ onBeforeUnmount(() => {
       <div class="bottom-spacer" aria-hidden="true" />
     </template>
 
-    <div v-if="recipe" class="fixed-action">
+    <div v-if="recipe" class="fixed-action shopping-action">
+      <button
+        class="button button-secondary"
+        type="button"
+        :disabled="writing"
+        @click="showShopping = true"
+      >
+        发送采购清单
+      </button>
       <button class="button button-primary" type="button" :disabled="writing" @click="openKitchen">
         发送到厨房
       </button>
@@ -439,6 +449,11 @@ onBeforeUnmount(() => {
       :initial-targets="recipe ? { [recipe.id]: targetServings } : {}"
       @close="showKitchen = false"
       @return-to-recipes="returnToRecipeList"
+    />
+    <ShoppingPanel
+      :show="showShopping"
+      :selections="recipe ? [{ recipeId: recipe.id, targetServings }] : []"
+      @close="showShopping = false"
     />
   </main>
 </template>

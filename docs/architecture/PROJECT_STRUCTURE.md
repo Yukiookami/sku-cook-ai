@@ -11,6 +11,8 @@
 
 基础工程已创建：workspace、Web技术联通验证页（非正式产品首页）、API health、共享Contract、Prisma默认用户模型与Seed、检查工具和PWA基础。启动方式见[SETUP.md](../development/SETUP.md)。下列结构仍含未实施的业务/按需项目，不能认为全部已实现；数据库迁移需PostgreSQL就绪后生成。
 
+V2采购增量已落实为API `modules/shopping`（route/service/preview及测试）、Web `api/shopping` 与共用 `ShoppingPanel`、shared `schemas/shopping`、Prisma采购账本迁移。该模块仅向独立Todo发送已确认快照，不接管Todo会话或购买状态；实际路径见[项目地图](PROJECT_MAP.md)，配置/验收边界见[集成手册](../development/TODO_INTEGRATION.md)。下方通用目标树不展开每个增量文件。
+
 ## 2. 完整目标结构
 
 ```text

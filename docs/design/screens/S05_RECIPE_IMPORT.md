@@ -1,6 +1,6 @@
 # S05 菜谱导入 / 导出设计书
 
-状态：Web画面已实现 JSON 导入及菜库导出入口；A08/A09 API client已按shared Contract接入，条目校验由服务端返回全部字段问题，正式导入使用同一份校验输入。S02详情“更多”还可单独导出当前菜谱的可导入JSON。JSON流程保持原样，并提供独立 [S09 Excel固定模板导入](S09_RECIPE_EXCEL_IMPORT.md) 入口。尚未在可用服务/数据库环境执行真实HTTP业务验收。路由 `/recipes/import`，组件 `RecipeImportView.vue`。从列表“更多”或空库入口进入。
+状态：Web画面已实现 JSON 导入及菜库导出入口；A08/A09 API client已按shared Contract接入，条目校验由服务端返回全部字段问题，正式导入使用同一份校验输入。S02详情“更多”还可单独导出当前菜谱的可导入JSON。JSON流程保持原样，并提供独立 [S09 Excel固定模板导入](S09_RECIPE_EXCEL_IMPORT.md) 入口。尚未在可用服务/数据库环境执行真实HTTP业务验收。路由 `/recipes/import`，组件 `RecipeImportView.vue`。可从S01“新增”菜单或“更多”进入，也保留空库入口。
 
 ## 1. 信息结构
 

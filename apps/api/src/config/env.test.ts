@@ -33,4 +33,21 @@ describe('server configuration', () => {
       expect(() => readConfig({ ...base, APP_ORIGIN })).toThrow();
     }
   });
+  it('requires paired server-only shopping credentials and an exact HTTPS Todo origin', () => {
+    const base = { DATABASE_URL: 'postgresql://localhost/test' };
+    const credentials = { TODO_COOK_USER_ID: '1', TODO_COOK_INTEGRATION_TOKEN: 'a'.repeat(64) };
+    expect(readConfig({ ...base, ...credentials }).TODO_ORIGIN).toBe(
+      'https://todo.taila48442.ts.net',
+    );
+    for (const input of [
+      { TODO_COOK_USER_ID: '1' },
+      { TODO_COOK_INTEGRATION_TOKEN: 'a'.repeat(64) },
+      { ...credentials, TODO_COOK_USER_ID: ' 1' },
+      { ...credentials, TODO_COOK_USER_ID: 'a@example.test' },
+      { ...credentials, TODO_COOK_INTEGRATION_TOKEN: 'short' },
+      { ...credentials, TODO_ORIGIN: 'http://todo.example.test' },
+      { ...credentials, TODO_ORIGIN: 'https://todo.example.test/path' },
+    ])
+      expect(() => readConfig({ ...base, ...input })).toThrow();
+  });
 });
