@@ -68,6 +68,7 @@ S03/S04共用表单已按实际职责拆分为基本信息、标签选择、单�
 | A31  | [DELETE /api/takeout/candidates/:id](apis/A31_TAKEOUT_CANDIDATE_DELETE.md) | S13 删除候选         | 隔离数据库/HTTP验收通过，本机迁移已应用              |
 | A32  | [GET /api/takeout/random](apis/A32_TAKEOUT_RANDOM_GET.md)                  | S01 点外卖推荐       | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
 | A33  | [POST /api/takeout/candidates/import](apis/A33_TAKEOUT_IMPORT_POST.md)     | S13 JSON批量导入     | 此前验收通过；可选链接迁移已应用本机，行为验收待完成 |
+| A39  | [GET /api/kitchen/events](apis/A39_KITCHEN_EVENTS_GET.md)                | S06                  | SSE变化通知、心跳、会话复验与断线回退；隔离库/HTTP验证 |
 
 菜谱静态API路径 `tags` / `random` 与 `:id` 正整数路由明确区分，不能因新增随机入口破坏详情访问。随机区复用S01，不新增独立路由页面。
 

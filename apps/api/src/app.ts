@@ -4,6 +4,7 @@ import { registerPrisma } from './plugins/prisma.js';
 import { healthRoutes } from './modules/health/health.route.js';
 import { recipeRoutes } from './modules/recipes/recipe.route.js';
 import { kitchenRoutes } from './modules/kitchen/kitchen.route.js';
+import { registerKitchenEvents } from './modules/kitchen/kitchen.events.js';
 import { historyRoutes } from './modules/history/history.route.js';
 import { authRoutes } from './modules/auth/auth.route.js';
 import { registerAuthentication } from './modules/auth/auth.session.js';
@@ -31,6 +32,7 @@ export function buildApp(
   app.register(healthRoutes, { prefix: '/api' });
   const secureCookie = settings.secureCookie ?? process.env.NODE_ENV === 'production';
   registerAuthentication(app, secureCookie, settings.allowedOrigin);
+  registerKitchenEvents(app);
   app.register(authRoutes, { prefix: '/api', secureCookie });
   app.register(recipeRoutes, { prefix: '/api' });
   app.register(kitchenRoutes, { prefix: '/api' });

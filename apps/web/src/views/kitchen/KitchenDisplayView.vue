@@ -2,7 +2,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import axios from 'axios';
 import { apiErrorMessage } from '../../api/errors';
-import { completeKitchenMenu, getKitchenState, setKitchenActiveRecipe } from '../../api/kitchen';
+import {
+  completeKitchenMenu,
+  getKitchenState,
+  setKitchenActiveRecipe,
+  watchKitchenChanges,
+} from '../../api/kitchen';
 import { useWakeLock } from '../../composables/useWakeLock';
 import { scaleIngredientAmount } from '@sku-cook/shared';
 
@@ -16,6 +21,7 @@ const initialLoading = ref(true);
 const loadError = ref('');
 const actionError = ref('');
 const actionPending = ref(false);
+const liveConnectionUnavailable = ref(false);
 const menuExpanded = ref(false);
 const wakeLockUnavailable = ref(false);
 const wakeLockNoticeDismissed = ref(
@@ -100,6 +106,10 @@ let completeTimer: ReturnType<typeof setTimeout> | undefined;
 let pollIntervalSeconds = 10;
 let viewDisposed = false;
 let scrollRestoreSequence = 0;
+let stopStream: (() => void) | undefined;
+let streamConnected = false;
+let pendingReads = 0;
+let refreshQueued = false;
 
 useWakeLock(hasMenu, wakeLockUnavailable);
 
@@ -110,8 +120,43 @@ function cancelPoll() {
 
 function schedulePoll() {
   cancelPoll();
-  if (viewDisposed || document.visibilityState !== 'visible') return;
+  if (
+    viewDisposed ||
+    document.visibilityState !== 'visible' ||
+    pendingReads ||
+    actionPending.value ||
+    (streamConnected && !loadError.value)
+  )
+    return;
   pollTimer = setTimeout(() => void readState(true), pollIntervalSeconds * 1000);
+}
+
+function startStream() {
+  if (stopStream || viewDisposed || document.visibilityState !== 'visible') return;
+  stopStream = watchKitchenChanges(
+    () => void refresh(),
+    (connected) => {
+      streamConnected = connected;
+      liveConnectionUnavailable.value = !connected;
+      if (connected) cancelPoll();
+      else schedulePoll();
+    },
+  );
+}
+
+function stopLiveUpdates() {
+  stopStream?.();
+  stopStream = undefined;
+  streamConnected = false;
+  cancelPoll();
+}
+
+function resumeUpdates() {
+  if (viewDisposed || document.visibilityState !== 'visible') return;
+  if (refreshQueued && !pendingReads && !actionPending.value) {
+    refreshQueued = false;
+    void readState(true);
+  } else schedulePoll();
 }
 
 function applyState(result: Awaited<ReturnType<typeof getKitchenState>>) {
@@ -128,6 +173,12 @@ function applyState(result: Awaited<ReturnType<typeof getKitchenState>>) {
 }
 
 async function readState(scheduleNext: boolean) {
+  if (viewDisposed) return;
+  if (pendingReads || (scheduleNext && actionPending.value)) {
+    refreshQueued = true;
+    return;
+  }
+  pendingReads += 1;
   const request = ++requestSequence;
   try {
     const result = await getKitchenState();
@@ -138,10 +189,11 @@ async function readState(scheduleNext: boolean) {
     if (request !== requestSequence) return;
     loadError.value = apiErrorMessage(cause, '无法读取厨房菜单，请检查网络后重试。');
   } finally {
+    pendingReads -= 1;
     if (request === requestSequence && !viewDisposed) {
       initialLoading.value = false;
-      if (scheduleNext) schedulePoll();
     }
+    if (scheduleNext || refreshQueued) resumeUpdates();
   }
 }
 
@@ -171,7 +223,7 @@ async function chooseRecipe(recipeId: number): Promise<boolean> {
     return false;
   } finally {
     actionPending.value = false;
-    schedulePoll();
+    resumeUpdates();
   }
 }
 
@@ -211,7 +263,7 @@ async function finishCooking() {
     await readState(false);
   } finally {
     actionPending.value = false;
-    schedulePoll();
+    resumeUpdates();
   }
 }
 
@@ -234,9 +286,18 @@ function saveReadingPosition() {
 }
 
 function handleVisibility() {
-  cancelPoll();
-  if (document.visibilityState === 'visible') void readState(true);
-  else saveReadingPosition();
+  if (document.visibilityState === 'visible') {
+    startStream();
+    void refresh();
+  } else {
+    saveReadingPosition();
+    stopLiveUpdates();
+  }
+}
+
+function handlePageHide() {
+  saveReadingPosition();
+  stopLiveUpdates();
 }
 
 watch(
@@ -260,8 +321,10 @@ watch(
 onMounted(async () => {
   measureViewport();
   window.addEventListener('resize', measureViewport);
-  window.addEventListener('pagehide', saveReadingPosition);
+  window.addEventListener('pagehide', handlePageHide);
+  window.addEventListener('pageshow', handleVisibility);
   document.addEventListener('visibilitychange', handleVisibility);
+  startStream();
   await readState(true);
 });
 
@@ -270,16 +333,20 @@ onBeforeUnmount(() => {
   scrollRestoreSequence += 1;
   saveReadingPosition();
   requestSequence += 1;
-  cancelPoll();
+  stopLiveUpdates();
   if (completeTimer) clearTimeout(completeTimer);
   window.removeEventListener('resize', measureViewport);
-  window.removeEventListener('pagehide', saveReadingPosition);
+  window.removeEventListener('pagehide', handlePageHide);
+  window.removeEventListener('pageshow', handleVisibility);
   document.removeEventListener('visibilitychange', handleVisibility);
 });
 </script>
 
 <template>
   <main class="kitchen-screen" :class="{ 'kitchen-landscape': landscape }">
+    <p v-if="liveConnectionUnavailable" class="kitchen-reference" role="status">
+      实时连接暂不可用，正在定时检查菜单。
+    </p>
     <p v-if="initialLoading" class="kitchen-status" role="status">正在读取厨房菜单</p>
     <section v-else-if="loadError && !stateResult" class="kitchen-empty" role="alert">
       <h1>无法读取厨房菜单</h1>

@@ -140,7 +140,8 @@ sku-cook-ai/
 | `apps/web/src/api/auth-errors.ts`                | 将账号操作的网络与服务端错误转换为可读提示。                                |
 | `apps/web/src/api/health.ts`                    | 请求health并用shared Schema校验响应。                                        |
 | `apps/web/src/api/recipes.ts`                   | A02–A09、A14、A19菜谱接口 typed client；请求与响应由shared Schema校验。        |
-| `apps/web/src/api/kitchen.ts`                   | A10–A13、A15厨房接口 typed client；携带会话revision。                         |
+| `apps/web/src/api/kitchen.ts`                   | A10–A13/A15 typed client与A39原生SSE订阅、心跳检测、重连及协议校验。 |
+| `apps/web/src/api/kitchen.test.ts` | 验证SSE事件校验、心跳/失活、重连清理、迟到事件与无原生能力降级。 |
 | `apps/web/src/api/cooking-history.ts`           | A16–A18做饭历史接口 typed client。                                            |
 | `apps/web/src/api/errors.ts`                    | 将网络与HTTP状态转换为可读提示，并从shared错误Contract提取导入问题。          |
 | `apps/web/src/api/clients.test.ts`              | 使用Contract合法响应和测试HTTP Adapter验证业务API路径/请求体/响应层级/204。 |
@@ -166,7 +167,7 @@ sku-cook-ai/
 | `apps/web/src/components/recipes/RecipeForm.test.ts` | 验证shared字段限制、提交后实时校验、必填提示及数量/单位组合联想。            |
 | `apps/web/src/components/kitchen/KitchenMenuPanel.vue` | S07查看/发送/清空弹层、目标份数、冲突刷新后显式确认重发及A11成功确认弹窗。                |
 | `apps/web/src/components/kitchen/KitchenMenuPanel.test.ts` | 验证开弹层读取、独立份数调整、A11成功确认操作及冲突刷新/显式确认重发。           |
-| `apps/web/src/views/kitchen/KitchenDisplayView.test.ts` | 验证多轮待机后接收新菜单、A15完成、整菜连续滚动、返回滚动恢复及常亮提醒收起状态。                 |
+| `apps/web/src/views/kitchen/KitchenDisplayView.test.ts` | 验证SSE通知/轮询回退、并发读写、后台清理、完成、滚动恢复及常亮提醒。 |
 | `apps/web/src/composables/useWakeLock.ts`        | 厨房页可见状态下申请/释放Screen Wake Lock及安全降级。                         |
 | `apps/web/src/composables/useConfirmDialog.ts`   | 按页面协调异步确认状态，去重等待、结算确认/取消并在卸载时取消。               |
 | `apps/web/src/composables/useWakeLock.test.ts`  | 验证迟到的Wake Lock sentinel在菜单清空或组件卸载后释放。                     |
@@ -199,7 +200,7 @@ sku-cook-ai/
 | `apps/web/src/views/recipes/RecipeImportView.vue` | S05 菜谱JSON导入/导出、文件/粘贴、预校验与完整菜库备份。                |
 | `apps/web/src/views/recipes/RecipeExcelImportView.vue` | S09固定Excel模板导入页面，显示解析预览并复用A08/A09校验及写入。        |
 | `apps/web/src/views/recipes/RecipeExcelImportView.test.ts` | 验证S09模板说明、A08/A09复用、错误行定位与本地解析错误拦截。           |
-| `apps/web/src/views/kitchen/KitchenDisplayView.vue` | S06厨房轮询、版本写入、整菜滚动/切换、完成历史及Wake Lock。                |
+| `apps/web/src/views/kitchen/KitchenDisplayView.vue` | S06厨房SSE同步/轮询回退、版本写入、整菜滚动/切换、完成历史及Wake Lock。 |
 | `apps/web/src/views/history/CookingHistoryView.test.ts` | 验证历史初次读取失败后可重试并恢复空列表状态。                         |
 | `apps/web/src/views/history/CookingHistoryView.vue` | S08历史分页、最新菜谱打开与删除误记。                                      |
 | `apps/web/src/api/takeout.ts` | A28–A33外卖候选typed client，按shared Contract校验响应。 |
@@ -227,7 +228,7 @@ sku-cook-ai/
 | `apps/api/src/modules/recipes/recipe.like.test.ts` | Mock HTTP验证爱心认证、严格输入、用户限定、幂等与错误形状。 |
 | `apps/api/prisma/schema.prisma`               | PostgreSQL用户邮箱/管理员权限、AuthSession、菜谱/厨房/历史及外卖候选关系；外卖链接列可空的前向迁移已应用于本机开发库。 |
 | `apps/api/prisma/seed.ts`                     | 通过本机配置幂等初始化Sku001的空密码哈希，不覆盖已设密码。                       |
-| `apps/api/src/app.ts`                         | 构造Fastify实例，装配统一错误处理、Prisma、认证钩子、health与业务路由。           |
+| `apps/api/src/app.ts`                         | 构造Fastify实例，装配错误处理、Prisma、认证、厨房SSE生命周期与业务路由。 |
 | `apps/api/src/server.ts`                      | 读取服务/认证配置、启动监听、失败处理与退出。                                   |
 | `apps/api/src/config/env.ts`                  | Zod校验数据库、端口、监听、日志、Origin及厨房轮询间隔。                         |
 | `apps/api/src/config/env.test.ts`             | 验证配置必填、非法URL/端口与默认值。                   |
@@ -243,8 +244,10 @@ sku-cook-ai/
 | `apps/api/src/modules/recipes/recipe.route.test.ts` | 不连接数据库的路由参数/未知字段/错误envelope边界测试。 |
 | `apps/api/src/modules/recipes/recipe.service.test.ts` | 测试共用随机候选索引边界与菜谱导出DTO，不模拟数据库业务集成。 |
 | `apps/api/src/modules/kitchen/kitchen.route.ts` | A10–A13/A15厨房快照、revision写入、完成记历史并清空。 |
+| `apps/api/src/modules/kitchen/kitchen.events.ts` | A39按会话/账号隔离的进程内SSE、提交后通知、心跳、连接上限与生命周期清理。 |
+| `apps/api/src/modules/kitchen/kitchen.events.test.ts` | 真实HTTP/模拟数据库验证认证、隔离、成功写入通知、注销及心跳/关闭清理。 |
 | `apps/api/src/modules/kitchen/kitchen.service.ts` | 厨房状态DTO/一致性校验及复用认证用户事务锁。 |
-| `apps/api/src/modules/kitchen/kitchen.integration.test.ts` | 显式独立本机测试库下验证真实HTTP发送、持久化、同账号第二设备读取及旧版本拒绝。 |
+| `apps/api/src/modules/kitchen/kitchen.integration.test.ts` | 独立测试库真实HTTP验证提交后SSE通知、同账号持久菜单读取及旧版本拒绝。 |
 | `apps/api/src/modules/takeout/takeout.route.ts` | A28–A33认证候选列表、增改删、随机推荐及JSON导入接口。 |
 | `apps/api/src/modules/takeout/takeout.service.ts` | 用户隔离的外卖候选DTO/查重/随机选择和事务原子批量写入。 |
 | `apps/api/src/modules/takeout/takeout.route.test.ts` | 验证外卖接口校验、认证与响应Contract边界。 |
@@ -276,7 +279,8 @@ sku-cook-ai/
 | `packages/shared/src/schemas/recipe.ts`      | 菜谱输入/响应、个人爱心、摘要、查询、随机、JSON导入/导出Schema与限制常量。 |
 | `packages/shared/src/schemas/recipe.like.test.ts` | 验证爱心严格布尔Contract、旧响应兼容及与输入/导入数据分离。 |
 | `packages/shared/src/schemas/recipe.test.ts` | 验证菜谱字段默认/边界、严格未知字段、分页、厨房及迁移导入/导出约束。 |
-| `packages/shared/src/schemas/kitchen.ts`     | 厨房会话/菜单/切换/版本请求Contract与DTO类型。 |
+| `packages/shared/src/schemas/kitchen.ts`     | 厨房会话/菜单/切换/版本与SSE事件Contract及DTO类型。 |
+| `packages/shared/src/schemas/kitchen.test.ts` | 验证SSE就绪/变化/心跳事件的严格字段与枚举边界。 |
 | `packages/shared/src/schemas/history.ts`     | 做饭历史及分页/手动写入/参数Contract与DTO类型。 |
 | `packages/shared/src/schemas/takeout.ts`    | 外卖候选CRUD、随机与批量导入的严格输入/响应Contract及上限。 |
 | `packages/shared/src/schemas/takeout.test.ts` | 验证外卖URL、名称、严格字段、导入数量及JSON大小约束。 |
@@ -375,6 +379,7 @@ sku-cook-ai/
 | `docs/design/apis/A31_TAKEOUT_CANDIDATE_DELETE.md` | 删除当前用户候选、归属检查与204响应设计。 |
 | `docs/design/apis/A32_TAKEOUT_RANDOM_GET.md` | 当前用户候选随机推荐、换项排除及空池响应设计。 |
 | `docs/design/apis/A33_TAKEOUT_IMPORT_POST.md` | 严格JSON批量校验、用户级查重及事务原子导入设计。 |
+| `docs/design/apis/A39_KITCHEN_EVENTS_GET.md` | SSE会话认证、隔离、心跳与失活、连接生命周期、通知边界及前端回退设计。 |
 
 ## 3. 不展开的目录与运行文件
 

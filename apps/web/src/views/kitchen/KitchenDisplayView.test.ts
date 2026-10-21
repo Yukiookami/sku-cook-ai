@@ -2,12 +2,18 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KitchenStateResponseSchema } from '@sku-cook/shared';
 import KitchenDisplayView from './KitchenDisplayView.vue';
-import { completeKitchenMenu, getKitchenState, setKitchenActiveRecipe } from '../../api/kitchen';
+import {
+  completeKitchenMenu,
+  getKitchenState,
+  setKitchenActiveRecipe,
+  watchKitchenChanges,
+} from '../../api/kitchen';
 
 vi.mock('../../api/kitchen', () => ({
   completeKitchenMenu: vi.fn(),
   getKitchenState: vi.fn(),
   setKitchenActiveRecipe: vi.fn(),
+  watchKitchenChanges: vi.fn(),
 }));
 vi.mock('../../composables/useWakeLock', () => ({
   useWakeLock: (_hasMenu: { value: boolean }, unavailable: { value: boolean }) => {
@@ -105,6 +111,7 @@ describe('KitchenDisplayView A15 completion', () => {
     window.localStorage.removeItem(wakeLockNoticeStorageKey);
     window.sessionStorage.clear();
     vi.mocked(setKitchenActiveRecipe).mockResolvedValue(queuedState);
+    vi.mocked(watchKitchenChanges).mockImplementation(() => vi.fn());
   });
 
   afterEach(() => {
@@ -141,6 +148,124 @@ describe('KitchenDisplayView A15 completion', () => {
     wrapper.unmount();
     await vi.advanceTimersByTimeAsync(10000);
     expect(getKitchenState).toHaveBeenCalledTimes(4);
+  });
+
+  it('does not poll a healthy live connection and reads only when notified', async () => {
+    vi.useFakeTimers();
+    vi.mocked(getKitchenState).mockResolvedValue(emptyState);
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    const [changed, connection] = vi.mocked(watchKitchenChanges).mock.calls[0]!;
+    connection(true);
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(getKitchenState).toHaveBeenCalledTimes(1);
+    vi.mocked(getKitchenState).mockResolvedValue(queuedState);
+    changed();
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('番茄炒蛋');
+    wrapper.unmount();
+  });
+
+  it('falls back to polling on stream errors and re-reads after reconnecting', async () => {
+    vi.useFakeTimers();
+    vi.mocked(getKitchenState).mockResolvedValue(emptyState);
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    const [changed, connection] = vi.mocked(watchKitchenChanges).mock.calls[0]!;
+    connection(true);
+    connection(false);
+    await flushPromises();
+    expect(wrapper.text()).toContain('正在定时检查菜单');
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    connection(true);
+    changed();
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(getKitchenState).toHaveBeenCalledTimes(3);
+    wrapper.unmount();
+  });
+
+  it('retries failed reads even with a healthy stream and stops polling after recovery', async () => {
+    vi.useFakeTimers();
+    vi.mocked(getKitchenState)
+      .mockResolvedValueOnce(queuedState)
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValue(queuedState);
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    const [changed, connection] = vi.mocked(watchKitchenChanges).mock.calls[0]!;
+    connection(true);
+    changed();
+    await flushPromises();
+    expect(wrapper.text()).toContain('连接中断');
+    await vi.advanceTimersByTimeAsync(10000);
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(3);
+    expect(wrapper.text()).not.toContain('连接中断');
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(getKitchenState).toHaveBeenCalledTimes(3);
+    wrapper.unmount();
+  });
+
+  it('waits for writes before applying queued stream notifications', async () => {
+    vi.mocked(getKitchenState).mockResolvedValue(queuedState);
+    let resolveComplete: ((value: typeof emptyState) => void) | undefined;
+    vi.mocked(completeKitchenMenu).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveComplete = resolve;
+      }),
+    );
+    const wrapper = mountKitchenView();
+    await flushPromises();
+    const [changed, connection] = vi.mocked(watchKitchenChanges).mock.calls[0]!;
+    connection(true);
+    await wrapper.get('.kitchen-primary').trigger('click');
+    changed();
+    changed();
+    expect(getKitchenState).toHaveBeenCalledTimes(1);
+    vi.mocked(getKitchenState).mockResolvedValue(emptyState);
+    resolveComplete?.(emptyState);
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('今天的菜做完了');
+    wrapper.unmount();
+  });
+
+  it('coalesces changes during a read and closes the stream in the background or on unmount', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    let resolveRead: ((value: typeof queuedState) => void) | undefined;
+    vi.mocked(getKitchenState).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRead = resolve;
+      }),
+    );
+    vi.mocked(getKitchenState).mockResolvedValue(queuedState);
+    const wrapper = mountKitchenView();
+    const [changed, connection] = vi.mocked(watchKitchenChanges).mock.calls[0]!;
+    const stop = vi.mocked(watchKitchenChanges).mock.results[0]!.value;
+    connection(true);
+    changed();
+    changed();
+    expect(getKitchenState).toHaveBeenCalledTimes(1);
+    resolveRead?.(queuedState);
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(2);
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(stop).toHaveBeenCalledOnce();
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flushPromises();
+    expect(watchKitchenChanges).toHaveBeenCalledTimes(2);
+    const secondStop = vi.mocked(watchKitchenChanges).mock.results[1]!.value;
+    wrapper.unmount();
+    expect(secondStop).toHaveBeenCalledOnce();
+    changed();
+    await flushPromises();
+    expect(getKitchenState).toHaveBeenCalledTimes(3);
   });
 
   it('waits for each response and recovers polling after a failed read', async () => {

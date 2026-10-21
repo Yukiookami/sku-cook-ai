@@ -19,8 +19,9 @@ describe.skipIf(!databaseUrl)('kitchen real HTTP and PostgreSQL persistence', ()
   it('persists a sent menu for a second device on the same account and rejects stale writes', async () => {
     if (!databaseUrl) throw new Error('请显式配置独立 TEST_DATABASE_URL');
     const app = buildApp(databaseUrl, { logger: false }, { secureCookie: false });
+    const streamController = new AbortController();
     try {
-      await app.ready();
+      await app.listen({ host: '127.0.0.1', port: 0 });
       const phone = request.agent(app.server);
       const kitchen = request.agent(app.server);
       const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
@@ -30,6 +31,33 @@ describe.skipIf(!databaseUrl)('kitchen real HTTP and PostgreSQL persistence', ()
         .send({ ...credentials, email: `${suffix}@example.test` })
         .expect(201);
       await kitchen.post('/api/auth/login').send(credentials).expect(200);
+      const address = app.server.address();
+      if (!address || typeof address === 'string') throw new Error('测试监听地址无效');
+      const cookies = registered.headers['set-cookie'];
+      if (!Array.isArray(cookies) || typeof cookies[0] !== 'string') {
+        throw new Error('注册未设置会话Cookie');
+      }
+      const stream = await fetch(`http://127.0.0.1:${address.port}/api/kitchen/events`, {
+        headers: { Cookie: cookies[0].split(';')[0]! },
+        signal: streamController.signal,
+      });
+      expect(stream.status).toBe(200);
+      const reader = stream.body!.getReader();
+      const decoder = new TextDecoder();
+      async function expectEvent(type: string) {
+        const timeout = setTimeout(() => streamController.abort(), 2000);
+        try {
+          let data = '';
+          while (!data.includes(`"type":"${type}"`)) {
+            const chunk = await reader.read();
+            if (chunk.done) throw new Error('SSE连接提前结束');
+            data += decoder.decode(chunk.value, { stream: true });
+          }
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+      await expectEvent('ready');
 
       const created = await phone
         .post('/api/recipes')
@@ -40,6 +68,7 @@ describe.skipIf(!databaseUrl)('kitchen real HTTP and PostgreSQL persistence', ()
           steps: [{ order: 1, text: '炒熟后盛出。' }],
         })
         .expect(201);
+      await expectEvent('changed');
       const recipe = RecipeResponseSchema.parse(created.body).recipe;
       const before = KitchenStateResponseSchema.parse(
         (await kitchen.get('/api/kitchen/session').expect(200)).body,
@@ -59,6 +88,7 @@ describe.skipIf(!databaseUrl)('kitchen real HTTP and PostgreSQL persistence', ()
       expect(sent.session.revision).toBe(before.session.revision + 1);
       expect(sent.session.activeRecipeId).toBe(recipe.id);
       expect(sent.session.recipes[0]?.steps[0]?.text).toBe('炒熟后盛出。');
+      await expectEvent('changed');
 
       const stored = await app.prisma.kitchenSession.findUniqueOrThrow({
         where: { userId: registered.body.user.id },
@@ -82,6 +112,7 @@ describe.skipIf(!databaseUrl)('kitchen real HTTP and PostgreSQL persistence', ()
       );
       expect(afterConflict).toEqual(sent);
     } finally {
+      streamController.abort();
       await app.close();
     }
   });

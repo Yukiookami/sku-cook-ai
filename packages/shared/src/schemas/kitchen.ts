@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { RecipeSchema, TargetServingsSchema } from './recipe.js';
 
+export const KitchenEventSchema = z
+  .object({ type: z.enum(['ready', 'changed', 'heartbeat', 'reconnect']) })
+  .strict();
+export type KitchenEvent = z.infer<typeof KitchenEventSchema>;
+
 export const KitchenItemSchema = z
   .object({
     recipeId: z.number().int().positive(),
